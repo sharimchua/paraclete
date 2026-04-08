@@ -159,8 +159,19 @@ def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     return db_note
 
 @app.get("/notes/", response_model=List[schemas.Note])
-def read_notes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Note).offset(skip).limit(limit).all()
+def read_notes(search: str = None, skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+    query = db.query(models.Note)
+    if search:
+        query = query.filter(
+            (models.Note.title.ilike(f"%{search}%")) | 
+            (models.Note.raw_capture.ilike(f"%{search}%")) | 
+            (models.Note.cleaned_text.ilike(f"%{search}%"))
+        )
+    return query.order_by(models.Note.date.desc(), models.Note.created_at.desc()).offset(skip).limit(limit).all()
+
+@app.get("/notes/by-date/{date_str}", response_model=List[schemas.Note])
+def read_notes_by_date(date_str: str, db: Session = Depends(get_db)):
+    return db.query(models.Note).filter(models.Note.date == date_str).order_by(models.Note.created_at.desc()).all()
 
 @app.get("/notes/{note_id}", response_model=schemas.Note)
 def read_note(note_id: int, db: Session = Depends(get_db)):

@@ -11,25 +11,26 @@ const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
     const [trends, setTrends] = useState<TrendPoint[]>([]);
     const [references, setReferences] = useState<ReferenceUsage[]>([]);
-    const [recentNotes, setRecentNotes] = useState<Note[]>([]);
+    const [dateNotes, setDateNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    });
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchBaseData = async () => {
             try {
-                // Parallel fetch for speed
-                const [s, c, t, r, n] = await Promise.all([
+                const [s, c, t, r] = await Promise.all([
                     api.get<DashboardStats>('/dashboard/stats'),
                     api.get<CalendarDay[]>('/dashboard/calendar'),
                     api.get<TrendPoint[]>('/dashboard/trends'),
-                    api.get<ReferenceUsage[]>('/dashboard/reference-usage'),
-                    api.get<Note[]>('/dashboard/recent-notes')
+                    api.get<ReferenceUsage[]>('/dashboard/reference-usage')
                 ]);
                 setStats(s);
                 setCalendarData(c);
                 setTrends(t);
                 setReferences(r);
-                setRecentNotes(n);
                 setLoading(false);
             } catch (err) {
                 console.error('Failed to fetch dashboard data', err);
@@ -37,8 +38,21 @@ const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
             }
         };
 
-        fetchData();
+        fetchBaseData();
     }, []);
+
+    useEffect(() => {
+        const fetchNotesByDate = async () => {
+            try {
+                const notes = await api.get<Note[]>(`/notes/by-date/${selectedDate}`);
+                setDateNotes(notes);
+            } catch (err) {
+                console.error('Failed to fetch notes for date', err);
+            }
+        };
+
+        fetchNotesByDate();
+    }, [selectedDate]);
 
     if (loading) return <div className="loader" />;
 
@@ -68,7 +82,11 @@ const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
                     </div>
                 </div>
 
-                <PracticeCalendar data={calendarData} />
+                <PracticeCalendar 
+                    data={calendarData} 
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                />
             </div>
 
             {/* Trends and References */}
@@ -128,12 +146,14 @@ const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
 
             {/* Recent Activity */}
             <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-                <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px' }}>Recent Notes</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-                    {recentNotes.length === 0 ? (
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '24px' }}>No notes captured yet.</div>
+                <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px' }}>
+                    Notes for {new Date(selectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto', maxHeight: '500px' }}>
+                    {dateNotes.length === 0 ? (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '24px' }}>No sessions on this day.</div>
                     ) : (
-                        recentNotes.map(note => (
+                        dateNotes.map(note => (
                             <div 
                                 key={note.id} 
                                 onClick={() => onSelectNote(note.id)}
@@ -163,7 +183,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
                                 </div>
 
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span>{new Date(note.date).toLocaleDateString()}</span>
+                                    <span>{new Date(note.date + 'T00:00:00').toLocaleDateString()}</span>
                                     <span style={{ 
                                         color: 'var(--primary)', 
                                         fontWeight: 800, 

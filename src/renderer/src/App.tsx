@@ -9,6 +9,7 @@ import NoteDetail from './components/NoteDetail';
 import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
 import TagManagement from './components/TagManagement';
+import NotesList from './components/NotesList';
 import Logo from './components/Logo';
 
 const App: React.FC = () => {
@@ -129,10 +130,10 @@ const App: React.FC = () => {
 
         if (currentView === 'notes') {
             return (
-                <div className="card">
-                    <h3>Notes Lifecycle</h3>
-                    <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Prepare, Capture, and Clean your sessions.</p>
-                </div>
+                <NotesList onSelectNote={(id) => {
+                    setSelectedNoteId(id);
+                    setCurrentView('note-detail');
+                }} />
             );
         }
 
@@ -180,7 +181,7 @@ const App: React.FC = () => {
                         className={`nav-item ${currentView === 'notes' ? 'active' : ''}`}
                         onClick={() => { setCurrentView('notes'); setSelectedPersonId(null); setSelectedGroupId(null); }}
                     >
-                        Recent Notes
+                        Notes
                     </div>
                 </nav>
 
