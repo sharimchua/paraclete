@@ -4,10 +4,9 @@ import { api, Person, Note } from '../services/api';
 interface Props {
     personId: number;
     onBack: () => void;
-    onNewNote: (id: number) => void;
 }
 
-const PersonProfile: React.FC<Props> = ({ personId, onBack, onNewNote }) => {
+const PersonProfile: React.FC<Props> = ({ personId, onBack }) => {
     const [person, setPerson] = useState<Person | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
@@ -66,7 +65,6 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onNewNote }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                     <button onClick={onBack} className="btn-secondary" style={{ padding: '4px 12px' }}>&lsaquo; Back</button>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn-primary" onClick={() => onNewNote(personId)}>+ New Note</button>
                         <button className="btn-secondary" onClick={() => setIsEditing(!isEditing)}>{isEditing ? 'Cancel' : 'Edit'}</button>
                         <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={handleDelete}>Delete</button>
                     </div>
@@ -114,7 +112,6 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onNewNote }) => {
                     {notes.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
                             <p style={{ color: 'var(--text-muted)' }}>No notes found for this person.</p>
-                            <button className="btn-primary" style={{ marginTop: '16px' }}>+ New Note</button>
                         </div>
                     ) : (
                         notes.map(note => (

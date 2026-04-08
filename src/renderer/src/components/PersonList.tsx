@@ -30,6 +30,10 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
 
     useEffect(() => {
         fetchPersons();
+
+        const handleTriggerCreate = () => setShowCreateModal(true);
+        window.addEventListener('trigger-create-person', handleTriggerCreate);
+        return () => window.removeEventListener('trigger-create-person', handleTriggerCreate);
     }, []);
 
     const handleCreatePerson = async (e: React.FormEvent) => {
@@ -56,15 +60,12 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn-primary" onClick={() => setShowCreateModal(true)}>+ Add Practitioner</button>
-            </div>
+            {/* Redundant header buttons removed to favor context-aware top bar */}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {persons.length === 0 ? (
                     <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px' }}>
-                        <p style={{ color: 'var(--text-secondary)' }}>No persons found. Start by adding one!</p>
-                        <button className="btn-primary" style={{ marginTop: '16px' }} onClick={() => setShowCreateModal(true)}>+ Add Practitioner</button>
+                        <p style={{ color: 'var(--text-secondary)' }}>No persons found. Start by adding one from the top bar!</p>
                     </div>
                 ) : (
                     persons.map(person => (

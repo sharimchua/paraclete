@@ -43,8 +43,9 @@ const App: React.FC = () => {
         return <SetupScreen />;
     }
 
-    const startNewNote = (personId?: number) => {
+    const startNewNote = (personId?: number, groupId?: number) => {
         setSelectedPersonId(personId || null);
+        setSelectedGroupId(groupId || null);
         setCurrentView('new-note');
     };
 
@@ -53,6 +54,7 @@ const App: React.FC = () => {
             return (
                 <NoteAuthoring 
                     personId={selectedPersonId || undefined} 
+                    groupId={selectedGroupId || undefined}
                     onComplete={() => setCurrentView('dashboard')} 
                 />
             );
@@ -86,7 +88,6 @@ const App: React.FC = () => {
                     <PersonProfile 
                         personId={selectedPersonId} 
                         onBack={() => setSelectedPersonId(null)} 
-                        onNewNote={startNewNote}
                     />
                 );
             }
@@ -138,7 +139,7 @@ const App: React.FC = () => {
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'persons' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('persons'); setSelectedPersonId(null); }}
+                        onClick={() => { setCurrentView('persons'); setSelectedPersonId(null); setSelectedGroupId(null); }}
                     >
                         Persons
                     </div>
@@ -150,7 +151,7 @@ const App: React.FC = () => {
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'notes' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('notes'); setSelectedPersonId(null); }}
+                        onClick={() => { setCurrentView('notes'); setSelectedPersonId(null); setSelectedGroupId(null); }}
                     >
                         Recent Notes
                     </div>
@@ -161,9 +162,36 @@ const App: React.FC = () => {
                 <header className="header">
                     <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{
                         currentView === 'new-note' ? 'SESSION WORKFLOW' :
-                        selectedPersonId ? 'PERSON PROFILE' : currentView.toUpperCase()
+                        selectedPersonId ? 'PERSON PROFILE' : 
+                        selectedGroupId ? 'GROUP PROFILE' : currentView.toUpperCase()
                     }</h2>
-                    <button className="btn-primary" onClick={() => startNewNote()}>+ New Note</button>
+                    
+                    {/* Context-aware buttons */}
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        {currentView === 'persons' && !selectedPersonId && (
+                            <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('trigger-create-person'))}>
+                                + Add Practitioner
+                            </button>
+                        )}
+                        
+                        {currentView === 'persons' && selectedPersonId && (
+                            <button className="btn-primary" onClick={() => startNewNote(selectedPersonId)}>
+                                + New Note
+                            </button>
+                        )}
+
+                        {currentView === 'groups' && !selectedGroupId && (
+                            <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('trigger-create-group'))}>
+                                + Add Group
+                            </button>
+                        )}
+
+                        {currentView === 'groups' && selectedGroupId && (
+                            <button className="btn-primary" onClick={() => startNewNote(undefined, selectedGroupId)}>
+                                + New Note
+                            </button>
+                        )}
+                    </div>
                 </header>
                 
                 <div className="content-area">

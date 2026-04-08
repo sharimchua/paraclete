@@ -29,6 +29,10 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
 
     useEffect(() => {
         fetchGroups();
+
+        const handleTriggerCreate = () => setShowCreateModal(true);
+        window.addEventListener('trigger-create-group', handleTriggerCreate);
+        return () => window.removeEventListener('trigger-create-group', handleTriggerCreate);
     }, []);
 
     const handleCreateGroup = async (e: React.FormEvent) => {
@@ -50,9 +54,7 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn-primary" onClick={() => setShowCreateModal(true)}>+ Create Group</button>
-            </div>
+            {/* Redundant header buttons removed to favor context-aware top bar */}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {groups.length === 0 ? (

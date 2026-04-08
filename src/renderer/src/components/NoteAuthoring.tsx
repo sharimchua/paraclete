@@ -3,14 +3,16 @@ import { api, Person, Note } from '../services/api';
 
 interface Props {
     personId?: number;
+    groupId?: number;
     onComplete: () => void;
 }
 
 type Stage = 'Prepare' | 'Capture' | 'Clean' | 'Publish';
 
-const NoteAuthoring: React.FC<Props> = ({ personId, onComplete }) => {
+const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
     const [stage, setStage] = useState<Stage>('Prepare');
     const [person, setPerson] = useState<Person | null>(null);
+    const [group, setGroup] = useState<any | null>(null);
     const [recentNotes, setRecentNotes] = useState<Note[]>([]);
     const [rawText, setRawText] = useState('');
     const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, onComplete }) => {
         if (personId) {
             Promise.all([
                 api.get<Person>(`/persons/${personId}`),
-                api.get<Note[]>(`/notes/`) // Filter later
+                api.get<Note[]>(`/notes/`) 
             ]).then(([p, notes]) => {
                 setPerson(p);
                 setRecentNotes(notes.filter(n => n.person_id === personId).slice(0, 3));
@@ -28,10 +30,22 @@ const NoteAuthoring: React.FC<Props> = ({ personId, onComplete }) => {
                 console.error(err);
                 setLoading(false);
             });
+        } else if (groupId) {
+            Promise.all([
+                api.get<any>(`/groups/${groupId}`),
+                api.get<Note[]>(`/notes/`)
+            ]).then(([g, notes]) => {
+                setGroup(g);
+                setRecentNotes(notes.filter(n => n.group_id === groupId).slice(0, 3));
+                setLoading(false);
+            }).catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
         } else {
             setLoading(false);
         }
-    }, [personId]);
+    }, [personId, groupId]);
 
     const handleSaveCapture = async () => {
         setStage('Clean');
@@ -42,7 +56,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, onComplete }) => {
                 date: date,
                 stage: 'Clean',
                 raw_capture: rawText,
-                person_id: personId
+                person_id: personId,
+                group_id: groupId
             });
             // In a real app, we'd wait for AI cleaning to happen here.
             // For now, we just wait a bit to show the "Cleaning" UI.
@@ -82,6 +97,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, onComplete }) => {
                         <h2 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Prepare for Session</h2>
                         {person ? (
                             <p style={{ color: 'var(--text-secondary)' }}>Setting context for <strong>{person.name}</strong>.</p>
+                        ) : group ? (
+                            <p style={{ color: 'var(--text-secondary)' }}>Setting context for group <strong>{group.name}</strong>.</p>
                         ) : (
                             <p style={{ color: 'var(--text-secondary)' }}>New general session.</p>
                         )}
