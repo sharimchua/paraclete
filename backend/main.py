@@ -2,6 +2,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import socket
+import os
 
 app = FastAPI(title="Paraclete Backend")
 
@@ -26,9 +27,12 @@ async def health():
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_json({"event": "connected", "data": "Handshake successful"})
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_json({"event": "echo", "data": data})
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await websocket.send_json({"event": "echo", "data": data})
+    except Exception:
+        pass # Handle disconnects gracefully
 
 def get_local_ip():
     try:
@@ -42,6 +46,10 @@ def get_local_ip():
 
 if __name__ == "__main__":
     ip = get_local_ip()
-    print(f"Starting Paraclete Backend on {ip}:8000")
-    # In production, this can be bound to 0.0.0.0 for mobile access
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Check if we should expose the backend to the network
+    expose = os.getenv("PARACLETE_EXPOSE", "0") == "1"
+    host = "0.0.0.0" if expose else "127.0.0.1"
+    
+    print(f"Starting Paraclete Backend on {host}:8000 (Local IP: {ip})")
+    
+    uvicorn.run(app, host=host, port=8000)
