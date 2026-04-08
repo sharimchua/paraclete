@@ -8,6 +8,7 @@ import GroupProfile from './components/GroupProfile';
 import NoteDetail from './components/NoteDetail';
 import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
+import TagManagement from './components/TagManagement';
 import Logo from './components/Logo';
 
 const App: React.FC = () => {
@@ -139,6 +140,10 @@ const App: React.FC = () => {
             return <AdminPanel />;
         }
 
+        if (currentView === 'tags') {
+            return <TagManagement />;
+        }
+
         return <div>View {currentView} coming soon.</div>;
     };
 
@@ -180,6 +185,13 @@ const App: React.FC = () => {
                 </nav>
 
                 <div className="sidebar-footer" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                    <div 
+                        className={`nav-item ${currentView === 'tags' ? 'active' : ''}`}
+                        onClick={() => { setCurrentView('tags'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        style={{ opacity: 0.8 }}
+                    >
+                        <span style={{ marginRight: '8px' }}>🏷️</span> Tags
+                    </div>
                     <div 
                         className={`nav-item ${currentView === 'admin' ? 'active' : ''}`}
                         onClick={() => { setCurrentView('admin'); setSelectedPersonId(null); setSelectedGroupId(null); }}

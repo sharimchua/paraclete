@@ -270,6 +270,15 @@ def create_tag(tag: schemas.TagCreate, db: Session = Depends(get_db)):
 def read_tags(db: Session = Depends(get_db)):
     return db.query(models.Tag).all()
 
+@app.delete("/tags/{tag_id}")
+def delete_tag(tag_id: int, db: Session = Depends(get_db)):
+    db_tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+    if not db_tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    db.delete(db_tag)
+    db.commit()
+    return {"status": "success"}
+
 @app.post("/tags/link")
 def link_tag(entity_type: str, entity_id: int, tag_id: int, db: Session = Depends(get_db)):
     tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
