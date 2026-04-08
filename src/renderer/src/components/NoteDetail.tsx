@@ -76,8 +76,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <button onClick={onBack} className="btn-secondary" style={{ padding: '6px 16px' }}>&lsaquo; Back</button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button className="btn-secondary" onClick={() => setIsEditing(!isEditing)}>
                             {isEditing ? 'Cancel Edit' : 'Edit Note'}

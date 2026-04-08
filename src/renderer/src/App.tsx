@@ -188,12 +188,38 @@ const App: React.FC = () => {
 
             <main className="main-content">
                 <header className="header">
-                    <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{
-                        currentView === 'new-note' ? 'SESSION WORKFLOW' :
-                        currentView === 'note-detail' ? 'NOTE DETAIL' :
-                        selectedPersonId ? 'PERSON PROFILE' : 
-                        selectedGroupId ? 'GROUP PROFILE' : currentView.toUpperCase()
-                    }</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        {(selectedPersonId || selectedGroupId || currentView === 'note-detail' || currentView === 'new-note') && (
+                            <button 
+                                onClick={() => {
+                                    if (currentView === 'note-detail') {
+                                        setSelectedNoteId(null);
+                                        // If we came from a profile, stay there (selectedId is still set)
+                                        // If not, go back to notes list
+                                        if (!selectedPersonId && !selectedGroupId) setCurrentView('notes');
+                                    } else if (currentView === 'new-note') {
+                                        if (selectedPersonId) setCurrentView('persons');
+                                        else if (selectedGroupId) setCurrentView('groups');
+                                        else setCurrentView('dashboard');
+                                    } else if (selectedPersonId) {
+                                        setSelectedPersonId(null);
+                                    } else if (selectedGroupId) {
+                                        setSelectedGroupId(null);
+                                    }
+                                }} 
+                                className="btn-secondary" 
+                                style={{ padding: '4px 10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                                &lsaquo; Back
+                            </button>
+                        )}
+                        <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{
+                            currentView === 'new-note' ? 'SESSION WORKFLOW' :
+                            currentView === 'note-detail' ? 'NOTE DETAIL' :
+                            selectedPersonId ? 'PERSON PROFILE' : 
+                            selectedGroupId ? 'GROUP PROFILE' : currentView.toUpperCase()
+                        }</h2>
+                    </div>
                     
                     {/* Context-aware buttons */}
                     <div style={{ display: 'flex', gap: '12px' }}>

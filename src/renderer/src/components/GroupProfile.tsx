@@ -97,8 +97,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <button onClick={onBack} className="btn-secondary" style={{ padding: '4px 12px' }}>&lsaquo; Back</button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button className="btn-secondary" onClick={() => setIsEditing(!isEditing)}>{isEditing ? 'Cancel Edit' : 'Edit Group'}</button>
                         <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={handleDelete}>Delete</button>
