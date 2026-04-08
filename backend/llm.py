@@ -92,5 +92,21 @@ Note summary: {summary}
 Draft a follow-up message to the person based on this session. Use a warm, professional, and practice-appropriate tone.
 MESSAGE:""",
 
-    "embed_note": "{title} {text}"
+    "embed_note": "{title} {text}",
+
+    "ocr_capture": """Analyze the provided image content and transcribe any text found.
+Ensure you maintain the original layout and formatting where possible.
+
+IMAGE CONTENT:
+{text}
+
+TRANSCRIPTION:""",
+
+    "dictation_capture": """Transcribe the following audio content into clear, readable text.
+Remove filler words (um, uh, like) but keep the original intent and professional context.
+
+AUDIO CONTENT:
+{text}
+
+TRANSCRIPTION:"""
 }

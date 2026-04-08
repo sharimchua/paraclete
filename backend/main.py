@@ -44,18 +44,24 @@ manager = ConnectionManager()
 async def process_ocr(file: UploadFile = File(...)):
     # In a real multimodal setup, we'd pass the image bytes to Gemma 4
     # For now, we simulate the logic.
-    await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "filename": file.filename}})
+    prompt = llm.TEMPLATES["ocr_capture"].format(text=f"[Image: {file.filename}]")
+    await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": prompt}})
+    
     await asyncio.sleep(2) # Simulate processing
-    result = f"[Extracted from {file.filename}]: This is a simulated OCR result from Gemma 4 Vision."
+    result = f"[Extracted from {file.filename}]: This is a simulated OCR result from Gemma 4 Vision based on the prompt template."
+    
     await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
     return {"text": result}
 
 @app.post("/process/dictate")
 async def process_dictate(file: UploadFile = File(...)):
     # In a real setup, we'd pass audio to Gemma 4
-    await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "filename": file.filename}})
+    prompt = llm.TEMPLATES["dictation_capture"].format(text=f"[Audio: {file.filename}]")
+    await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "prompt": prompt}})
+    
     await asyncio.sleep(3) # Simulate transcribing
-    result = "This is a simulated transcription from Gemma 4 Multimodal audio processing."
+    result = "This is a simulated transcription from Gemma 4 Multimodal audio processing based on the prompt template."
+    
     await manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
     return {"text": result}
 
