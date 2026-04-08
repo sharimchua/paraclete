@@ -216,3 +216,27 @@ button.btn-secondary:hover {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* Admin Panel Specifics */
+.admin-card {
+    transition: var(--transition);
+}
+
+.admin-card:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: var(--primary-faded) !important;
+    transform: translateY(-2px);
+}
+
+.admin-section h4 {
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.75rem !important;
+    color: var(--text-muted);
+}
+
+.sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}

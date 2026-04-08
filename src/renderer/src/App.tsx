@@ -7,6 +7,7 @@ import GroupList from './components/GroupList';
 import GroupProfile from './components/GroupProfile';
 import NoteDetail from './components/NoteDetail';
 import Dashboard from './components/Dashboard';
+import AdminPanel from './components/AdminPanel';
 import Logo from './components/Logo';
 
 const App: React.FC = () => {
@@ -134,6 +135,10 @@ const App: React.FC = () => {
             );
         }
 
+        if (currentView === 'admin') {
+            return <AdminPanel />;
+        }
+
         return <div>View {currentView} coming soon.</div>;
     };
 
@@ -173,6 +178,16 @@ const App: React.FC = () => {
                         Recent Notes
                     </div>
                 </nav>
+
+                <div className="sidebar-footer" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                    <div 
+                        className={`nav-item ${currentView === 'admin' ? 'active' : ''}`}
+                        onClick={() => { setCurrentView('admin'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        style={{ opacity: 0.8 }}
+                    >
+                        <span style={{ marginRight: '8px' }}>⚙️</span> Admin
+                    </div>
+                </div>
             </aside>
 
             <main className="main-content">
