@@ -52,9 +52,15 @@ export interface CalendarDay {
     count: number;
 }
 
+export interface TrendStack {
+    name: string;
+    count: number;
+}
+
 export interface TrendPoint {
     label: string;
     count: number;
+    stacks: TrendStack[];
 }
 
 export interface ReferenceUsage {

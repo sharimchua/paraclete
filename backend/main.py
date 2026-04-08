@@ -429,13 +429,69 @@ def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
 
 @app.get("/dashboard/trends", response_model=List[schemas.TrendPoint])
 def get_trends(db: Session = Depends(get_db)):
-    results = db.query(
-        func.strftime('%m', models.Note.date).label('month'),
-        func.count(models.Note.id).label('count')
-    ).group_by('month').all()
+    # 1. Find the tag key with the lowest cardinality (smallest number of unique values)
+    tag_counts = db.query(
+        models.Tag.key, 
+        func.count(models.Tag.id).label('val_count')
+    ).filter(models.Tag.key != None).group_by(models.Tag.key).all()
     
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    return [{"label": months[int(r.month)-1], "count": r.count} for r in results]
+    selected_key = None
+    if tag_counts:
+        # Sort by val_count ascending
+        tag_counts.sort(key=lambda x: x.val_count)
+        selected_key = tag_counts[0].key
+
+    # 2. Get all notes to process trends
+    notes = db.query(models.Note).all()
+    
+    # Organize by Month-Year (YYYY-MM)
+    month_data = {}
+    
+    for note in notes:
+        # Create a key like "2025-10"
+        m_key = note.date.strftime('%Y-%m')
+        
+        if m_key not in month_data:
+            month_data[m_key] = {"count": 0, "stacks": {}}
+        
+        month_data[m_key]["count"] += 1
+        
+        # Determine stack value for the selected key
+        stack_val = "None"
+        if selected_key:
+            # Check note tags first
+            note_tag = next((t.value for t in note.tags if t.key == selected_key), None)
+            if note_tag:
+                stack_val = note_tag
+            elif note.person:
+                # Check person tags
+                person_tag = next((t.value for t in note.person.tags if t.key == selected_key), None)
+                if person_tag:
+                    stack_val = person_tag
+        
+        month_data[m_key]["stacks"][stack_val] = month_data[m_key]["stacks"].get(stack_val, 0) + 1
+
+    # Format result
+    # Sort keys (YYYY-MM) chronologically
+    sorted_keys = sorted(month_data.keys())
+    
+    result = []
+    for k in sorted_keys:
+        # Convert "2025-10" to "Oct 2025"
+        dt = datetime.strptime(k, '%Y-%m')
+        label = dt.strftime('%b %Y')
+        
+        stacks = [
+            {"name": name, "count": count} 
+            for name, count in month_data[k]["stacks"].items()
+        ]
+        result.append({
+            "label": label,
+            "count": month_data[k]["count"],
+            "stacks": stacks
+        })
+            
+    return result
 
 @app.get("/dashboard/reference-usage", response_model=List[schemas.ReferenceUsage])
 def get_reference_usage(db: Session = Depends(get_db)):

@@ -96,26 +96,74 @@ const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '140px', paddingBottom: '20px', paddingLeft: '8px', paddingRight: '8px' }}>
                         {trends.length === 0 ? (
                             <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No data yet</div>
-                        ) : (
-                            trends.slice(-6).map(t => { // Last 6 months
+                        ) : (() => {
+                            // Stable Color Mapping
+                            const colors = ['var(--primary)', 'var(--secondary)', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6'];
+                            const allCategories = Array.from(new Set(trends.flatMap(t => t.stacks.map(s => s.name)))).sort();
+                            const categoryColorMap: Record<string, string> = {};
+                            allCategories.forEach((cat, i) => {
+                                categoryColorMap[cat] = cat === 'None' ? 'var(--bg-surface)' : colors[i % colors.length];
+                            });
+
+                            return trends.slice(-6).map(t => { // Last 6 months
                                 const max = Math.max(...trends.map(x => x.count), 1);
-                                const height = (t.count / max) * 100;
                                 return (
-                                    <div key={t.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                    <div key={t.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%' }}>
                                         <div style={{ 
+                                            flex: 1, 
                                             width: '100%', 
-                                            height: `${Math.max(height, 5)}%`, 
-                                            background: 'var(--primary)', 
-                                            borderRadius: '4px 4px 0 0',
-                                            opacity: 0.8,
-                                            transition: 'height 0.5s ease'
-                                        }} />
+                                            display: 'flex', 
+                                            flexDirection: 'column-reverse', 
+                                            justifyContent: 'flex-start',
+                                            paddingTop: '10px'
+                                        }}>
+                                            {[...t.stacks].sort((a, b) => a.name.localeCompare(b.name)).map((stack, idx, sortedStacks) => {
+                                                const height = (stack.count / max) * 100;
+                                                return (
+                                                    <div 
+                                                        key={stack.name}
+                                                        title={`${stack.name}: ${stack.count}`}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: `${height}%`,
+                                                            background: categoryColorMap[stack.name],
+                                                            border: stack.name === 'None' ? '1px solid var(--border-color)' : 'none',
+                                                            borderRadius: idx === 0 ? '0 0 4px 4px' : (idx === sortedStacks.length - 1 ? '4px 4px 0 0' : '0'),
+                                                            opacity: 0.85,
+                                                            transition: 'height 0.4s ease'
+                                                        }}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
                                         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t.label}</div>
                                     </div>
                                 );
-                            })
-                        )}
+                            });
+                        })()}
                     </div>
+                    {/* Tiny Legend */}
+                    {trends.length > 0 && (() => {
+                        const colors = ['var(--primary)', 'var(--secondary)', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6'];
+                        const allCategories = Array.from(new Set(trends.flatMap(t => t.stacks.map(s => s.name)))).sort();
+                        
+                        return (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '14px', padding: '0 8px' }}>
+                                {allCategories.map((stackName, i) => (
+                                    <div key={stackName} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <div style={{ 
+                                            width: '8px', 
+                                            height: '8px', 
+                                            borderRadius: '2px', 
+                                            background: stackName === 'None' ? 'var(--bg-surface)' : colors[i % colors.length], 
+                                            border: stackName === 'None' ? '1px solid var(--border-color)' : 'none' 
+                                        }} />
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{stackName}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 <div className="card" style={{ flex: 1 }}>

@@ -169,9 +169,14 @@ class CalendarDay(BaseModel):
     date: date
     count: int
 
+class TrendStack(BaseModel):
+    name: str
+    count: int
+
 class TrendPoint(BaseModel):
     label: str
     count: int
+    stacks: List[TrendStack] = []
 
 class ReferenceUsage(BaseModel):
     id: int
