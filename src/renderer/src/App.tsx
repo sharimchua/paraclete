@@ -6,6 +6,7 @@ import NoteAuthoring from './components/NoteAuthoring';
 import GroupList from './components/GroupList';
 import GroupProfile from './components/GroupProfile';
 import NoteDetail from './components/NoteDetail';
+import Dashboard from './components/Dashboard';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -81,25 +82,7 @@ const App: React.FC = () => {
         }
 
         if (currentView === 'dashboard') {
-            return (
-                <div className="dashboard-grid" style={{ display: 'grid', gap: '24px' }}>
-                    <div className="card">
-                        <h3 style={{ marginBottom: '8px' }}>Welcome back</h3>
-                        <p style={{ color: 'var(--text-secondary)' }}>You have 0 scheduled sessions today.</p>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                        <div className="card">
-                            <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '12px' }}>Quick Stats</h4>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>0 Persons</div>
-                        </div>
-                        <div className="card">
-                            <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '12px' }}>Recent Notes</h4>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No notes yet.</div>
-                        </div>
-                    </div>
-                </div>
-            );
+            return <Dashboard />;
         }
 
         if (currentView === 'persons') {

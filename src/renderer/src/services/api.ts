@@ -38,6 +38,29 @@ export interface Note {
     tags: Tag[];
 }
 
+export interface DashboardStats {
+    person_count: number;
+    note_count: number;
+    group_count: number;
+    reference_count: number;
+}
+
+export interface CalendarDay {
+    date: string;
+    count: number;
+}
+
+export interface TrendPoint {
+    label: string;
+    count: number;
+}
+
+export interface ReferenceUsage {
+    id: number;
+    title: string;
+    usage_count: number;
+}
+
 export const api = {
     async get<T>(path: string): Promise<T> {
         const res = await fetch(`${API_BASE}${path}`);
