@@ -12,6 +12,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newName, setNewName] = useState('');
     const [newContact, setNewContact] = useState('');
+    const [filterText, setFilterText] = useState('');
 
     const fetchPersons = () => {
         setLoading(true);
@@ -50,6 +51,12 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
         }
     };
 
+    const filteredPersons = persons.filter(p => 
+        p.name.toLowerCase().includes(filterText.toLowerCase()) ||
+        p.contact_method?.toLowerCase().includes(filterText.toLowerCase()) ||
+        p.tags.some(t => t.value.toLowerCase().includes(filterText.toLowerCase()))
+    );
+
     if (loading && persons.length === 0) return <div className="loader" />;
     if (error) return (
         <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -60,16 +67,54 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Redundant header buttons removed to favor context-aware top bar */}
+            <div style={{ position: 'relative' }}>
+                <input 
+                    type="text" 
+                    placeholder="Search people by name, contact, or tag..." 
+                    className="input-field"
+                    value={filterText}
+                    onChange={e => setFilterText(e.target.value)}
+                    style={{ paddingLeft: '40px', background: 'var(--bg-surface)' }}
+                />
+                <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                    🔍
+                </div>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                {persons.length === 0 ? (
+                {filteredPersons.length === 0 ? (
                     <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px' }}>
-                        <p style={{ color: 'var(--text-secondary)' }}>No persons found. Start by adding one from the top bar!</p>
+                        <p style={{ color: 'var(--text-secondary)' }}>{persons.length === 0 ? 'No persons found. Start by adding one from the top bar!' : 'No matches found for your search.'}</p>
                     </div>
                 ) : (
-                    persons.map(person => (
-                        <div key={person.id} className="card" style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(person.id)}>
+                    filteredPersons.map(person => (
+                        <div key={person.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => onSelectPerson(person.id)}>
+                            {person.groups && person.groups.length > 0 && (
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    top: '12px', 
+                                    right: '12px', 
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'flex-end',
+                                    gap: '4px'
+                                }}>
+                                    {person.groups.map(g => (
+                                        <div key={g.id} style={{ 
+                                            background: 'var(--secondary-faded)', 
+                                            color: 'var(--secondary)',
+                                            fontSize: '0.6rem',
+                                            fontWeight: 700,
+                                            padding: '1px 8px',
+                                            borderRadius: '4px',
+                                            textTransform: 'uppercase',
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                            {g.name}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                 <div style={{ 
                                     width: '48px', 

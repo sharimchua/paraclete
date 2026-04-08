@@ -25,16 +25,22 @@ class PersonUpdate(BaseModel):
     name: Optional[str] = None
     contact_method: Optional[str] = None
 
+class GroupBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class GroupBadge(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
 class Person(PersonBase):
     id: int
     created_at: datetime
     updated_at: datetime
     tags: List[Tag] = []
+    groups: List[GroupBadge] = []
     model_config = ConfigDict(from_attributes=True)
-
-class GroupBase(BaseModel):
-    name: str
-    description: Optional[str] = None
 
 class GroupCreate(GroupBase):
     pass

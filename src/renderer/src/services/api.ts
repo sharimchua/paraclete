@@ -13,6 +13,7 @@ export interface Person {
     created_at: string;
     updated_at: string;
     tags: Tag[];
+    groups?: { name: string, id: number }[];
 }
 
 export interface Group {
