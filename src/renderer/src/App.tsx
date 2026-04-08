@@ -11,6 +11,7 @@ import AdminPanel from './components/AdminPanel';
 import TagManagement from './components/TagManagement';
 import NotesList from './components/NotesList';
 import Logo from './components/Logo';
+import DeveloperPanel from './components/DeveloperPanel';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -270,6 +271,7 @@ const App: React.FC = () => {
                     {renderContent()}
                 </div>
             </main>
+            <DeveloperPanel />
         </div>
     );
 };

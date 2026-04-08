@@ -17,6 +17,27 @@ import asyncio
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Paraclete Backend")
+manager = None
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass
+
+manager = ConnectionManager()
 
 app.add_middleware(
     CORSMiddleware,
@@ -207,21 +228,39 @@ def update_note(note_id: int, note_update: schemas.NoteUpdate, db: Session = Dep
     return db_note
 
 @app.post("/notes/{note_id}/process", response_model=schemas.Note)
-def process_note(note_id: int, db: Session = Depends(get_db)):
+async def process_note(note_id: int, db: Session = Depends(get_db)):
     db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     
     prompt = llm.TEMPLATES["clean_note"].format(text=db_note.raw_capture)
-    # This is a synchronous call to the LLM for now.
-    # We should ideally offload this to a task queue or use async properly.
-    # But llama-cpp is blocking anyway.
-    response = llm.llm_manager.generate(prompt, max_tokens=1000)
+    
+    await manager.broadcast({
+        "event": "llm_start",
+        "data": {
+            "type": "clean_note",
+            "prompt": prompt
+        }
+    })
+
+    # Since llama-cpp is blocking, we wrap it in a thread
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt, max_tokens=1000))
     
     if "error" in response:
+        await manager.broadcast({"event": "llm_error", "data": response["error"]})
         raise HTTPException(status_code=500, detail=response["error"])
         
     cleaned_text = response["choices"][0]["text"].strip()
+    
+    await manager.broadcast({
+        "event": "llm_finish",
+        "data": {
+            "type": "clean_note",
+            "result": cleaned_text
+        }
+    })
+
     db_note.cleaned_text = cleaned_text
     db_note.stage = "Clean"
     db.commit()
@@ -229,14 +268,21 @@ def process_note(note_id: int, db: Session = Depends(get_db)):
     return db_note
 
 @app.post("/notes/{note_id}/extract")
-def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
+async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
     db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     
     prompt = llm.TEMPLATES["extract_entities"].format(text=db_note.cleaned_text or db_note.raw_capture)
     
-    # Use GBNF grammar for JSON enforcement (Phase 5.3)
+    await manager.broadcast({
+        "event": "llm_start",
+        "data": {
+            "type": "extract_entities",
+            "prompt": prompt
+        }
+    })
+
     # Simple JSON grammar
     grammar = r'''
     root   ::= object
@@ -249,17 +295,25 @@ def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
     space  ::= [ \t\n\r]*
     '''
     
-    response = llm.llm_manager.generate(prompt, grammar=grammar, max_tokens=1000)
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt, grammar=grammar, max_tokens=1000))
     
     if "error" in response:
+        await manager.broadcast({"event": "llm_error", "data": response["error"]})
         raise HTTPException(status_code=500, detail=response["error"])
         
     try:
         data = json.loads(response["choices"][0]["text"])
-        # Here we would actually create the tags, actions, and references in the DB
-        # For now, just return the extracted data
+        await manager.broadcast({
+            "event": "llm_finish",
+            "data": {
+                "type": "extract_entities",
+                "result": data
+            }
+        })
         return data
     except Exception as e:
+        await manager.broadcast({"event": "llm_error", "data": f"JSON Parse Error: {e}"})
         raise HTTPException(status_code=500, detail=f"Failed to parse LLM JSON: {e}")
 
 @app.delete("/notes/{note_id}")
@@ -567,14 +621,14 @@ def get_reference_usage(db: Session = Depends(get_db)):
 # --- WebSocket Support ---
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_json({"event": "connected", "data": "Handshake successful"})
+    await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
+            # Echo for testing
             await websocket.send_json({"event": "echo", "data": data})
     except Exception:
-        pass 
+        manager.disconnect(websocket) 
 
 def get_local_ip():
     try:
