@@ -25,6 +25,7 @@ class Person(PersonBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    tags: List[Tag] = []
     model_config = ConfigDict(from_attributes=True)
 
 class GroupBase(BaseModel):
@@ -38,6 +39,7 @@ class Group(GroupBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    tags: List[Tag] = []
     model_config = ConfigDict(from_attributes=True)
 
 class NoteStage(str, Enum):
@@ -46,6 +48,30 @@ class NoteStage(str, Enum):
     CLEAN = "Clean"
     PUBLISHED = "Published"
     ARCHIVED = "Archived"
+
+class ActionBase(BaseModel):
+    text: str
+    resolved: bool = False
+
+class ActionCreate(ActionBase):
+    note_id: int
+
+class Action(ActionBase):
+    id: int
+    note_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+class MessageBase(BaseModel):
+    draft_text: str
+    sent_at: Optional[datetime] = None
+
+class MessageCreate(MessageBase):
+    note_id: int
+
+class Message(MessageBase):
+    id: int
+    note_id: int
+    model_config = ConfigDict(from_attributes=True)
 
 class NoteBase(BaseModel):
     title: str
@@ -62,6 +88,9 @@ class NoteCreate(NoteBase):
 class Note(NoteBase):
     id: int
     created_at: datetime
+    tags: List[Tag] = []
+    actions: List[Action] = []
+    messages: List[Message] = []
     model_config = ConfigDict(from_attributes=True)
 
 class ReferenceType(str, Enum):
@@ -83,6 +112,7 @@ class ReferenceCreate(ReferenceBase):
 class Reference(ReferenceBase):
     id: int
     created_at: datetime
+    tags: List[Tag] = []
     model_config = ConfigDict(from_attributes=True)
 
 # For Atomic JSON Import/Export (Phase 2 Step 4.2)
@@ -92,5 +122,5 @@ class FullExport(BaseModel):
     tags: List[Tag]
     notes: List[Note]
     references: List[Reference]
-    # junction relationships should be included for a truly atomic export, 
-    # but for simplicity we assume linkage via IDs in this schema
+    actions: List[Action] = []
+    messages: List[Message] = []
