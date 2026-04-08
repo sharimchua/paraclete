@@ -20,6 +20,7 @@ $pythonUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVer
 
 if (-not (Test-Path (Join-Path $installPath "python.exe"))) {
     Write-Host "--- Downloading Python $pythonVersion..."
+    if (Test-Path $zipFile) { Remove-Item $zipFile -Force -ErrorAction SilentlyContinue }
     Invoke-WebRequest -Uri $pythonUrl -OutFile $zipFile
     Write-Host "--- Extracting..."
     Expand-Archive -Path $zipFile -DestinationPath $installPath -Force
@@ -52,8 +53,11 @@ if (-not (Test-Path (Join-Path $installPath "Scripts/pip.exe"))) {
 }
 
 # 4. Install Dependencies with CUDA
-Write-Host "--- Installing backend dependencies (FastAPI, llama-cpp-python with CUDA)..."
+Write-Host "--- Installing build requirements (scikit-build-core)..."
 $pipExe = Join-Path $installPath "Scripts/pip.exe"
+& $pipExe install scikit-build-core setuptools wheel
+
+Write-Host "--- Installing backend dependencies (FastAPI, llama-cpp-python with CUDA)..."
 $env:CMAKE_ARGS = "-DGGML_CUDA=on"
 & $pipExe install -r $requirementsFile --force-reinstall --no-cache-dir
 

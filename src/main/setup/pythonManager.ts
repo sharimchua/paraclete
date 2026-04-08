@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 
 export class PythonManager {
     private setupPath: string;
+    private isSettingUp: boolean = false;
 
     constructor() {
         // Path to store the standalone python environment
@@ -19,6 +20,11 @@ export class PythonManager {
     }
 
     async startSetup(window: BrowserWindow): Promise<void> {
+        if (this.isSettingUp) {
+            console.log('Setup already in progress, ignoring duplicate call.');
+            return;
+        }
+        this.isSettingUp = true;
         try {
             const sendStatus = (status: string, progress: number, log?: string) => {
                 window.webContents.send('setup-status', { status, progress, log });
@@ -77,6 +83,7 @@ export class PythonManager {
             });
 
             child.on('close', (code) => {
+                this.isSettingUp = false;
                 if (code === 0) {
                     fs.writeFileSync(path.join(this.setupPath, '.setup_complete'), new Date().toISOString());
                     window.webContents.send('setup-status', {
@@ -99,6 +106,7 @@ export class PythonManager {
             });
 
         } catch (error: any) {
+            this.isSettingUp = false;
             window.webContents.send('setup-status', { 
                 status: 'Error launching setup', 
                 progress: 0, 
