@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SetupScreen from './components/SetupScreen';
 import PersonList from './components/PersonList';
 import PersonProfile from './components/PersonProfile';
+import NoteAuthoring from './components/NoteAuthoring';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -39,7 +40,21 @@ const App: React.FC = () => {
         return <SetupScreen />;
     }
 
+    const startNewNote = (personId?: number) => {
+        setSelectedPersonId(personId || null);
+        setCurrentView('new-note');
+    };
+
     const renderContent = () => {
+        if (currentView === 'new-note') {
+            return (
+                <NoteAuthoring 
+                    personId={selectedPersonId || undefined} 
+                    onComplete={() => setCurrentView('dashboard')} 
+                />
+            );
+        }
+
         if (currentView === 'dashboard') {
             return (
                 <div className="dashboard-grid" style={{ display: 'grid', gap: '24px' }}>
@@ -68,6 +83,7 @@ const App: React.FC = () => {
                     <PersonProfile 
                         personId={selectedPersonId} 
                         onBack={() => setSelectedPersonId(null)} 
+                        onNewNote={startNewNote}
                     />
                 );
             }
@@ -124,8 +140,11 @@ const App: React.FC = () => {
 
             <main className="main-content">
                 <header className="header">
-                    <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{selectedPersonId ? 'PERSON PROFILE' : currentView.toUpperCase()}</h2>
-                    <button className="btn-primary">+ New Note</button>
+                    <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{
+                        currentView === 'new-note' ? 'SESSION WORKFLOW' :
+                        selectedPersonId ? 'PERSON PROFILE' : currentView.toUpperCase()
+                    }</h2>
+                    <button className="btn-primary" onClick={() => startNewNote()}>+ New Note</button>
                 </header>
                 
                 <div className="content-area">

@@ -4,9 +4,10 @@ import { api, Person, Note } from '../services/api';
 interface Props {
     personId: number;
     onBack: () => void;
+    onNewNote: (id: number) => void;
 }
 
-const PersonProfile: React.FC<Props> = ({ personId, onBack }) => {
+const PersonProfile: React.FC<Props> = ({ personId, onBack, onNewNote }) => {
     const [person, setPerson] = useState<Person | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
@@ -32,7 +33,10 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <div className="card">
-                <button onClick={onBack} style={{ border: 'none', background: 'none', color: 'var(--primary)', cursor: 'pointer', marginBottom: '16px' }}>&lsaquo; Back to list</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <button onClick={onBack} style={{ border: 'none', background: 'none', color: 'var(--primary)', cursor: 'pointer' }}>&lsaquo; Back to list</button>
+                    <button className="btn-primary" onClick={() => onNewNote(personId)}>+ New Note</button>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                      <div style={{ 
                         width: '80px', 
