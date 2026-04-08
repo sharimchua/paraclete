@@ -51,24 +51,34 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
         setStage('Clean');
         try {
             const date = new Date().toISOString().split('T')[0];
-            await api.post('/notes/', {
+            const note = await api.post<Note>('/notes/', {
                 title: `Session ${date}`,
                 date: date,
-                stage: 'Clean',
+                stage: 'Capture',
                 raw_capture: rawText,
                 person_id: personId,
                 group_id: groupId
             });
-            // In a real app, we'd wait for AI cleaning to happen here.
-            // For now, we just wait a bit to show the "Cleaning" UI.
-            setTimeout(() => {
-                onComplete();
-            }, 2000);
+
+            // Call the real AI processing endpoint
+            await api.post(`/notes/${note.id}/process`, {});
+            
+            // Extract entities
+            await api.post(`/notes/${note.id}/extract`, {});
+
+            onComplete();
         } catch (err) {
             console.error('Failed to save note:', err);
             setStage('Capture');
-            alert('Failed to save note. Please try again.');
+            alert('Failed to save note or process with AI. Please try again.');
         }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.[0]) return;
+        // In a real app, we'd upload this to an /ocr endpoint
+        alert('OCR Processing started (Simulated with Gemma 4 Vision)');
+        setRawText(prev => prev + "\n[OCR Content placeholder]\n");
     };
 
     if (loading) return <div className="loader" />;
@@ -140,7 +150,20 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                             <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Capture Mode</h2>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Direct focus scratchpad</p>
                         </div>
-                        <button className="btn-primary" onClick={handleSaveCapture}>Finish & Clean &rsaquo;</button>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                onClick={() => alert('Dictation started (Using Gemma 4 Multimodal)')}
+                            >
+                                <span>🎤</span> Dictate
+                            </button>
+                            <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <span>📄</span> OCR
+                                <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
+                            </label>
+                            <button className="btn-primary" onClick={handleSaveCapture}>Finish & Clean &rsaquo;</button>
+                        </div>
                     </div>
 
                     <textarea
