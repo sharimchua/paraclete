@@ -50,22 +50,31 @@ if ($pthFile) {
 
 # 3. Install PIP
 $pythonExe = Join-Path $installPath "python.exe"
-if (-not (Test-Path (Join-Path $installPath "Scripts/pip.exe"))) {
+$hasPip = $false
+try {
+    & $pythonExe -m pip --version | Out-Null
+    $hasPip = $true
+} catch {
+    $hasPip = $false
+}
+
+if (-not $hasPip) {
     Write-Host "--- Installing PIP..."
     $pipScript = Join-Path $installPath "get-pip.py"
     Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile $pipScript
-    & $pythonExe $pipScript
+    & $pythonExe $pipScript | Out-Host
     Remove-Item $pipScript
+} else {
+    Write-Host "--- PIP already installed."
 }
 
 # 4. Install Dependencies with CUDA
 Write-Host "--- Installing build requirements (scikit-build-core)..."
-$pipExe = Join-Path $installPath "Scripts/pip.exe"
-& $pipExe install scikit-build-core setuptools wheel
+& $pythonExe -m pip install scikit-build-core setuptools wheel
 
 Write-Host "--- Installing backend dependencies (FastAPI, llama-cpp-python with CUDA)..."
 $env:CMAKE_ARGS = "-DGGML_CUDA=on"
-& $pipExe install -r $requirementsFile --force-reinstall --no-cache-dir
+& $pythonExe -m pip install -r $requirementsFile --force-reinstall --no-cache-dir
 
 # 5. Model Weights
 Write-Host "--- Downloading Model Weights (Placeholder for Gemma 4 MoE)..."
@@ -87,6 +96,9 @@ Write-Host "--- Verifying CUDA support and model presence..."
 $pythonVerification = @"
 import sys
 import os
+import site
+print(f'Python path: {sys.path}')
+print(f'Site packages: {site.getsitepackages()}')
 try:
     import llama_cpp
     print(f'Python version: {sys.version}')

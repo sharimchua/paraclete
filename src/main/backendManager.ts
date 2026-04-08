@@ -29,15 +29,22 @@ export class BackendManager {
 
         const env = { 
             ...process.env, 
-            PARACLETE_EXPOSE: exposeExternally ? '1' : '0' 
+            PARACLETE_EXPOSE: exposeExternally ? '1' : '0',
+            PYTHONPATH: path.join(app.getPath('userData'), 'python_env', 'Lib', 'site-packages')
         };
+
+        console.log(`Python Exe: ${this.pythonExe}`);
+        console.log(`Backend File: ${this.backendFile}`);
+        console.log(`PYTHONPATH: ${env.PYTHONPATH}`);
 
         this.process = spawn(this.pythonExe, [this.backendFile], { env });
 
         this.process.stdout?.on('data', (data) => console.log(`[BACKEND]: ${data.toString().trim()}`));
         this.process.stderr?.on('data', (data) => {
             const err = data.toString().trim();
-            if (err) console.error(`[BACKEND-ERR]: ${err}`);
+            if (err) {
+                console.error(`[BACKEND-ERR]: ${err}`);
+            }
         });
 
         this.process.on('close', (code) => {
