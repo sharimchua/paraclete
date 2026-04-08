@@ -5,3 +5,4 @@ alembic
 llama-cpp-python
 numpy
 python-multipart
+websockets

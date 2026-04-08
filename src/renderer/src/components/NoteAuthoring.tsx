@@ -74,11 +74,23 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ocr' | 'dictate') => {
         if (!e.target.files?.[0]) return;
-        // In a real app, we'd upload this to an /ocr endpoint
-        alert('OCR Processing started (Simulated with Gemma 4 Vision)');
-        setRawText(prev => prev + "\n[OCR Content placeholder]\n");
+        const file = e.target.files[0];
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const endpoint = type === 'ocr' ? '/process/ocr' : '/process/dictate';
+            const data = await api.postForm<{ text: string }>(endpoint, formData);
+            setRawText(prev => prev + (prev ? "\n\n" : "") + data.text);
+        } catch (err) {
+            console.error(`${type.toUpperCase()} failed:`, err);
+            alert(`${type.toUpperCase()} processing failed. Check Developer Logs.`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) return <div className="loader" />;
@@ -151,16 +163,13 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Direct focus scratchpad</p>
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button 
-                                className="btn-secondary" 
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                                onClick={() => alert('Dictation started (Using Gemma 4 Multimodal)')}
-                            >
+                            <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <span>🎤</span> Dictate
-                            </button>
+                                <input type="file" hidden accept="audio/*" onChange={(e) => handleFileUpload(e, 'dictate')} />
+                            </label>
                             <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <span>📄</span> OCR
-                                <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
+                                <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'ocr')} />
                             </label>
                             <button className="btn-primary" onClick={handleSaveCapture}>Finish & Clean &rsaquo;</button>
                         </div>

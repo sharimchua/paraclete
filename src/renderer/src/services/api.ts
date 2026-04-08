@@ -102,5 +102,14 @@ export const api = {
         });
         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
         return res.json();
+    },
+
+    async postForm<T>(path: string, formData: FormData): Promise<T> {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+        return res.json();
     }
 };
