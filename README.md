@@ -13,7 +13,8 @@ Paraclete (from the Greek *parakletos*, "one called alongside to help") acts as 
 - **Person & Group Management**: Deep tracking of individuals and cohorts, including session history and personalized knowledge mapping.
 - **Reference Library**: Accumulate your intellectual capital. Extract concepts, resources, and patterns from sessions into a reusable knowledge base.
 - **Universal Tagging**: A strictly managed global tagging system that connects people, notes, and references through shared vocabulary.
-- **Local AI (Gemma 4 MoE)**: 100% private, local inference using `llama.cpp` and CUDA acceleration for transcribing, cleaning, and synthesizing notes.
+- **Local AI (Gemma 4 MoE)**: 100% private, local inference using `llama.cpp` and CUDA acceleration. Supports automated note cleaning, semantic entity extraction, and multimodal dictation/OCR (Phase 5 Complete).
+- **Developer Observability**: Real-time "LLM Forensics" panel to monitor prompts, grammar enforcement, and local vector search deltas.
 - **Atomic Portability**: Robust JSON export/import for full ownership of your data.
 
 ## 🛠️ Tech Stack
