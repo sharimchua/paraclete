@@ -280,19 +280,19 @@ def delete_tag(tag_id: int, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 @app.post("/tags/link")
-def link_tag(entity_type: str, entity_id: int, tag_id: int, db: Session = Depends(get_db)):
-    tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+def link_tag(link: schemas.TagLink, db: Session = Depends(get_db)):
+    tag = db.query(models.Tag).filter(models.Tag.id == link.tag_id).first()
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
     
-    if entity_type == "person":
-        obj = db.query(models.Person).filter(models.Person.id == entity_id).first()
-    elif entity_type == "group":
-        obj = db.query(models.Group).filter(models.Group.id == entity_id).first()
-    elif entity_type == "note":
-        obj = db.query(models.Note).filter(models.Note.id == entity_id).first()
-    elif entity_type == "reference":
-        obj = db.query(models.Reference).filter(models.Reference.id == entity_id).first()
+    if link.entity_type == "person":
+        obj = db.query(models.Person).filter(models.Person.id == link.entity_id).first()
+    elif link.entity_type == "group":
+        obj = db.query(models.Group).filter(models.Group.id == link.entity_id).first()
+    elif link.entity_type == "note":
+        obj = db.query(models.Note).filter(models.Note.id == link.entity_id).first()
+    elif link.entity_type == "reference":
+        obj = db.query(models.Reference).filter(models.Reference.id == link.entity_id).first()
     else:
         raise HTTPException(status_code=400, detail="Invalid entity type")
     

@@ -14,6 +14,11 @@ class Tag(TagBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
+class TagLink(BaseModel):
+    entity_type: str
+    entity_id: int
+    tag_id: int
+
 class PersonBase(BaseModel):
     name: str
     contact_method: Optional[str] = None
