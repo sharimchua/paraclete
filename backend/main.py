@@ -342,7 +342,8 @@ def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
         # 2. Reload Persons & Groups
         person_map = {}
         for p in data.persons:
-            db_person = models.Person(**p.model_dump(exclude={"tags"}))
+            # RELATIONSHIP FIX: Exclude tags and groups lists which are dicts
+            db_person = models.Person(**p.model_dump(exclude={"tags", "groups"}))
             for t in p.tags:
                 if t.id in tag_map:
                     db_person.tags.append(tag_map[t.id])
@@ -351,7 +352,8 @@ def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
             
         group_map = {}
         for g in data.groups:
-            db_group = models.Group(**g.model_dump(exclude={"tags"}))
+            # RELATIONSHIP FIX: Exclude tags and members lists
+            db_group = models.Group(**g.model_dump(exclude={"tags", "members"}))
             for t in g.tags:
                 if t.id in tag_map:
                     db_group.tags.append(tag_map[t.id])
@@ -362,7 +364,8 @@ def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
         # 3. Reload Notes
         note_map = {}
         for n in data.notes:
-            dump = n.model_dump(exclude={"tags", "actions", "messages"})
+            # RELATIONSHIP FIX: Exclude all nested relationship objects
+            dump = n.model_dump(exclude={"tags", "actions", "messages", "person", "group"})
             db_note = models.Note(**dump)
             for t in n.tags:
                 if t.id in tag_map:
@@ -377,7 +380,8 @@ def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
         
         # 4. Reload References
         for r in data.references:
-            db_ref = models.Reference(**r.model_dump(exclude={"tags"}))
+            # RELATIONSHIP FIX: Exclude nested tags and other backrefs
+            db_ref = models.Reference(**r.model_dump(exclude={"tags", "linked_notes", "persons"}))
             for t in r.tags:
                 if t.id in tag_map:
                     db_ref.tags.append(tag_map[t.id])
