@@ -147,3 +147,10 @@ class Message(Base):
 
     # Relationships
     note = relationship("Note", back_populates="messages")
+
+class NoteEmbedding(Base):
+    __tablename__ = "note_embeddings"
+    note_id = Column(Integer, ForeignKey("notes.id"), primary_key=True)
+    vector = Column(Text) # JSON string of float list
+    
+    note = relationship("Note", backref="embedding")

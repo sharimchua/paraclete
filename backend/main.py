@@ -11,6 +11,7 @@ import json
 from . import models, schemas, database, llm
 from datetime import datetime
 import asyncio
+import numpy as np
 
 # Ensure database tables exist (simple startup for prototype)
 # In production, Alembic handles this.
@@ -233,39 +234,70 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     
-    prompt = llm.TEMPLATES["clean_note"].format(text=db_note.raw_capture)
+    # 1. Cleaning
+    clean_prompt = llm.TEMPLATES["clean_note"].format(text=db_note.raw_capture)
+    await manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": clean_prompt}})
     
-    await manager.broadcast({
-        "event": "llm_start",
-        "data": {
-            "type": "clean_note",
-            "prompt": prompt
-        }
-    })
-
-    # Since llama-cpp is blocking, we wrap it in a thread
     loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt, max_tokens=1000))
-    
-    if "error" in response:
-        await manager.broadcast({"event": "llm_error", "data": response["error"]})
-        raise HTTPException(status_code=500, detail=response["error"])
+    clean_response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(clean_prompt, max_tokens=1000))
+    if "error" in clean_response:
+        await manager.broadcast({"event": "llm_error", "data": clean_response["error"]})
+        raise HTTPException(status_code=500, detail=clean_response["error"])
         
-    cleaned_text = response["choices"][0]["text"].strip()
-    
-    await manager.broadcast({
-        "event": "llm_finish",
-        "data": {
-            "type": "clean_note",
-            "result": cleaned_text
-        }
-    })
+    cleaned_text = clean_response["choices"][0]["text"].strip()
+    await manager.broadcast({"event": "llm_finish", "data": {"type": "clean_note", "result": cleaned_text}})
 
+    # 2. Embedding (Phase 5.4)
+    embed_text = llm.TEMPLATES["embed_note"].format(title=db_note.title, text=cleaned_text)
+    embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+    if embed_response:
+        vector = embed_response["data"][0]["embedding"]
+        # Save or update embedding
+        db_emb = db.query(models.NoteEmbedding).filter(models.NoteEmbedding.note_id == note_id).first()
+        if not db_emb:
+            db_emb = models.NoteEmbedding(note_id=note_id, vector=json.dumps(vector))
+            db.add(db_emb)
+        else:
+            db_emb.vector = json.dumps(vector)
+            
     db_note.cleaned_text = cleaned_text
     db_note.stage = "Clean"
     db.commit()
     db.refresh(db_note)
     return db_note
+
+@app.get("/search/semantic")
+async def semantic_search(query: str, db: Session = Depends(get_db)):
+    loop = asyncio.get_event_loop()
+    query_embedding = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+    if not query_embedding:
+        raise HTTPException(status_code=500, detail="Could not generate query embedding")
+    
+    q_vec = np.array(query_embedding["data"][0]["embedding"])
+    
+    note_embeddings = db.query(models.NoteEmbedding).all()
+    results = []
+    
+    for ne in note_embeddings:
+        n_vec = np.array(json.loads(ne.vector))
+        # Cosine similarity
+        norm_q = np.linalg.norm(q_vec)
+        norm_n = np.linalg.norm(n_vec)
+        if norm_q > 0 and norm_n > 0:
+            score = np.dot(q_vec, n_vec) / (norm_q * norm_n)
+            # Higher threshold for better results
+            if score > 0.3: 
+                note = db.query(models.Note).filter(models.Note.id == ne.note_id).first()
+                if note:
+                    results.append({
+                        "id": note.id,
+                        "title": note.title,
+                        "score": float(score),
+                        "date": str(note.date)
+                    })
+    
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:10]
 
 @app.post("/notes/{note_id}/extract")
 async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):

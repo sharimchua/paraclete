@@ -58,6 +58,13 @@ class LLMManager:
             **kwargs
         )
 
+    def embed(self, text: str):
+        if self.model is None:
+            self.load_model()
+            if self.model is None:
+                return None
+        return self.model.create_embedding(text)
+
 llm_manager = LLMManager()
 
 # Prompt Templates
@@ -83,5 +90,7 @@ JSON:""",
 Note summary: {summary}
 
 Draft a follow-up message to the person based on this session. Use a warm, professional, and practice-appropriate tone.
-MESSAGE:"""
+MESSAGE:""",
+
+    "embed_note": "{title} {text}"
 }

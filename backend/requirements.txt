@@ -3,3 +3,4 @@ uvicorn
 sqlalchemy
 alembic
 llama-cpp-python
+numpy
