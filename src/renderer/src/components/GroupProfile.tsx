@@ -184,7 +184,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson }) => {
                         <h3>Add Member to {group.name}</h3>
                         <div style={{ marginTop: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {availablePersons.length === 0 ? (
-                                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>No more practitioners available to add.</p>
+                                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>No more people available to add.</p>
                             ) : (
                                 availablePersons.map(p => (
                                     <div 

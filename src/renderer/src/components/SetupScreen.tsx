@@ -45,7 +45,7 @@ const SetupScreen: React.FC = () => {
                 border: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
                 <h1 style={{ fontSize: '2rem', marginBottom: '20px', fontWeight: 700 }}>Paraclete Setup</h1>
-                <p style={{ color: '#94a3b8', marginBottom: '40px' }}>Configuring your private practitioner OS. This happens only once.</p>
+                <p style={{ color: '#94a3b8', marginBottom: '40px' }}>Configuring your private workspace. This happens only once.</p>
                 
                 <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontWeight: 500 }}>{status}</span>

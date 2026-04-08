@@ -170,7 +170,7 @@ const App: React.FC = () => {
                     <div style={{ display: 'flex', gap: '12px' }}>
                         {currentView === 'persons' && !selectedPersonId && (
                             <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('trigger-create-person'))}>
-                                + Add Practitioner
+                                + Add Person
                             </button>
                         )}
                         

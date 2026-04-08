@@ -40,18 +40,18 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack }) => {
             api.get<Person>(`/persons/${personId}`).then(data => setPerson(data));
         } catch (err) {
             console.error(err);
-            alert('Failed to update practitioner');
+            alert('Failed to update person');
         }
     };
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this practitioner? All their notes will remain but will be unlinked.')) {
+        if (window.confirm('Are you sure you want to delete this person? All their notes will remain but will be unlinked.')) {
             try {
                 await api.delete(`/persons/${personId}`);
                 onBack();
             } catch (err) {
                 console.error(err);
-                alert('Failed to delete practitioner');
+                alert('Failed to delete person');
             }
         }
     };

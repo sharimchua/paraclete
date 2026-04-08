@@ -46,7 +46,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
             fetchPersons();
         } catch (err) {
             console.error(err);
-            alert('Failed to create practitioner');
+            alert('Failed to create person');
         }
     };
 
@@ -105,7 +105,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
             {showCreateModal && (
                 <div className="modal-overlay">
                     <div className="modal-content card" style={{ width: '400px' }}>
-                        <h3>Add New Practitioner</h3>
+                        <h3>Add New Person</h3>
                         <form onSubmit={handleCreatePerson} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Full Name</label>
@@ -130,7 +130,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
                             </div>
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
                                 <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                                <button type="submit" className="btn-primary">Add Practitioner</button>
+                                <button type="submit" className="btn-primary">Add Person</button>
                             </div>
                         </form>
                     </div>
