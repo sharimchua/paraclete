@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 import uvicorn
 import socket
@@ -378,6 +379,53 @@ def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+# --- Dashboard Endpoints (Phase 4) ---
+@app.get("/dashboard/stats", response_model=schemas.DashboardStats)
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    return {
+        "person_count": db.query(models.Person).count(),
+        "note_count": db.query(models.Note).count(),
+        "group_count": db.query(models.Group).count(),
+        "reference_count": db.query(models.Reference).count()
+    }
+
+@app.get("/dashboard/calendar", response_model=List[schemas.CalendarDay])
+def get_calendar_data(db: Session = Depends(get_db)):
+    results = db.query(
+        models.Note.date, 
+        func.count(models.Note.id).label('count')
+    ).group_by(models.Note.date).all()
+    
+    return [{"date": r.date, "count": r.count} for r in results]
+
+@app.get("/dashboard/recent-notes", response_model=List[schemas.Note])
+def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
+    return db.query(models.Note).order_by(models.Note.created_at.desc()).limit(limit).all()
+
+@app.get("/dashboard/trends", response_model=List[schemas.TrendPoint])
+def get_trends(db: Session = Depends(get_db)):
+    results = db.query(
+        func.strftime('%m', models.Note.date).label('month'),
+        func.count(models.Note.id).label('count')
+    ).group_by('month').all()
+    
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    return [{"label": months[int(r.month)-1], "count": r.count} for r in results]
+
+@app.get("/dashboard/reference-usage", response_model=List[schemas.ReferenceUsage])
+def get_reference_usage(db: Session = Depends(get_db)):
+    refs = db.query(models.Reference).all()
+    usage = []
+    for r in refs:
+        count = len(r.linked_notes) + len(r.persons)
+        usage.append({
+            "id": r.id,
+            "title": r.title,
+            "usage_count": count
+        })
+    usage.sort(key=lambda x: x["usage_count"], reverse=True)
+    return usage[:10]
 
 # --- WebSocket Support ---
 @app.websocket("/ws")

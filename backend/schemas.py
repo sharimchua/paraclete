@@ -145,3 +145,23 @@ class FullExport(BaseModel):
     references: List[Reference]
     actions: List[Action] = []
     messages: List[Message] = []
+
+# Phase 4 Dashboard Schemas
+class DashboardStats(BaseModel):
+    person_count: int
+    note_count: int
+    group_count: int
+    reference_count: int
+
+class CalendarDay(BaseModel):
+    date: date
+    count: int
+
+class TrendPoint(BaseModel):
+    label: str
+    count: int
+
+class ReferenceUsage(BaseModel):
+    id: int
+    title: str
+    usage_count: int
