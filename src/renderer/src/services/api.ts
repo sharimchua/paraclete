@@ -36,6 +36,8 @@ export interface Note {
     person_id?: number;
     group_id?: number;
     tags: Tag[];
+    person?: { id: number, name: string };
+    group?: { id: number, name: string };
 }
 
 export interface DashboardStats {

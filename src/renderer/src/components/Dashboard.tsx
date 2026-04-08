@@ -137,7 +137,21 @@ const Dashboard: React.FC = () => {
                                 borderLeft: '3px solid var(--primary)',
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                             }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>{note.title}</div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '2px' }}>{note.title}</div>
+                                
+                                <div style={{ marginBottom: '8px' }}>
+                                    {note.person && (
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            👤 {note.person.name}
+                                        </span>
+                                    )}
+                                    {note.group && (
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            👥 {note.group.name}
+                                        </span>
+                                    )}
+                                </div>
+
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span>{new Date(note.date).toLocaleDateString()}</span>
                                     <span style={{ 

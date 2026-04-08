@@ -34,6 +34,11 @@ class GroupBadge(BaseModel):
     name: str
     model_config = ConfigDict(from_attributes=True)
 
+class PersonBadge(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
 class Person(PersonBase):
     id: int
     created_at: datetime
@@ -112,6 +117,8 @@ class Note(NoteBase):
     tags: List[Tag] = []
     actions: List[Action] = []
     messages: List[Message] = []
+    person: Optional[PersonBadge] = None
+    group: Optional[GroupBadge] = None
     model_config = ConfigDict(from_attributes=True)
 
 class ReferenceType(str, Enum):
