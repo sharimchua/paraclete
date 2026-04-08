@@ -6,12 +6,10 @@ import fs from 'fs';
 export class BackendManager {
     private process: ChildProcess | null = null;
     private pythonExe: string;
-    private backendFile: string;
 
     constructor() {
         const userDataPath = app.getPath('userData');
         this.pythonExe = path.join(userDataPath, 'python_env', 'python.exe');
-        this.backendFile = path.join(app.getAppPath(), 'backend', 'main.py');
     }
 
     startBackend(exposeExternally: boolean = false): void {
@@ -27,17 +25,39 @@ export class BackendManager {
             this.stopBackend();
         }
 
+        // Phase 3 Hardening: Ensure the embeddable python can find our code and dependencies
+        // Embeddable python ignores PYTHONPATH, so we must inject paths into the ._pth file
+        const pythonDir = path.dirname(this.pythonExe);
+        const pthFiles = fs.readdirSync(pythonDir).filter(f => f.endsWith('._pth'));
+        if (pthFiles.length > 0) {
+            const pthPath = path.join(pythonDir, pthFiles[0]);
+            const appPath = app.getAppPath();
+            
+            // We need: zip, current dir, site-packages, app root, and 'import site'
+            const pthContent = [
+                pthFiles[0].replace('._pth', '.zip'),
+                '.',
+                'Lib/site-packages',
+                appPath,
+                'import site'
+            ].join('\n');
+            
+            fs.writeFileSync(pthPath, pthContent);
+        }
+
         const env = { 
             ...process.env, 
             PARACLETE_EXPOSE: exposeExternally ? '1' : '0',
-            PYTHONPATH: path.join(app.getPath('userData'), 'python_env', 'Lib', 'site-packages')
+            PYTHONPATH: [
+                path.join(app.getPath('userData'), 'python_env', 'Lib', 'site-packages'),
+                app.getAppPath()
+            ].join(path.delimiter)
         };
 
-        console.log(`Python Exe: ${this.pythonExe}`);
-        console.log(`Backend File: ${this.backendFile}`);
-        console.log(`PYTHONPATH: ${env.PYTHONPATH}`);
-
-        this.process = spawn(this.pythonExe, [this.backendFile], { env });
+        this.process = spawn(this.pythonExe, ['-m', 'backend.main'], { 
+            env,
+            cwd: app.getAppPath()
+        });
 
         this.process.stdout?.on('data', (data) => console.log(`[BACKEND]: ${data.toString().trim()}`));
         this.process.stderr?.on('data', (data) => {
@@ -51,15 +71,12 @@ export class BackendManager {
             console.log(`Backend process exited with code ${code}`);
             this.process = null;
         });
-
-        console.log('Backend spawned.');
     }
 
     stopBackend(): void {
         if (this.process) {
             this.process.kill();
             this.process = null;
-            console.log('Backend stopped.');
         }
     }
 }

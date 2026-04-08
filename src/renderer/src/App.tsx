@@ -3,11 +3,14 @@ import SetupScreen from './components/SetupScreen';
 import PersonList from './components/PersonList';
 import PersonProfile from './components/PersonProfile';
 import NoteAuthoring from './components/NoteAuthoring';
+import GroupList from './components/GroupList';
+import GroupProfile from './components/GroupProfile';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
     const [currentView, setCurrentView] = useState<string>('dashboard');
     const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+    const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
     useEffect(() => {
         // Query if setup is complete
@@ -90,6 +93,22 @@ const App: React.FC = () => {
             return <PersonList onSelectPerson={(id) => setSelectedPersonId(id)} />;
         }
 
+        if (currentView === 'groups') {
+            if (selectedGroupId) {
+                return (
+                    <GroupProfile 
+                        groupId={selectedGroupId} 
+                        onBack={() => setSelectedGroupId(null)} 
+                        onSelectPerson={(id) => {
+                            setCurrentView('persons');
+                            setSelectedPersonId(id);
+                        }}
+                    />
+                );
+            }
+            return <GroupList onSelectGroup={(id) => setSelectedGroupId(id)} />;
+        }
+
         if (currentView === 'notes') {
             return (
                 <div className="card">
@@ -125,7 +144,7 @@ const App: React.FC = () => {
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'groups' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('groups'); setSelectedPersonId(null); }}
+                        onClick={() => { setCurrentView('groups'); setSelectedPersonId(null); setSelectedGroupId(null); }}
                     >
                         Groups
                     </div>

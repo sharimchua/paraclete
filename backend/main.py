@@ -19,7 +19,7 @@ app = FastAPI(title="Paraclete Backend")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -60,6 +60,29 @@ def read_person(person_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Person not found")
     return db_person
 
+@app.patch("/persons/{person_id}", response_model=schemas.Person)
+def update_person(person_id: int, person_update: schemas.PersonUpdate, db: Session = Depends(get_db)):
+    db_person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    if db_person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+    
+    update_data = person_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_person, key, value)
+    
+    db.commit()
+    db.refresh(db_person)
+    return db_person
+
+@app.delete("/persons/{person_id}")
+def delete_person(person_id: int, db: Session = Depends(get_db)):
+    db_person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    if db_person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+    db.delete(db_person)
+    db.commit()
+    return {"status": "success"}
+
 # --- Group CRUD ---
 @app.post("/groups/", response_model=schemas.Group)
 def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
@@ -80,6 +103,29 @@ def read_group(group_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Group not found")
     return db_group
 
+@app.patch("/groups/{group_id}", response_model=schemas.Group)
+def update_group(group_id: int, group_update: schemas.GroupUpdate, db: Session = Depends(get_db)):
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    update_data = group_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_group, key, value)
+    
+    db.commit()
+    db.refresh(db_group)
+    return db_group
+
+@app.delete("/groups/{group_id}")
+def delete_group(group_id: int, db: Session = Depends(get_db)):
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    db.delete(db_group)
+    db.commit()
+    return {"status": "success"}
+
 @app.post("/groups/{group_id}/members/{person_id}")
 def add_group_member(group_id: int, person_id: int, db: Session = Depends(get_db)):
     group = db.query(models.Group).filter(models.Group.id == group_id).first()
@@ -88,6 +134,17 @@ def add_group_member(group_id: int, person_id: int, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Group or Person not found")
     if person not in group.members:
         group.members.append(person)
+        db.commit()
+    return {"status": "success"}
+
+@app.delete("/groups/{group_id}/members/{person_id}")
+def remove_group_member(group_id: int, person_id: int, db: Session = Depends(get_db)):
+    group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    if not group or not person:
+        raise HTTPException(status_code=404, detail="Group or Person not found")
+    if person in group.members:
+        group.members.remove(person)
         db.commit()
     return {"status": "success"}
 

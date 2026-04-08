@@ -21,6 +21,10 @@ class PersonBase(BaseModel):
 class PersonCreate(PersonBase):
     pass
 
+class PersonUpdate(BaseModel):
+    name: Optional[str] = None
+    contact_method: Optional[str] = None
+
 class Person(PersonBase):
     id: int
     created_at: datetime
@@ -35,11 +39,16 @@ class GroupBase(BaseModel):
 class GroupCreate(GroupBase):
     pass
 
+class GroupUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
 class Group(GroupBase):
     id: int
     created_at: datetime
     updated_at: datetime
     tags: List[Tag] = []
+    members: List[Person] = []
     model_config = ConfigDict(from_attributes=True)
 
 class NoteStage(str, Enum):

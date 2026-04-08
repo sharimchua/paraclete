@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 
 export interface Tag {
     id: number;
@@ -22,6 +22,7 @@ export interface Group {
     created_at: string;
     updated_at: string;
     tags: Tag[];
+    members: Person[];
 }
 
 export interface Note {
@@ -58,6 +59,14 @@ export const api = {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+        return res.json();
+    },
+
+    async delete<T>(path: string): Promise<T> {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: 'DELETE'
         });
         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
         return res.json();
