@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Logo from './Logo';
 
 const SetupScreen: React.FC = () => {
     const [status, setStatus] = useState<string>('Initializing...');
@@ -44,6 +45,9 @@ const SetupScreen: React.FC = () => {
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
                 border: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
+                <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'center' }}>
+                    <Logo />
+                </div>
                 <h1 style={{ fontSize: '2rem', marginBottom: '20px', fontWeight: 700 }}>Paraclete Setup</h1>
                 <p style={{ color: '#94a3b8', marginBottom: '40px' }}>Configuring your private workspace. This happens only once.</p>
                 

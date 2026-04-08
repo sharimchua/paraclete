@@ -7,6 +7,7 @@ import GroupList from './components/GroupList';
 import GroupProfile from './components/GroupProfile';
 import NoteDetail from './components/NoteDetail';
 import Dashboard from './components/Dashboard';
+import Logo from './components/Logo';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -140,7 +141,9 @@ const App: React.FC = () => {
         <div className="app-container">
             <aside className="sidebar">
                 <div className="logo-area">
-                    <div className="logo-icon"></div>
+                    <div className="logo-icon">
+                        <Logo />
+                    </div>
                     <span className="app-name">Paraclete</span>
                 </div>
                 

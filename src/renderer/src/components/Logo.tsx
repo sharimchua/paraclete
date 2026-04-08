@@ -1,0 +1,19 @@
+import React from 'react';
+
+const Logo: React.FC<{ className?: string }> = ({ className }) => {
+  return (
+    <svg 
+        width="32" 
+        height="32" 
+        viewBox="0 0 32 32" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+    >
+      <rect x="6" y="2" width="8" height="28" rx="4" fill="#38bdf8" />
+      <rect x="18" y="10" width="8" height="20" rx="4" fill="#818cf8" />
+    </svg>
+  );
+};
+
+export default Logo;
