@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { api, DashboardStats, CalendarDay, TrendPoint, ReferenceUsage, Note } from '../services/api';
 import PracticeCalendar from './PracticeCalendar';
 
-const Dashboard: React.FC = () => {
+interface Props {
+    onSelectNote: (id: number) => void;
+}
+
+const Dashboard: React.FC<Props> = ({ onSelectNote }) => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
     const [trends, setTrends] = useState<TrendPoint[]>([]);
@@ -130,13 +134,19 @@ const Dashboard: React.FC = () => {
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '24px' }}>No notes captured yet.</div>
                     ) : (
                         recentNotes.map(note => (
-                            <div key={note.id} style={{ 
-                                padding: '12px', 
-                                background: 'var(--bg-surface)', 
-                                borderRadius: '8px',
-                                borderLeft: '3px solid var(--primary)',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}>
+                            <div 
+                                key={note.id} 
+                                onClick={() => onSelectNote(note.id)}
+                                style={{ 
+                                    padding: '12px', 
+                                    background: 'var(--bg-surface)', 
+                                    borderRadius: '8px',
+                                    borderLeft: '3px solid var(--primary)',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                    cursor: 'pointer'
+                                }}
+                                className="clickable-card"
+                            >
                                 <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '2px' }}>{note.title}</div>
                                 
                                 <div style={{ marginBottom: '8px' }}>

@@ -82,7 +82,10 @@ const App: React.FC = () => {
         }
 
         if (currentView === 'dashboard') {
-            return <Dashboard />;
+            return <Dashboard onSelectNote={(id) => {
+                setSelectedNoteId(id);
+                setCurrentView('note-detail');
+            }} />;
         }
 
         if (currentView === 'persons') {

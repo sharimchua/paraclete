@@ -10,8 +10,8 @@ const backend = new BackendManager()
 
 function createWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1350,
+    height: 840,
     show: false,
     autoHideMenuBar: true,
     title: 'Paraclete',
