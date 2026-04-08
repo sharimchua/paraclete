@@ -8,6 +8,7 @@ import os
 import json
 
 from . import models, schemas, database
+from datetime import datetime
 
 # Ensure database tables exist (simple startup for prototype)
 # In production, Alembic handles this.
@@ -52,6 +53,13 @@ def create_person(person: schemas.PersonCreate, db: Session = Depends(get_db)):
 def read_persons(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.Person).offset(skip).limit(limit).all()
 
+@app.get("/persons/{person_id}", response_model=schemas.Person)
+def read_person(person_id: int, db: Session = Depends(get_db)):
+    db_person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    if db_person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return db_person
+
 # --- Group CRUD ---
 @app.post("/groups/", response_model=schemas.Group)
 def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
@@ -64,6 +72,106 @@ def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
 @app.get("/groups/", response_model=List[schemas.Group])
 def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.Group).offset(skip).limit(limit).all()
+
+@app.get("/groups/{group_id}", response_model=schemas.Group)
+def read_group(group_id: int, db: Session = Depends(get_db)):
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return db_group
+
+@app.post("/groups/{group_id}/members/{person_id}")
+def add_group_member(group_id: int, person_id: int, db: Session = Depends(get_db)):
+    group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    if not group or not person:
+        raise HTTPException(status_code=404, detail="Group or Person not found")
+    if person not in group.members:
+        group.members.append(person)
+        db.commit()
+    return {"status": "success"}
+
+# --- Note CRUD ---
+@app.post("/notes/", response_model=schemas.Note)
+def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
+    db_note = models.Note(**note.model_dump())
+    db.add(db_note)
+    db.commit()
+    db.refresh(db_note)
+    return db_note
+
+@app.get("/notes/", response_model=List[schemas.Note])
+def read_notes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Note).offset(skip).limit(limit).all()
+
+@app.get("/notes/{note_id}", response_model=schemas.Note)
+def read_note(note_id: int, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if db_note is None:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return db_note
+
+@app.post("/notes/{note_id}/references/{reference_id}")
+def link_note_reference(note_id: int, reference_id: int, db: Session = Depends(get_db)):
+    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+    if not note or not ref:
+        raise HTTPException(status_code=404, detail="Note or Reference not found")
+    if ref not in note.references:
+        note.references.append(ref)
+        db.commit()
+    return {"status": "success"}
+
+# --- Reference CRUD ---
+@app.post("/references/", response_model=schemas.Reference)
+def create_reference(reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):
+    db_ref = models.Reference(**reference.model_dump())
+    db.add(db_ref)
+    db.commit()
+    db.refresh(db_ref)
+    return db_ref
+
+@app.get("/references/", response_model=List[schemas.Reference])
+def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Reference).offset(skip).limit(limit).all()
+
+# --- Action CRUD ---
+@app.post("/actions/", response_model=schemas.Action)
+def create_action(action: schemas.ActionCreate, db: Session = Depends(get_db)):
+    db_action = models.Action(**action.model_dump())
+    db.add(db_action)
+    db.commit()
+    db.refresh(db_action)
+    return db_action
+
+@app.patch("/actions/{action_id}", response_model=schemas.Action)
+def update_action(action_id: int, resolved: bool, db: Session = Depends(get_db)):
+    db_action = db.query(models.Action).filter(models.Action.id == action_id).first()
+    if not db_action:
+        raise HTTPException(status_code=404, detail="Action not found")
+    db_action.resolved = resolved
+    db.commit()
+    db.refresh(db_action)
+    return db_action
+
+# --- Message CRUD ---
+@app.post("/messages/", response_model=schemas.Message)
+def create_message(message: schemas.MessageCreate, db: Session = Depends(get_db)):
+    db_msg = models.Message(**message.model_dump())
+    db.add(db_msg)
+    db.commit()
+    db.refresh(db_msg)
+    return db_msg
+
+@app.post("/messages/{message_id}/send", response_model=schemas.Message)
+def send_message(message_id: int, db: Session = Depends(get_db)):
+    db_msg = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not db_msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    db_msg.sent_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_msg)
+    return db_msg
 
 # --- Managed Tags ---
 @app.post("/tags/", response_model=schemas.Tag)
@@ -81,6 +189,31 @@ def create_tag(tag: schemas.TagCreate, db: Session = Depends(get_db)):
 def read_tags(db: Session = Depends(get_db)):
     return db.query(models.Tag).all()
 
+@app.post("/tags/link")
+def link_tag(entity_type: str, entity_id: int, tag_id: int, db: Session = Depends(get_db)):
+    tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    
+    if entity_type == "person":
+        obj = db.query(models.Person).filter(models.Person.id == entity_id).first()
+    elif entity_type == "group":
+        obj = db.query(models.Group).filter(models.Group.id == entity_id).first()
+    elif entity_type == "note":
+        obj = db.query(models.Note).filter(models.Note.id == entity_id).first()
+    elif entity_type == "reference":
+        obj = db.query(models.Reference).filter(models.Reference.id == entity_id).first()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid entity type")
+    
+    if not obj:
+        raise HTTPException(status_code=404, detail="Entity not found")
+    
+    if tag not in obj.tags:
+        obj.tags.append(tag)
+        db.commit()
+    return {"status": "success"}
+
 # --- Atomic Export/Import (Phase 2 Step 4.2) ---
 @app.get("/export/", response_model=schemas.FullExport)
 def export_data(db: Session = Depends(get_db)):
@@ -89,32 +222,82 @@ def export_data(db: Session = Depends(get_db)):
         "groups": db.query(models.Group).all(),
         "tags": db.query(models.Tag).all(),
         "notes": db.query(models.Note).all(),
-        "references": db.query(models.Reference).all()
+        "references": db.query(models.Reference).all(),
+        "actions": db.query(models.Action).all(),
+        "messages": db.query(models.Message).all()
     }
 
 @app.post("/import/")
 def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
     # This acts as a single atomic SQL transaction
     try:
-        # Simple implementation for Phase 2: clear and reload
-        # In a real environment, we would handle merges or conflict resolution
+        # Clear all existing data
+        db.query(models.Message).delete()
+        db.query(models.Action).delete()
+        db.query(models.Note).delete()
+        db.query(models.Reference).delete()
         db.query(models.Person).delete()
         db.query(models.Group).delete()
         db.query(models.Tag).delete()
-        db.query(models.Note).delete()
-        db.query(models.Reference).delete()
+        db.flush()
         
-        for p in data.persons: db.add(models.Person(**p.model_dump()))
-        for g in data.groups: db.add(models.Group(**g.model_dump()))
-        for t in data.tags: db.add(models.Tag(**t.model_dump()))
-        for n in data.notes: db.add(models.Note(**n.model_dump()))
-        for r in data.references: db.add(models.Reference(**r.model_dump()))
+        # 1. Reload Tags
+        tag_map = {}
+        for t in data.tags:
+            db_tag = models.Tag(**t.model_dump())
+            db.add(db_tag)
+            tag_map[t.id] = db_tag
+        db.flush()
+        
+        # 2. Reload Persons & Groups
+        person_map = {}
+        for p in data.persons:
+            db_person = models.Person(**p.model_dump(exclude={"tags"}))
+            for t in p.tags:
+                if t.id in tag_map:
+                    db_person.tags.append(tag_map[t.id])
+            db.add(db_person)
+            person_map[p.id] = db_person
+            
+        group_map = {}
+        for g in data.groups:
+            db_group = models.Group(**g.model_dump(exclude={"tags"}))
+            for t in g.tags:
+                if t.id in tag_map:
+                    db_group.tags.append(tag_map[t.id])
+            db.add(db_group)
+            group_map[g.id] = db_group
+        db.flush()
+        
+        # 3. Reload Notes
+        note_map = {}
+        for n in data.notes:
+            dump = n.model_dump(exclude={"tags", "actions", "messages"})
+            db_note = models.Note(**dump)
+            for t in n.tags:
+                if t.id in tag_map:
+                    db_note.tags.append(tag_map[t.id])
+            for a in n.actions:
+                db_note.actions.append(models.Action(**a.model_dump(exclude={"id"})))
+            for m in n.messages:
+                db_note.messages.append(models.Message(**m.model_dump(exclude={"id"})))
+            db.add(db_note)
+            note_map[n.id] = db_note
+        db.flush()
+        
+        # 4. Reload References
+        for r in data.references:
+            db_ref = models.Reference(**r.model_dump(exclude={"tags"}))
+            for t in r.tags:
+                if t.id in tag_map:
+                    db_ref.tags.append(tag_map[t.id])
+            db.add(db_ref)
         
         db.commit()
-        return {"status": "success", "message": "Atomic import completed"}
+        return {"status": "success", "message": "Atomic import completed with relationship reconstruction"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 # --- WebSocket Support ---
 @app.websocket("/ws")
