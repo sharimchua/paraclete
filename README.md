@@ -8,6 +8,7 @@
 Paraclete (from the Greek *parakletos*, "one called alongside to help") acts as the digital infrastructure for practitioners. It handles the administrative heavy lifting—preparing for sessions, capturing notes, cleaning transcriptions, and drafting follow-ups—so you can focus entirely on the human in front of you.
 
 ## ✨ Core Features
+- **Practice Dashboard & Analytics**: A deterministic overview of your practice. Visualize session frequency via the Note Calendar, track developmental trends, and monitor Reference utilization across your client base.
 - **The Note Lifecycle**: A structured workflow derived from clinical and coaching best practices: `Prepare → Capture → Clean → Publish → Archive`.
 - **Person & Group Management**: Deep tracking of individuals and cohorts, including session history and personalized knowledge mapping.
 - **Reference Library**: Accumulate your intellectual capital. Extract concepts, resources, and patterns from sessions into a reusable knowledge base.
