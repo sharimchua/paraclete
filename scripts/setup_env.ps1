@@ -32,14 +32,20 @@ if (-not (Test-Path (Join-Path $installPath "python.exe"))) {
 # 2. Configure Site Packages for Embeddable Python
 $pthFile = Get-ChildItem -Path $installPath -Filter "*._pth" | Select-Object -First 1
 if ($pthFile) {
-    Write-Host "--- Enabling site-packages in $($pthFile.Name)..."
+    Write-Host "--- Configuring paths in $($pthFile.Name)..."
     $content = Get-Content $pthFile.FullName
-    $newContent = $content -replace "#import site", "import site"
-    if ($newContent -eq $content) {
-         # Manually append if not replaced
-         $newContent = $content + "`r`nimport site"
+    
+    # Ensure Lib/site-packages and import site are present
+    $newLines = @()
+    foreach ($line in $content) {
+        if ($line -notmatch "import site" -and $line -notmatch "Lib/site-packages") {
+            $newLines += $line
+        }
     }
-    $newContent | Set-Content $pthFile.FullName -Force
+    $newLines += "Lib/site-packages"
+    $newLines += "import site"
+    
+    $newLines | Set-Content $pthFile.FullName -Force
 }
 
 # 3. Install PIP
