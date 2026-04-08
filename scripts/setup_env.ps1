@@ -69,8 +69,8 @@ if (-not $hasPip) {
 }
 
 # 4. Install Dependencies with CUDA
-Write-Host "--- Installing build requirements (scikit-build-core)..."
-& $pythonExe -m pip install scikit-build-core setuptools wheel
+Write-Host "--- Installing build requirements (cmake, scikit-build-core)..."
+& $pythonExe -m pip install cmake scikit-build-core setuptools wheel
 
 Write-Host "--- Installing backend dependencies (FastAPI, llama-cpp-python with CUDA)..."
 $env:CMAKE_ARGS = "-DGGML_CUDA=on"

@@ -95,7 +95,7 @@ MESSAGE:""",
     "embed_note": "{title} {text}",
 
     "ocr_capture": """Analyze the provided image content and transcribe any text found.
-Ensure you maintain the original layout and formatting where possible.
+Use the context of the note to expand on any partially formed thoughts or sentences. Order and compile the text into a coherent note with logical order and formatting.
 
 IMAGE CONTENT:
 {text}
