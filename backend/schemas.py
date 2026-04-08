@@ -94,6 +94,12 @@ class NoteBase(BaseModel):
 class NoteCreate(NoteBase):
     pass
 
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    stage: Optional[NoteStage] = None
+    raw_capture: Optional[str] = None
+    cleaned_text: Optional[str] = None
+
 class Note(NoteBase):
     id: int
     created_at: datetime

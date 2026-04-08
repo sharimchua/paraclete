@@ -4,9 +4,10 @@ import { api, Person, Note } from '../services/api';
 interface Props {
     personId: number;
     onBack: () => void;
+    onSelectNote: (id: number) => void;
 }
 
-const PersonProfile: React.FC<Props> = ({ personId, onBack }) => {
+const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
     const [person, setPerson] = useState<Person | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
@@ -115,7 +116,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack }) => {
                         </div>
                     ) : (
                         notes.map(note => (
-                            <div key={note.id} className="card">
+                            <div key={note.id} className="card" style={{ cursor: 'pointer' }} onClick={() => onSelectNote(note.id)}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{note.date}</span>
                                     <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)' }}>{note.stage.toUpperCase()}</span>

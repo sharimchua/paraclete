@@ -5,9 +5,10 @@ interface Props {
     groupId: number;
     onBack: () => void;
     onSelectPerson: (id: number) => void;
+    onSelectNote: (id: number) => void;
 }
 
-const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson }) => {
+const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSelectNote }) => {
     const [group, setGroup] = useState<Group | null>(null);
     const [allPersons, setAllPersons] = useState<Person[]>([]);
     const [groupNotes, setGroupNotes] = useState<Note[]>([]);
@@ -153,7 +154,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson }) => {
                             <p style={{ color: 'var(--text-muted)' }}>No notes linked specifically to this group.</p>
                         ) : (
                             groupNotes.map(note => (
-                                <div key={note.id} className="card">
+                                <div key={note.id} className="card" style={{ cursor: 'pointer' }} onClick={() => onSelectNote(note.id)}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{note.date}</span>
                                         <span className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)' }}>{note.stage}</span>

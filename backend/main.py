@@ -179,6 +179,29 @@ def link_note_reference(note_id: int, reference_id: int, db: Session = Depends(g
         db.commit()
     return {"status": "success"}
 
+@app.patch("/notes/{note_id}", response_model=schemas.Note)
+def update_note(note_id: int, note_update: schemas.NoteUpdate, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if db_note is None:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    update_data = note_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_note, key, value)
+    
+    db.commit()
+    db.refresh(db_note)
+    return db_note
+
+@app.delete("/notes/{note_id}")
+def delete_note(note_id: int, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if db_note is None:
+        raise HTTPException(status_code=404, detail="Note not found")
+    db.delete(db_note)
+    db.commit()
+    return {"status": "success"}
+
 # --- Reference CRUD ---
 @app.post("/references/", response_model=schemas.Reference)
 def create_reference(reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):

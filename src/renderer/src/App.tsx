@@ -5,12 +5,14 @@ import PersonProfile from './components/PersonProfile';
 import NoteAuthoring from './components/NoteAuthoring';
 import GroupList from './components/GroupList';
 import GroupProfile from './components/GroupProfile';
+import NoteDetail from './components/NoteDetail';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
     const [currentView, setCurrentView] = useState<string>('dashboard');
     const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+    const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
     useEffect(() => {
         // Query if setup is complete
@@ -55,7 +57,25 @@ const App: React.FC = () => {
                 <NoteAuthoring 
                     personId={selectedPersonId || undefined} 
                     groupId={selectedGroupId || undefined}
-                    onComplete={() => setCurrentView('dashboard')} 
+                    onComplete={() => {
+                        if (selectedPersonId) setCurrentView('persons');
+                        else if (selectedGroupId) setCurrentView('groups');
+                        else setCurrentView('dashboard');
+                    }} 
+                />
+            );
+        }
+
+        if (currentView === 'note-detail' && selectedNoteId) {
+            return (
+                <NoteDetail 
+                    noteId={selectedNoteId} 
+                    onBack={() => {
+                        setSelectedNoteId(null);
+                        if (selectedPersonId) setCurrentView('persons');
+                        else if (selectedGroupId) setCurrentView('groups');
+                        else setCurrentView('notes');
+                    }} 
                 />
             );
         }
@@ -88,6 +108,10 @@ const App: React.FC = () => {
                     <PersonProfile 
                         personId={selectedPersonId} 
                         onBack={() => setSelectedPersonId(null)} 
+                        onSelectNote={(id) => {
+                            setSelectedNoteId(id);
+                            setCurrentView('note-detail');
+                        }}
                     />
                 );
             }
@@ -103,6 +127,10 @@ const App: React.FC = () => {
                         onSelectPerson={(id) => {
                             setCurrentView('persons');
                             setSelectedPersonId(id);
+                        }}
+                        onSelectNote={(id) => {
+                            setSelectedNoteId(id);
+                            setCurrentView('note-detail');
                         }}
                     />
                 );
@@ -162,6 +190,7 @@ const App: React.FC = () => {
                 <header className="header">
                     <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{
                         currentView === 'new-note' ? 'SESSION WORKFLOW' :
+                        currentView === 'note-detail' ? 'NOTE DETAIL' :
                         selectedPersonId ? 'PERSON PROFILE' : 
                         selectedGroupId ? 'GROUP PROFILE' : currentView.toUpperCase()
                     }</h2>
