@@ -8,8 +8,9 @@ import socket
 import os
 import json
 
-from . import models, schemas, database
+from . import models, schemas, database, llm
 from datetime import datetime
+import asyncio
 
 # Ensure database tables exist (simple startup for prototype)
 # In production, Alembic handles this.
@@ -204,6 +205,62 @@ def update_note(note_id: int, note_update: schemas.NoteUpdate, db: Session = Dep
     db.commit()
     db.refresh(db_note)
     return db_note
+
+@app.post("/notes/{note_id}/process", response_model=schemas.Note)
+def process_note(note_id: int, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not db_note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    prompt = llm.TEMPLATES["clean_note"].format(text=db_note.raw_capture)
+    # This is a synchronous call to the LLM for now.
+    # We should ideally offload this to a task queue or use async properly.
+    # But llama-cpp is blocking anyway.
+    response = llm.llm_manager.generate(prompt, max_tokens=1000)
+    
+    if "error" in response:
+        raise HTTPException(status_code=500, detail=response["error"])
+        
+    cleaned_text = response["choices"][0]["text"].strip()
+    db_note.cleaned_text = cleaned_text
+    db_note.stage = "Clean"
+    db.commit()
+    db.refresh(db_note)
+    return db_note
+
+@app.post("/notes/{note_id}/extract")
+def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not db_note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    prompt = llm.TEMPLATES["extract_entities"].format(text=db_note.cleaned_text or db_note.raw_capture)
+    
+    # Use GBNF grammar for JSON enforcement (Phase 5.3)
+    # Simple JSON grammar
+    grammar = r'''
+    root   ::= object
+    object ::= "{" space ( pair ( "," space pair )* )? "}"
+    pair   ::= string ":" space value
+    string ::= "\"" ( [^"] | "\\" ["\\/bfnrt] | "\\u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] )* "\""
+    value  ::= string | number | object | array | "true" | "false" | "null"
+    array  ::= "[" space ( value ( "," space value )* )? "]"
+    number ::= "-"? ([0-9]+ | [0-9]+ "." [0-9]+)
+    space  ::= [ \t\n\r]*
+    '''
+    
+    response = llm.llm_manager.generate(prompt, grammar=grammar, max_tokens=1000)
+    
+    if "error" in response:
+        raise HTTPException(status_code=500, detail=response["error"])
+        
+    try:
+        data = json.loads(response["choices"][0]["text"])
+        # Here we would actually create the tags, actions, and references in the DB
+        # For now, just return the extracted data
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse LLM JSON: {e}")
 
 @app.delete("/notes/{note_id}")
 def delete_note(note_id: int, db: Session = Depends(get_db)):
