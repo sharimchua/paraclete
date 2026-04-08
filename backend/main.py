@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, Depends, HTTPException, status
+from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -39,6 +39,25 @@ class ConnectionManager:
                 pass
 
 manager = ConnectionManager()
+
+@app.post("/process/ocr")
+async def process_ocr(file: UploadFile = File(...)):
+    # In a real multimodal setup, we'd pass the image bytes to Gemma 4
+    # For now, we simulate the logic.
+    await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "filename": file.filename}})
+    await asyncio.sleep(2) # Simulate processing
+    result = f"[Extracted from {file.filename}]: This is a simulated OCR result from Gemma 4 Vision."
+    await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
+    return {"text": result}
+
+@app.post("/process/dictate")
+async def process_dictate(file: UploadFile = File(...)):
+    # In a real setup, we'd pass audio to Gemma 4
+    await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "filename": file.filename}})
+    await asyncio.sleep(3) # Simulate transcribing
+    result = "This is a simulated transcription from Gemma 4 Multimodal audio processing."
+    await manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
+    return {"text": result}
 
 app.add_middleware(
     CORSMiddleware,
