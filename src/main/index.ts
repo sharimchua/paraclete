@@ -14,6 +14,7 @@ function createWindow(): BrowserWindow {
     height: 670,
     show: false,
     autoHideMenuBar: true,
+    title: 'Paraclete',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

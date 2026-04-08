@@ -7,7 +7,7 @@ const SetupScreen: React.FC = () => {
 
     useEffect(() => {
         // Listen for setup progress from main process
-        const unlisten = window.electron.ipcRenderer.on('setup-status', (_, data: { status: string, progress: number, log?: string }) => {
+        window.electron.ipcRenderer.on('setup-status', (_, data: { status: string, progress: number, log?: string }) => {
             setStatus(data.status);
             setProgress(data.progress);
             if (data.log) {
