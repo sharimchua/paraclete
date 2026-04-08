@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
+import { spawn } from 'child_process';
 
 export class PythonManager {
     private setupPath: string;
@@ -23,35 +24,83 @@ export class PythonManager {
                 window.webContents.send('setup-status', { status, progress, log });
             };
 
+            // In development, app.getAppPath() points to the project root
+            const rootPath = app.getAppPath();
+            const scriptPath = path.join(rootPath, 'scripts', 'setup_env.ps1');
+            const requirementsPath = path.join(rootPath, 'backend', 'requirements.txt');
+
+            console.log(`Running setup script at: ${scriptPath}`);
+
             // 1. Initialize
-            sendStatus('Initializing...', 10, 'Creating environment directories');
-            if (!fs.existsSync(this.setupPath)) {
-                fs.mkdirSync(this.setupPath, { recursive: true });
-            }
-            await new Promise(r => setTimeout(r, 1000));
+            sendStatus('Initializing setup...', 5, 'Launching PowerShell environment...');
 
-            // 2. Download Python (Simulated)
-            sendStatus('Downloading Python standalone...', 30, 'Fetching portable Windows distribution');
-            await new Promise(r => setTimeout(r, 2000));
+            const child = spawn('powershell.exe', [
+                '-ExecutionPolicy', 'Bypass',
+                '-File', scriptPath,
+                '-installPath', this.setupPath,
+                '-requirementsFile', requirementsPath
+            ]);
 
-            // 3. Install dependencies (Simulated llama-cpp-python with CUDA)
-            sendStatus('Installing dependencies...', 60, 'pip install fastapi llama-cpp-python (FORCE CUDA)');
-            await new Promise(r => setTimeout(r, 2500));
+            child.stdout.on('data', (data) => {
+                const lines = data.toString().split('\n');
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
 
-            // 4. Download Model Weights (Simulated Gemma 4 MoE)
-            sendStatus('Downloading Gemma 4 MoE weight...', 90, 'Fetching GGUF (Mixture of Experts)');
-            await new Promise(r => setTimeout(r, 3000));
+                    // Heuristics for progress bar mapping
+                    let progress = -1; // -1 means don't change bar
+                    if (trimmed.includes('Downloading Python')) progress = 20;
+                    else if (trimmed.includes('Installing PIP')) progress = 35;
+                    else if (trimmed.includes('Installing dependencies')) progress = 60;
+                    else if (trimmed.includes('Verifying CUDA')) progress = 90;
 
-            // 5. Finalize
-            fs.writeFileSync(path.join(this.setupPath, '.setup_complete'), new Date().toISOString());
-            sendStatus('Setup complete', 100, 'All systems ready');
-            
-            await new Promise(r => setTimeout(r, 500));
-            window.webContents.send('setup-complete');
+                    // Update UI
+                    window.webContents.send('setup-status', {
+                        status: progress > 0 ? 'Updating Environment...' : 'Setting up...',
+                        progress,
+                        log: trimmed
+                    });
+                }
+            });
+
+            child.stderr.on('data', (data) => {
+                const logLine = data.toString().trim();
+                if (logLine) {
+                    console.error(`PS Stderr: ${logLine}`);
+                    // We don't necessarily treat stderr as failure since pip uses it for progress sometimes
+                    window.webContents.send('setup-status', {
+                        status: 'Setup Progress (Log)',
+                        progress: -1,
+                        log: logLine
+                    });
+                }
+            });
+
+            child.on('close', (code) => {
+                if (code === 0) {
+                    fs.writeFileSync(path.join(this.setupPath, '.setup_complete'), new Date().toISOString());
+                    window.webContents.send('setup-status', {
+                        status: 'Setup complete',
+                        progress: 100,
+                        log: 'All systems ready'
+                    });
+                    
+                    // Allow UI to breathe before signal
+                    setTimeout(() => {
+                        window.webContents.send('setup-complete');
+                    }, 1500);
+                } else {
+                    window.webContents.send('setup-status', {
+                         status: 'Setup Failed',
+                         progress: 0,
+                         log: `PowerShell process exited with code ${code}`
+                    });
+                }
+            });
 
         } catch (error: any) {
             window.webContents.send('setup-status', { 
-                status: 'Error during setup', 
+                status: 'Error launching setup', 
                 progress: 0, 
                 log: `ERROR: ${error.message}` 
             });
