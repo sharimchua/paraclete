@@ -3,6 +3,7 @@ import SetupScreen from './components/SetupScreen';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
+    const [currentView, setCurrentView] = useState<string>('dashboard');
 
     useEffect(() => {
         // Query if setup is complete
@@ -22,19 +23,11 @@ const App: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                width: '100vw',
                 height: '100vh',
-                backgroundColor: '#0f172a'
+                backgroundColor: '#020617'
             }}>
-                <div className="loader" style={{
-                    width: '48px',
-                    height: '48px',
-                    border: '5px solid #1e293b',
-                    borderBottomColor: '#38bdf8',
-                    borderRadius: '50%',
-                    display: 'inline-block',
-                    boxSizing: 'border-box',
-                    animation: 'rotation 1s linear infinite'
-                }} />
+                <div className="loader" />
             </div>
         ); 
     }
@@ -44,29 +37,83 @@ const App: React.FC = () => {
     }
 
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            backgroundColor: '#0f172a',
-            color: '#f8fafc',
-            fontFamily: 'Inter, system-ui, sans-serif'
-        }}>
-            <h1 style={{ fontWeight: 700, fontSize: '2.5rem', marginBottom: '1rem' }}>Paraclete</h1>
-            <p style={{ color: '#94a3b8' }}>Welcome to your personal practice OS.</p>
-            <div style={{
-                marginTop: '40px',
-                padding: '20px',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                border: '1px solid rgba(56, 189, 248, 0.2)',
-                borderRadius: '12px',
-                color: '#38bdf8',
-                fontSize: '0.9rem'
-            }}>
-                Successfully configured local Gemma 4 MoE environment.
-            </div>
+        <div className="app-container">
+            <aside className="sidebar">
+                <div className="logo-area">
+                    <div className="logo-icon"></div>
+                    <span className="app-name">Paraclete</span>
+                </div>
+                
+                <nav className="nav-section">
+                    <div 
+                        className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('dashboard')}
+                    >
+                        Dashboard
+                    </div>
+                    <div 
+                        className={`nav-item ${currentView === 'persons' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('persons')}
+                    >
+                        Persons
+                    </div>
+                    <div 
+                        className={`nav-item ${currentView === 'groups' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('groups')}
+                    >
+                        Groups
+                    </div>
+                    <div 
+                        className={`nav-item ${currentView === 'notes' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('notes')}
+                    >
+                        Recent Notes
+                    </div>
+                </nav>
+            </aside>
+
+            <main className="main-content">
+                <header className="header">
+                    <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{currentView.toUpperCase()}</h2>
+                    <button className="btn-primary">+ New Note</button>
+                </header>
+                
+                <div className="content-area">
+                    {currentView === 'dashboard' && (
+                        <div className="dashboard-grid" style={{ display: 'grid', gap: '24px' }}>
+                            <div className="card">
+                                <h3 style={{ marginBottom: '8px' }}>Welcome back</h3>
+                                <p style={{ color: 'var(--text-secondary)' }}>You have 0 scheduled sessions today.</p>
+                            </div>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                                <div className="card">
+                                    <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '12px' }}>Quick Stats</h4>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>0 Persons</div>
+                                </div>
+                                <div className="card">
+                                    <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '12px' }}>Recent Notes</h4>
+                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No notes yet.</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {currentView === 'persons' && (
+                        <div className="card">
+                            <h3>Persons Library</h3>
+                            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Manage your practitioners and clients here.</p>
+                        </div>
+                    )}
+
+                    {currentView === 'notes' && (
+                        <div className="card">
+                            <h3>Notes Lifecycle</h3>
+                            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Prepare, Capture, and Clean your sessions.</p>
+                        </div>
+                    )}
+                </div>
+            </main>
         </div>
     );
 };
