@@ -48,6 +48,7 @@ export class BackendManager {
         const env = { 
             ...process.env, 
             PARACLETE_EXPOSE: exposeExternally ? '1' : '0',
+            PARACLETE_MODEL_PATH: path.join(app.getPath('userData'), 'python_env', 'models', 'gemma-4-moe.gguf'),
             PYTHONPATH: [
                 path.join(app.getPath('userData'), 'python_env', 'Lib', 'site-packages'),
                 app.getAppPath()
