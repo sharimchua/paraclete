@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, Group, Person, Note } from '../services/api';
+import TagSelectionModal from './TagSelectionModal';
 
 interface Props {
     groupId: number;
@@ -17,6 +18,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     const [editName, setEditName] = useState('');
     const [editDesc, setEditDesc] = useState('');
     const [showAddMember, setShowAddMember] = useState(false);
+    const [showTagModal, setShowTagModal] = useState(false);
 
     const fetchData = () => {
         setLoading(true);
@@ -88,6 +90,21 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
             }
         }
     };
+    
+    const handleSelectTag = async (tagId: number) => {
+        try {
+            await api.post('/tags/link', {
+                entity_type: 'group',
+                entity_id: groupId,
+                tag_id: tagId
+            });
+            setShowTagModal(false);
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to link tag');
+        }
+    };
 
     if (loading && !group) return <div className="loader" />;
     if (!group) return <div>Group not found.</div>;
@@ -114,6 +131,21 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                     <div>
                         <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>{group.name}</h1>
                         <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>{group.description || 'No description'}</p>
+                        
+                        <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                            {group.tags.map(tag => (
+                                <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
+                                    {tag.key ? `${tag.key}: ` : ''}{tag.value}
+                                </span>
+                            ))}
+                            <button 
+                                className="tag-pill" 
+                                style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}
+                                onClick={() => setShowTagModal(true)}
+                            >
+                                + Add Tag
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -166,17 +198,18 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className="card">
-                        <h4>Group Tags</h4>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-                            {group.tags.map(tag => (
-                                <span key={tag.id} className="tag-pill">{tag.value}</span>
-                            ))}
-                            <button className="tag-pill" style={{ border: '1px dashed var(--border)', background: 'none' }}>+ Tag</button>
-                        </div>
-                    </div>
+                    {/* Group Tags moved to header card */}
                 </div>
             </div>
+
+            {showTagModal && (
+                <TagSelectionModal 
+                    title={`Tag ${group.name}`}
+                    existingTagIds={group.tags.map(t => t.id)}
+                    onClose={() => setShowTagModal(false)}
+                    onSelect={handleSelectTag}
+                />
+            )}
 
             {showAddMember && (
                 <div className="modal-overlay">

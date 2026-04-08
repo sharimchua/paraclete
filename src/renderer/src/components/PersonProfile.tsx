@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, Person, Note } from '../services/api';
+import TagSelectionModal from './TagSelectionModal';
 
 interface Props {
     personId: number;
@@ -14,6 +15,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [editContact, setEditContact] = useState('');
+    const [showTagModal, setShowTagModal] = useState(false);
 
     useEffect(() => {
         // Fetch person details and notes tied to them
@@ -33,12 +35,16 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
         });
     }, [personId]);
 
+    const refreshPerson = () => {
+        api.get<Person>(`/persons/${personId}`).then(data => setPerson(data));
+    };
+
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await api.patch(`/persons/${personId}`, { name: editName, contact_method: editContact });
             setIsEditing(false);
-            api.get<Person>(`/persons/${personId}`).then(data => setPerson(data));
+            refreshPerson();
         } catch (err) {
             console.error(err);
             alert('Failed to update person');
@@ -54,6 +60,21 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                 console.error(err);
                 alert('Failed to delete person');
             }
+        }
+    };
+
+    const handleSelectTag = async (tagId: number) => {
+        try {
+            await api.post('/tags/link', {
+                entity_type: 'person',
+                entity_id: personId,
+                tag_id: tagId
+            });
+            setShowTagModal(false);
+            refreshPerson();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to link tag');
         }
     };
 
@@ -101,6 +122,21 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                         <div>
                             <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>{person.name}</h1>
                             <p style={{ color: 'var(--text-secondary)' }}>{person.contact_method || 'No contact method specified'}</p>
+                            
+                            <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                                {person.tags.map(tag => (
+                                    <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
+                                        {tag.key ? `${tag.key}: ` : ''}{tag.value}
+                                    </span>
+                                ))}
+                                <button 
+                                    className="tag-pill" 
+                                    style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}
+                                    onClick={() => setShowTagModal(true)}
+                                >
+                                    + Add Tag
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -130,33 +166,18 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className="card">
-                        <h4 style={{ marginBottom: '16px' }}>Universal Tags</h4>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {person.tags.map(tag => (
-                                <span key={tag.id} style={{ 
-                                    fontSize: '0.75rem', 
-                                    padding: '4px 10px', 
-                                    background: 'var(--primary-faded)', 
-                                    color: 'var(--primary)',
-                                    borderRadius: '100px'
-                                }}>
-                                    {tag.key ? `${tag.key}: ` : ''}{tag.value}
-                                </span>
-                            ))}
-                            <button style={{ 
-                                fontSize: '0.75rem', 
-                                padding: '4px 10px', 
-                                background: 'transparent', 
-                                border: '1px dashed var(--border)', 
-                                borderRadius: '100px',
-                                cursor: 'pointer',
-                                color: 'var(--text-muted)'
-                            }}>+ Add Tag</button>
-                        </div>
-                    </div>
+                    {/* Universal Tags moved to header card */}
                 </div>
             </div>
+
+            {showTagModal && (
+                <TagSelectionModal 
+                    title={`Tag ${person.name}`}
+                    existingTagIds={person.tags.map(t => t.id)}
+                    onClose={() => setShowTagModal(false)}
+                    onSelect={handleSelectTag}
+                />
+            )}
         </div>
     );
 };
