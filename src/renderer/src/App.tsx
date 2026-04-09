@@ -10,9 +10,13 @@ import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
 import TagManagement from './components/TagManagement';
 import NotesList from './components/NotesList';
+import ReferenceLibrary from './components/ReferenceLibrary';
+import PracticeFramework from './components/PracticeFramework';
 import Logo from './components/Logo';
 import DeveloperPanel from './components/DeveloperPanel';
 import StandardNavbar from './components/StandardNavbar';
+import PersonaSelectionModal from './components/PersonaSelectionModal';
+import { api } from './services/api';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -22,6 +26,7 @@ const App: React.FC = () => {
     const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
     const [initialNoteDate, setInitialNoteDate] = useState<string | null>(null);
     const [viewHistory, setViewHistory] = useState<string[]>(['dashboard']);
+    const [personaLinkingTarget, setPersonaLinkingTarget] = useState<{ type: 'person' | 'group', id: number, existingPersonaIds: number[] } | null>(null);
 
     useEffect(() => {
         // Query if setup is complete
@@ -33,6 +38,12 @@ const App: React.FC = () => {
         window.electron.ipcRenderer.on('setup-complete', () => {
             setIsSetup(true);
         });
+
+        const handleLinkPersona = (e: any) => {
+            setPersonaLinkingTarget(e.detail);
+        };
+        window.addEventListener('trigger-link-persona' as any, handleLinkPersona);
+        return () => window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
     }, []);
 
     const navigateTo = (view: string, personId: number | null = null, groupId: number | null = null, noteId: number | null = null, date: string | null = null, resetHistory: boolean = false) => {
@@ -187,6 +198,14 @@ const App: React.FC = () => {
             return <TagManagement />;
         }
 
+        if (currentView === 'references') {
+            return <ReferenceLibrary />;
+        }
+
+        if (currentView === 'framework') {
+            return <PracticeFramework />;
+        }
+
         return <div>View {currentView} coming soon.</div>;
     };
 
@@ -260,6 +279,18 @@ const App: React.FC = () => {
                     >
                         Notes
                     </div>
+                    <div 
+                        className={`nav-item ${currentView === 'references' ? 'active' : ''}`}
+                        onClick={() => { navigateTo('references', null, null, null, null, true); }}
+                    >
+                        References
+                    </div>
+                    <div 
+                        className={`nav-item ${currentView === 'framework' ? 'active' : ''}`}
+                        onClick={() => { navigateTo('framework', null, null, null, null, true); }}
+                    >
+                        Framework
+                    </div>
                 </nav>
 
                 <div className="sidebar-footer" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
@@ -289,6 +320,29 @@ const App: React.FC = () => {
                 </div>
             </main>
             <DeveloperPanel />
+            
+            {personaLinkingTarget && (
+                <PersonaSelectionModal 
+                    title={`Link Persona to ${personaLinkingTarget.type === 'person' ? 'Individual' : 'Group'}`}
+                    existingPersonaIds={personaLinkingTarget.existingPersonaIds}
+                    onClose={() => setPersonaLinkingTarget(null)}
+                    onSelect={async (personaId) => {
+                        try {
+                            await api.post('/api/framework/link', {
+                                persona_id: personaId,
+                                entity_type: personaLinkingTarget.type,
+                                entity_id: personaLinkingTarget.id
+                            });
+                            setPersonaLinkingTarget(null);
+                            // Dispatch refresh event
+                            window.dispatchEvent(new CustomEvent('refresh-profile'));
+                        } catch (err) {
+                            console.error(err);
+                            alert('Failed to link persona');
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 };

@@ -50,6 +50,7 @@ class Person(PersonBase):
     updated_at: datetime
     tags: List[Tag] = []
     groups: List[GroupBadge] = []
+    custom_framework_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 class GroupCreate(GroupBase):
@@ -65,6 +66,7 @@ class Group(GroupBase):
     updated_at: datetime
     tags: List[Tag] = []
     members: List[Person] = []
+    custom_framework_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 class NoteStage(str, Enum):
@@ -96,6 +98,8 @@ class MessageCreate(MessageBase):
 class Message(MessageBase):
     id: int
     note_id: int
+    source: Optional[str] = None
+    analyzed_for_framework: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 
 class NoteBase(BaseModel):
@@ -127,6 +131,7 @@ class Note(NoteBase):
     messages: List[Message] = []
     person: Optional[PersonBadge] = None
     group: Optional[GroupBadge] = None
+    analyzed_for_framework: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 
 class ReferenceType(str, Enum):
@@ -141,6 +146,7 @@ class ReferenceBase(BaseModel):
     type: ReferenceType
     body: Optional[str] = None
     source_note_id: Optional[int] = None
+    url: Optional[str] = None
 
 class ReferenceCreate(ReferenceBase):
     pass
@@ -149,6 +155,59 @@ class Reference(ReferenceBase):
     id: int
     created_at: datetime
     tags: List[Tag] = []
+    embedding_status: str = "pending"
+    analyzed_for_framework: Optional[bool] = False
+    model_config = ConfigDict(from_attributes=True)
+
+# Phase 6 Schemas
+
+class PractiseFrameworkBase(BaseModel):
+    name: Optional[str] = None
+    formatting_preferences: Optional[str] = None # JSON string
+    common_phrasing: Optional[str] = None # JSON string
+    tone_idioms: Optional[str] = None # JSON string
+    principles_tenets: Optional[str] = None # JSON string
+    is_core: bool = False
+
+class PractiseFrameworkCreate(PractiseFrameworkBase):
+    pass
+
+class PractiseFramework(PractiseFrameworkBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
+class PersonaBase(BaseModel):
+    name: str
+    avatar_logo: Optional[str] = None
+    description: Optional[str] = None
+    framework_id: Optional[int] = None
+
+class PersonaCreate(PersonaBase):
+    pass
+
+class Persona(PersonaBase):
+    id: int
+    framework: PractiseFramework
+    model_config = ConfigDict(from_attributes=True)
+
+class FrameworkProposalStatus(str, Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+class FrameworkProposalBase(BaseModel):
+    source_type: str
+    source_id: int
+    aspect: str
+    action: str
+    value: str
+    persona_id: Optional[int] = None
+    is_core: bool = False
+    status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
+
+class FrameworkProposal(FrameworkProposalBase):
+    id: int
+    created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
 # For Atomic JSON Import/Export (Phase 2 Step 4.2)

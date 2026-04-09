@@ -10,6 +10,7 @@ import os
 import json
 
 from . import models, schemas, database, llm
+from .routers import references, framework
 from datetime import datetime, timedelta
 import asyncio
 import numpy as np
@@ -32,6 +33,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Paraclete Backend", lifespan=lifespan)
 manager = None
+
+# Include Routers with /api prefix
+app.include_router(references.router, prefix="/api")
+app.include_router(framework.router, prefix="/api")
+# Also include without prefix for legacy compatibility if needed, 
+# but the plan specifies /api for new features.
+app.include_router(references.router)
+app.include_router(framework.router)
 
 class ConnectionManager:
     def __init__(self):
@@ -757,29 +766,7 @@ def delete_note(note_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success"}
 
-# --- Reference CRUD ---
-@app.post("/references/", response_model=schemas.Reference)
-async def create_reference(reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):
-    db_ref = models.Reference(**reference.model_dump())
-    db.add(db_ref)
-    db.commit()
-    db.refresh(db_ref)
-    
-    # Generate embedding
-    loop = asyncio.get_event_loop()
-    embed_text = f"{db_ref.title} {db_ref.body}"
-    embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
-    if embed_response:
-        vector = embed_response["data"][0]["embedding"]
-        db_emb = models.ReferenceEmbedding(reference_id=db_ref.id, vector=json.dumps(vector))
-        db.add(db_emb)
-        db.commit()
-        
-    return db_ref
-
-@app.get("/references/", response_model=List[schemas.Reference])
-def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Reference).offset(skip).limit(limit).all()
+# References moved to routers/references.py
 
 # --- Action CRUD ---
 @app.post("/actions/", response_model=schemas.Action)

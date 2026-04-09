@@ -19,21 +19,28 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
     const [showTagModal, setShowTagModal] = useState(false);
 
     useEffect(() => {
-        // Fetch person details and notes tied to them
-        Promise.all([
-            api.get<Person>(`/persons/${personId}`),
-            api.get<Note[]>(`/notes/?person_id=${personId}`)
-        ]).then(([personData, personNotes]) => {
-            setPerson(personData);
-            setEditName(personData.name);
-            setEditContact(personData.contact_method || '');
-            setNotes(personNotes);
-            setLoading(false);
-        }).catch(err => {
-            console.error(err);
-            alert(`Error loading person profile: ${err instanceof Error ? err.message : String(err)}`);
-            setLoading(false);
-        });
+        const fetchAll = () => {
+            setLoading(true);
+            Promise.all([
+                api.get<Person>(`/persons/${personId}`),
+                api.get<Note[]>(`/notes/?person_id=${personId}`)
+            ]).then(([personData, personNotes]) => {
+                setPerson(personData);
+                setEditName(personData.name);
+                setEditContact(personData.contact_method || '');
+                setNotes(personNotes);
+                setLoading(false);
+            }).catch(err => {
+                console.error(err);
+                alert(`Error loading person profile: ${err instanceof Error ? err.message : String(err)}`);
+                setLoading(false);
+            });
+        };
+
+        fetchAll();
+
+        window.addEventListener('refresh-profile', fetchAll);
+        return () => window.removeEventListener('refresh-profile', fetchAll);
     }, [personId]);
 
     const refreshPerson = () => {
@@ -196,6 +203,28 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                                         onClick={() => setShowTagModal(true)}
                                     >
                                         + Add Tag
+                                    </button>
+                                </div>
+
+                                <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '8px' }}>PERSONAS:</span>
+                                    {person.personas?.map(persona => (
+                                        <span key={persona.id} className="tag-pill" style={{ background: 'var(--secondary-faded)', color: 'var(--secondary)', border: 'none' }}>
+                                            👤 {persona.name}
+                                        </span>
+                                    ))}
+                                    <button 
+                                        className="tag-pill" 
+                                        style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                                        onClick={() => window.dispatchEvent(new CustomEvent('trigger-link-persona', { 
+                                            detail: { 
+                                                type: 'person', 
+                                                id: personId,
+                                                existingPersonaIds: person.personas?.map(p => p.id) || []
+                                            } 
+                                        }))}
+                                    >
+                                        + Link Persona
                                     </button>
                                 </div>
                             </div>

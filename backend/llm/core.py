@@ -17,6 +17,7 @@ class LLMManager:
             cls._instance.model = None
             cls._instance.model_path = os.getenv("PARACLETE_MODEL_PATH")
             cls._instance.lock = threading.Lock()
+            cls._instance.interrupt_event = threading.Event()
         return cls._instance
 
     

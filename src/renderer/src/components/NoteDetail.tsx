@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, Note, Person, Group } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import NoteAuthoring from './NoteAuthoring';
-
+import NoteUtilities from './NoteUtilities';
 
 interface Props {
     noteId: number;
@@ -77,7 +77,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px', alignItems: 'flex-start' }}>
             <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
@@ -159,6 +159,10 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                         </details>
                     )}
                 </div>
+            </div>
+
+            <div style={{ position: 'sticky', top: '24px' }}>
+                <NoteUtilities note={note} />
             </div>
         </div>
     );

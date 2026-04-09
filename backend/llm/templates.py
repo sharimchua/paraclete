@@ -134,3 +134,33 @@ SESSION NOTE:
 {text}
 
 RECOMMENDED TITLE:"""
+
+def analyze_framework(content: str, persona_name: str, context: str = "") -> str:
+    """Analyze content for framework improvements."""
+    return f"""You are an expert at analyzing professional practices and styles.
+Analyze the following content to identify patterns, idioms, preferred tones, and principles that define the practitioner's style for the persona "{persona_name}".
+
+{context}
+
+### CONTENT TO ANALYZE:
+{content}
+
+### INSTRUCTIONS:
+Identify specific improvements or adjustments for the Practice Framework.
+Return valid JSON in the format:
+{{
+  "proposals": [
+    {{
+      "aspect": "Tone & Idioms",
+      "action": "Add",
+      "value": "Uses specific metaphorical language about 'weaving' ideas together."
+    }},
+    {{
+      "aspect": "Formatting Preferences",
+      "action": "Update",
+      "value": "Prefer bullet points for action items."
+    }}
+  ]
+}}
+
+JSON:"""

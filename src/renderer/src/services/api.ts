@@ -14,6 +14,7 @@ export interface Person {
     updated_at: string;
     tags: Tag[];
     groups?: { name: string, id: number }[];
+    personas?: Persona[];
 }
 
 export interface Group {
@@ -24,6 +25,7 @@ export interface Group {
     updated_at: string;
     tags: Tag[];
     members: Person[];
+    personas?: Persona[];
 }
 
 export interface Note {
@@ -39,6 +41,46 @@ export interface Note {
     tags: Tag[];
     person?: { id: number, name: string };
     group?: { id: number, name: string };
+}
+
+export interface Reference {
+    id: number;
+    title: string;
+    body: string;
+    source_link?: string;
+    type: 'Resource' | 'Protocol' | 'Insight' | 'Principle';
+    tags: Tag[];
+}
+
+export interface PractiseFramework {
+    id: number;
+    is_core: boolean;
+    persona_id?: number;
+    tone_idioms?: string;
+    formatting_preferences?: string;
+    principles_tenets?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface FrameworkProposal {
+    id: number;
+    aspect: string;
+    action: string;
+    value: string;
+    source_type: string;
+    source_id: number;
+    persona_id?: number;
+    is_core: boolean;
+    created_at: string;
+}
+
+export interface Persona {
+    id: number;
+    name: string;
+    description?: string;
+    logo_url?: string;
+    framework?: PractiseFramework;
 }
 
 export interface DashboardStats {

@@ -43,6 +43,8 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
 
     useEffect(() => {
         fetchData();
+        window.addEventListener('refresh-profile', fetchData);
+        return () => window.removeEventListener('refresh-profile', fetchData);
     }, [groupId]);
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -203,6 +205,28 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                 onClick={() => setShowTagModal(true)}
                             >
                                 + Add Tag
+                            </button>
+                        </div>
+
+                        <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '8px' }}>PERSONAS:</span>
+                            {group.personas?.map(persona => (
+                                <span key={persona.id} className="tag-pill" style={{ background: 'var(--secondary-faded)', color: 'var(--secondary)', border: 'none' }}>
+                                    👤 {persona.name}
+                                </span>
+                            ))}
+                            <button 
+                                className="tag-pill" 
+                                style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                                onClick={() => window.dispatchEvent(new CustomEvent('trigger-link-persona', { 
+                                    detail: { 
+                                        type: 'group', 
+                                        id: groupId,
+                                        existingPersonaIds: group.personas?.map(p => p.id) || []
+                                    } 
+                                }))}
+                            >
+                                + Link Persona
                             </button>
                         </div>
                     </div>

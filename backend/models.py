@@ -2,7 +2,10 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Tabl
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from .database import Base
+try:
+    from .database import Base
+except ImportError:
+    from database import Base
 
 # Junction table for Tags
 # Phase 2 Step 2: Junction tables for strictly managed Tags
@@ -42,6 +45,17 @@ person_references = Table('person_references', Base.metadata,
     Column('reference_id', Integer, ForeignKey('references.id'))
 )
 
+# Phase 6: Practise Framework & Persona Junctions
+person_personas = Table('person_personas', Base.metadata,
+    Column('person_id', Integer, ForeignKey('persons.id')),
+    Column('persona_id', Integer, ForeignKey('personas.id'))
+)
+
+group_personas = Table('group_personas', Base.metadata,
+    Column('group_id', Integer, ForeignKey('groups.id')),
+    Column('persona_id', Integer, ForeignKey('personas.id'))
+)
+
 class Tag(Base):
     __tablename__ = "tags"
     id = Column(Integer, primary_key=True, index=True)
@@ -56,6 +70,7 @@ class Person(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     contact_method = Column(String, nullable=True)
+    custom_framework_id = Column(Integer, ForeignKey("practise_frameworks.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -64,12 +79,15 @@ class Person(Base):
     groups = relationship("Group", secondary=group_members, back_populates="members")
     notes = relationship("Note", back_populates="person")
     references = relationship("Reference", secondary=person_references, back_populates="persons")
+    personas = relationship("Persona", secondary=person_personas, backref="associated_persons")
+    custom_framework = relationship("PractiseFramework")
 
 class Group(Base):
     __tablename__ = "groups"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(Text, nullable=True)
+    custom_framework_id = Column(Integer, ForeignKey("practise_frameworks.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -77,6 +95,8 @@ class Group(Base):
     tags = relationship("Tag", secondary=group_tags, backref="groups")
     members = relationship("Person", secondary=group_members, back_populates="groups")
     notes = relationship("Note", back_populates="group")
+    personas = relationship("Persona", secondary=group_personas, backref="associated_groups")
+    custom_framework = relationship("PractiseFramework")
 
 class NoteStage(str, enum.Enum):
     PREPARE = "Prepare"
@@ -96,6 +116,7 @@ class Note(Base):
     session_brief = Column(Text, nullable=True)
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    analyzed_for_framework = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -107,7 +128,6 @@ class Note(Base):
     references = relationship("Reference", secondary=note_references, back_populates="linked_notes")
     generated_references = relationship("Reference", back_populates="source_note", cascade="all, delete-orphan")
     embedding = relationship("NoteEmbedding", back_populates="note", cascade="all, delete-orphan", uselist=False)
-
 
 class ReferenceType(str, enum.Enum):
     CONCEPT = "Concept"
@@ -123,7 +143,9 @@ class Reference(Base):
     type = Column(Enum(ReferenceType), default=ReferenceType.CONCEPT)
     body = Column(Text, nullable=True)
     source_note_id = Column(Integer, ForeignKey("notes.id", ondelete="SET NULL"), nullable=True)
-
+    url = Column(String, nullable=True)
+    embedding_status = Column(String, default="pending")
+    analyzed_for_framework = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -139,7 +161,6 @@ class Action(Base):
     resolved = Column(Boolean, default=False)
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"))
 
-
     # Relationships
     note = relationship("Note", back_populates="actions")
 
@@ -149,7 +170,8 @@ class Message(Base):
     draft_text = Column(Text)
     sent_at = Column(DateTime, nullable=True)
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"))
-
+    source = Column(String, nullable=True) # 'native', 'imported'
+    analyzed_for_framework = Column(Boolean, default=False)
 
     # Relationships
     note = relationship("Note", back_populates="messages")
@@ -161,10 +183,49 @@ class NoteEmbedding(Base):
     
     note = relationship("Note", back_populates="embedding")
 
-
 class ReferenceEmbedding(Base):
     __tablename__ = "reference_embeddings"
     reference_id = Column(Integer, ForeignKey("references.id"), primary_key=True)
     vector = Column(Text) # JSON string of float list
     
     reference = relationship("Reference", backref="embedding")
+
+# Phase 6: Practise Framework & Persona Models
+
+class PractiseFramework(Base):
+    __tablename__ = "practise_frameworks"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=True)
+    formatting_preferences = Column(Text, nullable=True) # JSON
+    common_phrasing = Column(Text, nullable=True) # JSON
+    tone_idioms = Column(Text, nullable=True) # JSON
+    principles_tenets = Column(Text, nullable=True) # JSON
+    is_core = Column(Boolean, default=False)
+
+class Persona(Base):
+    __tablename__ = "personas"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    avatar_logo = Column(String, nullable=True) 
+    description = Column(Text, nullable=True)
+    framework_id = Column(Integer, ForeignKey("practise_frameworks.id"))
+    
+    framework = relationship("PractiseFramework")
+
+class FrameworkProposalStatus(str, enum.Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+class FrameworkProposal(Base):
+    __tablename__ = "framework_proposals"
+    id = Column(Integer, primary_key=True, index=True)
+    source_type = Column(String) # 'Note', 'Message', 'Reference'
+    source_id = Column(Integer)
+    aspect = Column(String) # 'formatting', 'phrasing', 'tone', 'principles'
+    action = Column(String) # 'Add', 'Update', 'Remove'
+    value = Column(Text) # The proposed text or JSON
+    persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
+    is_core = Column(Boolean, default=False)
+    status = Column(Enum(FrameworkProposalStatus), default=FrameworkProposalStatus.PENDING)
+    created_at = Column(DateTime, default=datetime.utcnow)

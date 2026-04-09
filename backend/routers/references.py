@@ -1,0 +1,174 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import json
+import asyncio
+import numpy as np
+
+try:
+    from .. import models, schemas, database, llm
+    from ..database import get_db
+except ImportError:
+    import models, schemas, database, llm
+    from database import get_db
+
+router = APIRouter(prefix="/references", tags=["references"])
+
+@router.post("/", response_model=schemas.Reference)
+async def create_reference(reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):
+    db_ref = models.Reference(**reference.model_dump())
+    db.add(db_ref)
+    db.commit()
+    db.refresh(db_ref)
+    
+    # Queue background embedding task
+    asyncio.create_task(generate_reference_embedding(db_ref.id))
+    
+    return db_ref
+
+@router.get("/", response_model=List[schemas.Reference])
+def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Reference).offset(skip).limit(limit).all()
+
+@router.get("/{reference_id}", response_model=schemas.Reference)
+def read_reference(reference_id: int, db: Session = Depends(get_db)):
+    db_ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+    if db_ref is None:
+        raise HTTPException(status_code=404, detail="Reference not found")
+    return db_ref
+
+@router.patch("/{reference_id}", response_model=schemas.Reference)
+async def update_reference(reference_id: int, reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):
+    db_ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+    if db_ref is None:
+        raise HTTPException(status_code=404, detail="Reference not found")
+    
+    # Check if content changed to re-trigger embedding and analysis
+    content_changed = (db_ref.title != reference.title or db_ref.body != reference.body)
+    
+    for key, value in reference.model_dump().items():
+        setattr(db_ref, key, value)
+    
+    if content_changed:
+        db_ref.embedding_status = "pending"
+        db_ref.analyzed_for_framework = False
+    
+    db.commit()
+    db.refresh(db_ref)
+    
+    if content_changed:
+        asyncio.create_task(generate_reference_embedding(db_ref.id))
+        
+    return db_ref
+
+@router.delete("/{reference_id}")
+def delete_reference(reference_id: int, db: Session = Depends(get_db)):
+    db_ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+    if db_ref is None:
+        raise HTTPException(status_code=404, detail="Reference not found")
+    db.delete(db_ref)
+    db.commit()
+    return {"status": "success"}
+
+@router.get("/suggest/", response_model=List[schemas.Reference])
+async def suggest_references(
+    query: str, 
+    note_id: Optional[int] = None, 
+    person_id: Optional[int] = None, 
+    group_id: Optional[int] = None,
+    limit: int = 5,
+    db: Session = Depends(get_db)
+):
+    """
+    Hybrid Suggestion Logic:
+    Semantic vector search hybridized with an explicit multiplier boost for occurrences 
+    of shared Tags between the retrieved Reference and the current context.
+    """
+    loop = asyncio.get_event_loop()
+    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+    
+    if not query_embedding_resp:
+        return []
+        
+    q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
+    norm_q = np.linalg.norm(q_vec)
+    
+    if norm_q == 0:
+        return []
+
+    # Get context tags for boosting
+    context_tag_ids = set()
+    if note_id:
+        note = db.query(models.Note).filter(models.Note.id == note_id).first()
+        if note:
+            context_tag_ids.update([t.id for t in note.tags])
+    if person_id:
+        person = db.query(models.Person).filter(models.Person.id == person_id).first()
+        if person:
+            context_tag_ids.update([t.id for t in person.tags])
+    if group_id:
+        group = db.query(models.Group).filter(models.Group.id == group_id).first()
+        if group:
+            context_tag_ids.update([t.id for t in group.tags])
+
+    all_refs = db.query(models.Reference).all()
+    scored_refs = []
+    
+    for ref in all_refs:
+        # 1. Semantic Score
+        sem_score = 0.0
+        if ref.embedding:
+            r_vec = np.array(json.loads(ref.embedding.vector))
+            norm_r = np.linalg.norm(r_vec)
+            if norm_r > 0:
+                sem_score = np.dot(q_vec, r_vec) / (norm_q * norm_r)
+        
+        # 2. Tag Boost
+        tag_match_count = 0
+        if context_tag_ids:
+            ref_tag_ids = set([t.id for t in ref.tags])
+            tag_match_count = len(context_tag_ids.intersection(ref_tag_ids))
+        
+        # Boost formula: semantic_score * (1 + 0.2 * matches)
+        # Using a multiplier ensures that completely irrelevant (semantically) refs don't jump to the top
+        # but strong matches with shared tags get a significant bump.
+        final_score = sem_score * (1.0 + (0.2 * tag_match_count))
+        
+        scored_refs.append((final_score, ref))
+    
+    scored_refs.sort(key=lambda x: x[0], reverse=True)
+    return [r for score, r in scored_refs[:limit]]
+
+
+async def generate_reference_embedding(reference_id: int):
+    """Background task to generate embedding for a reference."""
+    # We need a new session for background tasks usually, but here we'll use a local one
+    from ..database import SessionLocal
+    db = SessionLocal()
+    try:
+        db_ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+        if not db_ref:
+            return
+            
+        embed_text = f"{db_ref.title} {db_ref.body}"
+        loop = asyncio.get_event_loop()
+        embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+        
+        if embed_response:
+            vector = embed_response["data"][0]["embedding"]
+            # Update or create embedding
+            if db_ref.embedding:
+                db_ref.embedding.vector = json.dumps(vector)
+            else:
+                db_emb = models.ReferenceEmbedding(reference_id=db_ref.id, vector=json.dumps(vector))
+                db.add(db_emb)
+            
+            db_ref.embedding_status = "complete"
+            db.commit()
+    except Exception as e:
+        print(f"Error generating embedding for reference {reference_id}: {e}")
+        if db_ref:
+            db_ref.embedding_status = "error"
+            db.commit()
+    finally:
+        db.close()
