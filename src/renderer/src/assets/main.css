@@ -97,12 +97,26 @@
   border-bottom: 1px solid var(--border);
   background: var(--glass);
   backdrop-filter: var(--glass-blur);
+  flex-shrink: 0;
+}
+
+.toolbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .content-area {
   flex-grow: 1;
   overflow-y: auto;
   padding: 32px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Generic Card/Panel */

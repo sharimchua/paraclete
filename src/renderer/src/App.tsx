@@ -12,6 +12,7 @@ import TagManagement from './components/TagManagement';
 import NotesList from './components/NotesList';
 import Logo from './components/Logo';
 import DeveloperPanel from './components/DeveloperPanel';
+import StandardNavbar from './components/StandardNavbar';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -20,6 +21,7 @@ const App: React.FC = () => {
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
     const [initialNoteDate, setInitialNoteDate] = useState<string | null>(null);
+    const [viewHistory, setViewHistory] = useState<string[]>(['dashboard']);
 
     useEffect(() => {
         // Query if setup is complete
@@ -32,6 +34,53 @@ const App: React.FC = () => {
             setIsSetup(true);
         });
     }, []);
+
+    const navigateTo = (view: string, personId: number | null = null, groupId: number | null = null, noteId: number | null = null, date: string | null = null, resetHistory: boolean = false) => {
+        setCurrentView(view);
+        setSelectedPersonId(personId);
+        setSelectedGroupId(groupId);
+        setSelectedNoteId(noteId);
+        setInitialNoteDate(date);
+        
+        if (resetHistory) {
+            setViewHistory([view]);
+        } else {
+            // Only push to history if it's different (simple prevent duplicates)
+            setViewHistory(prev => {
+                if (prev[prev.length - 1] === view) return prev;
+                return [...prev, view];
+            });
+        }
+    };
+
+    const goBack = () => {
+        if (viewHistory.length <= 1) {
+            // If we can't go back, at least return to dashboard
+            setCurrentView('dashboard');
+            setSelectedPersonId(null);
+            setSelectedGroupId(null);
+            setSelectedNoteId(null);
+            setViewHistory(['dashboard']);
+            return;
+        }
+        
+        const newHistory = [...viewHistory];
+        newHistory.pop(); // Remove current view
+        const previousView = newHistory[newHistory.length - 1];
+        
+        setViewHistory(newHistory);
+        setCurrentView(previousView);
+        
+        // Reset specific context if moving away from detail views
+        // This logic remains to ensure we don't have stale IDs when returning to list views
+        if (previousView === 'dashboard' || previousView === 'notes' || previousView === 'tags' || previousView === 'admin' || 
+           (previousView === 'persons' && !selectedPersonId) || (previousView === 'groups' && !selectedGroupId)) {
+            setSelectedPersonId(null);
+            setSelectedGroupId(null);
+            setSelectedNoteId(null);
+            setInitialNoteDate(null);
+        }
+    };
 
     if (isSetup === null) {
         return (
@@ -53,12 +102,7 @@ const App: React.FC = () => {
     }
 
     const startNewNote = (personId?: number, groupId?: number, date?: string) => {
-        setSelectedPersonId(personId || null);
-        setSelectedGroupId(groupId || null);
-        // We can pass date via a new state or just reuse selectedNoteId if we were clever, 
-        // but let's add a newState for initialDate to be clean.
-        setInitialNoteDate(date || null);
-        setCurrentView('new-note');
+        navigateTo('new-note', personId || null, groupId || null, null, date || null);
     };
 
 
@@ -69,12 +113,7 @@ const App: React.FC = () => {
                     personId={selectedPersonId || undefined} 
                     groupId={selectedGroupId || undefined}
                     initialDate={initialNoteDate || undefined}
-                    onComplete={() => {
-                        setInitialNoteDate(null);
-                        if (selectedPersonId) setCurrentView('persons');
-                        else if (selectedGroupId) setCurrentView('groups');
-                        else setCurrentView('dashboard');
-                    }} 
+                    onComplete={() => goBack()} 
                 />
             );
         }
@@ -83,12 +122,7 @@ const App: React.FC = () => {
             return (
                 <NoteDetail 
                     noteId={selectedNoteId} 
-                    onBack={() => {
-                        setSelectedNoteId(null);
-                        if (selectedPersonId) setCurrentView('persons');
-                        else if (selectedGroupId) setCurrentView('groups');
-                        else setCurrentView('notes');
-                    }} 
+                    onBack={goBack} 
                 />
             );
         }
@@ -96,8 +130,7 @@ const App: React.FC = () => {
         if (currentView === 'dashboard') {
             return <Dashboard 
                 onSelectNote={(id) => {
-                    setSelectedNoteId(id);
-                    setCurrentView('note-detail');
+                    navigateTo('note-detail', selectedPersonId, selectedGroupId, id);
                 }} 
                 onStartNote={(date, pid, gid) => {
                     startNewNote(pid, gid, date);
@@ -112,8 +145,7 @@ const App: React.FC = () => {
                         personId={selectedPersonId} 
                         onBack={() => setSelectedPersonId(null)} 
                         onSelectNote={(id) => {
-                            setSelectedNoteId(id);
-                            setCurrentView('note-detail');
+                            navigateTo('note-detail', selectedPersonId, null, id);
                         }}
                     />
                 );
@@ -128,12 +160,10 @@ const App: React.FC = () => {
                         groupId={selectedGroupId} 
                         onBack={() => setSelectedGroupId(null)} 
                         onSelectPerson={(id) => {
-                            setCurrentView('persons');
                             setSelectedPersonId(id);
                         }}
                         onSelectNote={(id) => {
-                            setSelectedNoteId(id);
-                            setCurrentView('note-detail');
+                            navigateTo('note-detail', null, selectedGroupId, id);
                         }}
                     />
                 );
@@ -144,8 +174,7 @@ const App: React.FC = () => {
         if (currentView === 'notes') {
             return (
                 <NotesList onSelectNote={(id) => {
-                    setSelectedNoteId(id);
-                    setCurrentView('note-detail');
+                    navigateTo('note-detail', null, null, id);
                 }} />
             );
         }
@@ -161,6 +190,41 @@ const App: React.FC = () => {
         return <div>View {currentView} coming soon.</div>;
     };
 
+    const getHeaderProps = () => {
+        const showBack = viewHistory.length > 1;
+        let title = currentView.toUpperCase();
+        let actions: any[] = [];
+
+        if (currentView === 'new-note') title = 'SESSION WORKFLOW';
+        else if (currentView === 'note-detail') title = 'NOTE DETAIL';
+        else if (selectedPersonId) title = 'PERSON PROFILE';
+        else if (selectedGroupId) title = 'GROUP PROFILE';
+
+        if (currentView === 'persons' && !selectedPersonId) {
+            actions.push({
+                label: '+ Add Person',
+                onClick: () => window.dispatchEvent(new CustomEvent('trigger-create-person'))
+            });
+        } else if (currentView === 'persons' && selectedPersonId) {
+            actions.push({
+                label: '+ New Note',
+                onClick: () => startNewNote(selectedPersonId || undefined)
+            });
+        } else if (currentView === 'groups' && !selectedGroupId) {
+            actions.push({
+                label: '+ Add Group',
+                onClick: () => window.dispatchEvent(new CustomEvent('trigger-create-group'))
+            });
+        } else if (currentView === 'groups' && selectedGroupId) {
+            actions.push({
+                label: '+ New Note',
+                onClick: () => startNewNote(undefined, selectedGroupId || undefined)
+            });
+        }
+
+        return { title, showBack, onBack: goBack, actions };
+    };
+
     return (
         <div className="app-container">
             <aside className="sidebar">
@@ -174,25 +238,25 @@ const App: React.FC = () => {
                 <nav className="nav-section">
                     <div 
                         className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('dashboard'); setSelectedPersonId(null); }}
+                        onClick={() => { navigateTo('dashboard', null, null, null, null, true); }}
                     >
                         Dashboard
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'persons' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('persons'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        onClick={() => { navigateTo('persons', null, null, null, null, true); }}
                     >
                         Persons
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'groups' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('groups'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        onClick={() => { navigateTo('groups', null, null, null, null, true); }}
                     >
                         Groups
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'notes' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('notes'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        onClick={() => { navigateTo('notes', null, null, null, null, true); }}
                     >
                         Notes
                     </div>
@@ -201,14 +265,14 @@ const App: React.FC = () => {
                 <div className="sidebar-footer" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
                     <div 
                         className={`nav-item ${currentView === 'tags' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('tags'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        onClick={() => { navigateTo('tags', null, null, null, null, true); }}
                         style={{ opacity: 0.8 }}
                     >
                         <span style={{ marginRight: '8px' }}>🏷️</span> Tags
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'admin' ? 'active' : ''}`}
-                        onClick={() => { setCurrentView('admin'); setSelectedPersonId(null); setSelectedGroupId(null); }}
+                        onClick={() => { navigateTo('admin', null, null, null, null, true); }}
                         style={{ opacity: 0.8 }}
                     >
                         <span style={{ marginRight: '8px' }}>⚙️</span> Admin
@@ -216,68 +280,9 @@ const App: React.FC = () => {
                 </div>
             </aside>
 
+
             <main className="main-content">
-                <header className="header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        {(selectedPersonId || selectedGroupId || currentView === 'note-detail' || currentView === 'new-note') && (
-                            <button 
-                                onClick={() => {
-                                    if (currentView === 'note-detail') {
-                                        setSelectedNoteId(null);
-                                        // If we came from a profile, stay there (selectedId is still set)
-                                        // If not, go back to notes list
-                                        if (!selectedPersonId && !selectedGroupId) setCurrentView('notes');
-                                    } else if (currentView === 'new-note') {
-                                        if (selectedPersonId) setCurrentView('persons');
-                                        else if (selectedGroupId) setCurrentView('groups');
-                                        else setCurrentView('dashboard');
-                                    } else if (selectedPersonId) {
-                                        setSelectedPersonId(null);
-                                    } else if (selectedGroupId) {
-                                        setSelectedGroupId(null);
-                                    }
-                                }} 
-                                className="btn-secondary" 
-                                style={{ padding: '4px 10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            >
-                                &lsaquo; Back
-                            </button>
-                        )}
-                        <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>{
-                            currentView === 'new-note' ? 'SESSION WORKFLOW' :
-                            currentView === 'note-detail' ? 'NOTE DETAIL' :
-                            selectedPersonId ? 'PERSON PROFILE' : 
-                            selectedGroupId ? 'GROUP PROFILE' : currentView.toUpperCase()
-                        }</h2>
-                    </div>
-                    
-                    {/* Context-aware buttons */}
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        {currentView === 'persons' && !selectedPersonId && (
-                            <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('trigger-create-person'))}>
-                                + Add Person
-                            </button>
-                        )}
-                        
-                        {currentView === 'persons' && selectedPersonId && (
-                            <button className="btn-primary" onClick={() => startNewNote(selectedPersonId)}>
-                                + New Note
-                            </button>
-                        )}
-
-                        {currentView === 'groups' && !selectedGroupId && (
-                            <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('trigger-create-group'))}>
-                                + Add Group
-                            </button>
-                        )}
-
-                        {currentView === 'groups' && selectedGroupId && (
-                            <button className="btn-primary" onClick={() => startNewNote(undefined, selectedGroupId)}>
-                                + New Note
-                            </button>
-                        )}
-                    </div>
-                </header>
+                <StandardNavbar {...getHeaderProps()} />
                 
                 <div className="content-area">
                     {renderContent()}

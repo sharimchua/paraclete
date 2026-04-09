@@ -368,14 +368,14 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     if (loading) return <div className="loader" />;
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Breadcrumb Pill Navigation & Global Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '24px' }}>
-                <div style={{ width: '300px' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Stage Switcher Toolbar - now standardized */}
+            <div className="toolbar">
+                <div style={{ width: '250px' }}>
                     {noteId && (
                         <button 
                             className="btn-secondary" 
-                            style={{ color: '#ef4444', fontSize: '0.85rem' }}
+                            style={{ color: '#ef4444', fontSize: '0.75rem', padding: '6px 12px' }}
                             onClick={handleDeleteNote}
                         >
                             Delete Note
@@ -383,10 +383,10 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button 
                         className="btn-secondary" 
-                        style={{ padding: '8px', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}
                         disabled={stage === 'Prepare'}
                         onClick={() => {
                             if (stage === 'Capture') setStage('Prepare');
@@ -396,11 +396,11 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                         &lsaquo;
                     </button>
 
-                    <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '6px', borderRadius: '100px', border: '1px solid var(--border)', gap: '4px' }}>
+                    <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '4px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
                         {[
-                            { id: 'Prepare', label: 'Preparation' },
-                            { id: 'Capture', label: 'Capture' },
-                            { id: 'Refine', label: 'Refinement' }
+                            { id: 'Prepare', label: '1. Preparation' },
+                            { id: 'Capture', label: '2. Capture' },
+                            { id: 'Refine', label: '3. Refinement' }
                         ].map((s) => {
                             const isActive = stage === s.id;
                             const isDisabled = s.id === 'Refine' && !rawText.trim();
@@ -410,9 +410,9 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                     key={s.id}
                                     onClick={() => !isDisabled ? (s.id === 'Refine' ? handleStartRefine() : setStage(s.id as Stage)) : null}
                                     style={{
-                                        padding: '8px 20px',
+                                        padding: '6px 16px',
                                         borderRadius: '100px',
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.75rem',
                                         fontWeight: 600,
                                         cursor: isDisabled ? 'not-allowed' : 'pointer',
                                         background: isActive ? 'var(--primary)' : 'transparent',
@@ -429,7 +429,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
                     <button 
                         className="btn-secondary" 
-                        style={{ padding: '8px', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}
                         disabled={stage === 'Refine' || (stage === 'Capture' && !rawText.trim())}
                         onClick={() => {
                             if (stage === 'Prepare') setStage('Capture');
@@ -440,31 +440,28 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     </button>
                 </div>
 
-                <div style={{ width: '300px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Date</label>
-                        <input
-                            type="date"
-                            value={sessionDate}
-                            onChange={(e) => setSessionDate(e.target.value)}
-                            className="input-field"
-                            style={{ 
-                                padding: '6px 10px', 
-                                borderRadius: '8px', 
-                                background: 'var(--bg-deep)', 
-                                border: '1px solid var(--border)',
-                                fontSize: '0.85rem',
-                                width: '130px',
-                                cursor: 'pointer',
-                                colorScheme: 'dark'
-                            }}
-                        />
-                    </div>
+                <div style={{ width: '250px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                    <input
+                        type="date"
+                        value={sessionDate}
+                        onChange={(e) => setSessionDate(e.target.value)}
+                        className="input-field"
+                        style={{ 
+                            padding: '6px 10px', 
+                            borderRadius: '8px', 
+                            background: 'var(--bg-deep)', 
+                            border: '1px solid var(--border)',
+                            fontSize: '0.8rem',
+                            width: '120px',
+                            cursor: 'pointer',
+                            colorScheme: 'dark'
+                        }}
+                    />
                     <button 
                         className="btn-primary" 
                         disabled={loading || isBriefing}
                         onClick={handleSaveNote}
-                        style={{ padding: '8px 24px', borderRadius: '12px', flexGrow: 1 }}
+                        style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.8rem' }}
                     >
                         {noteId ? 'Update' : 'Save Draft'}
                     </button>
