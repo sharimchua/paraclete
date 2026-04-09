@@ -109,3 +109,17 @@ AUDIO CONTENT:
 [Audio Input: {filename}]
 
 TRANSCRIPTION:"""
+
+def session_brief(person_name: str, previous_notes: str) -> str:
+    """Generate a brief for a new session based on history."""
+    return f"""### Context
+Person: {person_name}
+
+### Session History & Trends
+{previous_notes}
+
+### Goal
+Based on the previous sessions' trends, summarise what topics have been covered and identify potential areas to explore in this new session. 
+Provide a concise, professional briefing for the practitioner to read before starting the session.
+
+### AI Session Brief:"""

@@ -240,3 +240,12 @@ button.btn-secondary:hover {
     flex-direction: column;
     gap: 4px;
 }
+
+/* Markdown Styles */
+.markdown-content h1, .markdown-brief h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+.markdown-content h2, .markdown-brief h2 { font-size: 1.25rem; margin-bottom: 0.75rem; margin-top: 1.5rem; }
+.markdown-content p, .markdown-brief p { margin-bottom: 1rem; }
+.markdown-content ul, .markdown-brief ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+.markdown-content li, .markdown-brief li { margin-bottom: 0.5rem; }
+.markdown-content strong, .markdown-brief strong { color: var(--primary); font-weight: 600; }
+.markdown-content code, .markdown-brief code { background: var(--bg-deep); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }

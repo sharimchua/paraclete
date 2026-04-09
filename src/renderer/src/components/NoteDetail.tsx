@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, Note, Person, Group } from '../services/api';
+import ReactMarkdown from 'react-markdown';
+
 
 interface Props {
     noteId: number;
@@ -138,14 +140,13 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                         </div>
 
                         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '32px', marginTop: '32px' }}>
-                            <div style={{ 
-                                whiteSpace: 'pre-wrap', 
+                                <div className="markdown-content" style={{ 
                                 fontSize: '1.1rem', 
                                 lineHeight: '1.8', 
                                 color: 'var(--text-main)',
                                 maxWidth: '800px'
                             }}>
-                                {note.cleaned_text || note.raw_capture || 'No content.'}
+                                <ReactMarkdown>{note.cleaned_text || note.raw_capture || 'No content.'}</ReactMarkdown>
                             </div>
                         </div>
 

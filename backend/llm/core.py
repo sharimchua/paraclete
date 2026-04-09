@@ -3,7 +3,9 @@ import os
 import sys
 import json
 import base64
+import threading
 from llama_cpp import Llama, LlamaGrammar
+
 from typing import Optional, Dict, Any, List
 
 class LLMManager:
@@ -14,7 +16,9 @@ class LLMManager:
             cls._instance = super(LLMManager, cls).__new__(cls)
             cls._instance.model = None
             cls._instance.model_path = os.getenv("PARACLETE_MODEL_PATH")
+            cls._instance.lock = threading.Lock()
         return cls._instance
+
     
     def _get_default_model_path(self):
         executable_dir = os.path.dirname(sys.executable)
@@ -22,40 +26,43 @@ class LLMManager:
         return potential_path
 
     def load_model(self):
-        if self.model is not None:
-            return
-        
-        path = self.model_path or self._get_default_model_path()
-        mmproj_path = os.path.join(os.path.dirname(path), "mmproj-gemma-4.gguf")
-        
-        if not os.path.exists(path) or os.path.getsize(path) < 1024*1024*1024:
-            print(f"ERROR: Model weights missing or invalid at {path}.")
-            return
-        
-        print(f"DEBUG: Loading Gemma 4 26B MoE from {path}...")
-        try:
-            chat_handler = None
-            if os.path.exists(mmproj_path):
-                print(f"DEBUG: Found Vision Projector. Initializing Multimodal Handler...")
-                try:
-                    from .vision import Gemma4VisionChatHandler
-                    chat_handler = Gemma4VisionChatHandler(clip_model_path=mmproj_path)
-                except Exception as ve:
-                    print(f"DEBUG: Could not load vision handler: {ve}")
+        with self.lock:
+            if self.model is not None:
+                return
             
-            self.model = Llama(
-                model_path=path,
-                n_ctx=4096,      
-                n_gpu_layers=-1, 
-                embedding=True,  
-                verbose=False,    
-                chat_handler=chat_handler,
-                n_threads=16
-            )
-            print(f"DEBUG: Gemma 4 26B MoE loaded successfully.")
-        except Exception as e:
-            print(f"DEBUG: Failed to load model: {e}")
-            self.model = None
+            path = self.model_path or self._get_default_model_path()
+            mmproj_path = os.path.join(os.path.dirname(path), "mmproj-gemma-4.gguf")
+            
+            if not os.path.exists(path) or os.path.getsize(path) < 1024*1024*1024:
+                print(f"ERROR: Model weights missing or invalid at {path}.")
+                return
+            
+            print(f"DEBUG: Loading Gemma 4 26B MoE from {path}...")
+            try:
+                chat_handler = None
+                if os.path.exists(mmproj_path):
+                    print(f"DEBUG: Found Vision Projector. Initializing Multimodal Handler...")
+                    try:
+                        from .vision import Gemma4VisionChatHandler
+                        chat_handler = Gemma4VisionChatHandler(clip_model_path=mmproj_path)
+                    except Exception as ve:
+                        print(f"DEBUG: Could not load vision handler: {ve}")
+                
+                self.model = Llama(
+                    model_path=path,
+                    n_ctx=8192,      
+                    n_gpu_layers=-1, 
+                    embedding=True,  
+                    verbose=False,    
+                    chat_handler=chat_handler,
+                    n_threads=16
+                )
+
+                print(f"DEBUG: Gemma 4 26B MoE loaded successfully.")
+            except Exception as e:
+                print(f"DEBUG: Failed to load model: {e}")
+                self.model = None
+
 
     def generate(self, prompt: str, grammar: Optional[Any] = None, stream: bool = False, **kwargs):
         """Low-level generation call."""
@@ -72,12 +79,14 @@ class LLMManager:
                 print(f"DEBUG: Failed to parse grammar string: {ge}")
                 grammar = None
 
-        return self.model(
-            prompt,
-            grammar=grammar,
-            stream=stream,
-            **kwargs
-        )
+        with self.lock:
+            return self.model(
+                prompt,
+                grammar=grammar,
+                stream=stream,
+                **kwargs
+            )
+
 
     def chat(self, messages: List[Dict[str, str]], **kwargs):
         """Chat completion call."""
@@ -131,14 +140,16 @@ class LLMManager:
                 print(f"DEBUG: Failed to parse grammar string: {ge}")
                 grammar = None
 
-        # Execute
-        response = self.model.create_chat_completion(
-            messages=messages,
-            stop=stop,
-            max_tokens=max_tokens,
-            grammar=grammar,
-            **kwargs
-        )
+        # Execute with thread safety
+        with self.lock:
+            response = self.model.create_chat_completion(
+                messages=messages,
+                stop=stop,
+                max_tokens=max_tokens,
+                grammar=grammar,
+                **kwargs
+            )
+
         
         content = response["choices"][0]["message"]["content"]
         
@@ -195,6 +206,12 @@ class LLMManager:
             self.load_model()
             if self.model is None:
                 return None
-        return self.model.create_embedding(text)
+        with self.lock:
+            return self.model.create_embedding(text)
+
+    def is_loaded(self) -> bool:
+        """Check if model is currently in memory."""
+        return self.model is not None
+
 
 llm_manager = LLMManager()

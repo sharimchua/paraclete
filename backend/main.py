@@ -96,8 +96,16 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/llm/status")
+async def get_llm_status():
+    return {
+        "is_ready": llm.llm_manager.is_loaded(),
+        "model_path": llm.llm_manager.model_path or "default (Gemma-4-MoE)"
+    }
+
 # --- Health & Base ---
 @app.get("/")
+
 async def root():
     return {"message": "Paraclete API is running"}
 
@@ -221,6 +229,37 @@ class AnalysisRequest(BaseModel):
     person_id: int | None = None
     group_id: int | None = None
 
+
+class SessionBriefRequest(BaseModel):
+    person_id: int | None = None
+    group_id: int | None = None
+
+@app.post("/analysis/session-brief")
+async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_db)):
+    person_name = "General"
+    history_text = "No previous history."
+
+    if req.person_id:
+        person = db.query(models.Person).filter(models.Person.id == req.person_id).first()
+        if person:
+            person_name = person.name
+            notes = db.query(models.Note).filter(models.Note.person_id == req.person_id).order_by(models.Note.date.desc()).limit(5).all()
+            if notes:
+                history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:300]}..." for n in notes if n.cleaned_text])
+    elif req.group_id:
+        group = db.query(models.Group).filter(models.Group.id == req.group_id).first()
+        if group:
+            person_name = f"Group: {group.name}"
+            notes = db.query(models.Note).filter(models.Note.group_id == req.group_id).order_by(models.Note.date.desc()).limit(5).all()
+            if notes:
+                history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:300]}..." for n in notes if n.cleaned_text])
+
+    try:
+        brief = await llm.workflows.run_session_brief(person_name, history_text)
+        return {"result": brief}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/analysis/process")
 async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db)):
     # Gather context
@@ -238,7 +277,7 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
             # History
             notes = db.query(models.Note).filter(models.Note.person_id == req.person_id).order_by(models.Note.date.desc()).limit(5).all()
             if notes:
-                history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:200]}..." for n in notes])
+                history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:200]}..." for n in notes if n.cleaned_text])
             
             # Person References
             if person.references:
