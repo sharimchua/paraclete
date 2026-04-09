@@ -6,13 +6,14 @@ import ReactMarkdown from 'react-markdown';
 interface Props {
     personId?: number;
     groupId?: number;
+    initialDate?: string;
     noteId?: number; // Added for editing
     onComplete: () => void;
 }
 
 type Stage = 'Prepare' | 'Capture' | 'Refine';
 
-const NoteAuthoring: React.FC<Props> = ({ personId, groupId, noteId, onComplete }) => {
+const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId, onComplete }) => {
     const [stage, setStage] = useState<Stage>('Prepare');
     const [person, setPerson] = useState<Person | null>(null);
     const [group, setGroup] = useState<any | null>(null);
@@ -25,6 +26,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, noteId, onComplete 
     const [isSuggestingTitle, setIsSuggestingTitle] = useState(false);
 
     const [sessionDate, setSessionDate] = useState<string>(() => {
+        if (initialDate) return initialDate;
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     });

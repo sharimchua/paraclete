@@ -19,6 +19,7 @@ const App: React.FC = () => {
     const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+    const [initialNoteDate, setInitialNoteDate] = useState<string | null>(null);
 
     useEffect(() => {
         // Query if setup is complete
@@ -51,11 +52,15 @@ const App: React.FC = () => {
         return <SetupScreen />;
     }
 
-    const startNewNote = (personId?: number, groupId?: number) => {
+    const startNewNote = (personId?: number, groupId?: number, date?: string) => {
         setSelectedPersonId(personId || null);
         setSelectedGroupId(groupId || null);
+        // We can pass date via a new state or just reuse selectedNoteId if we were clever, 
+        // but let's add a newState for initialDate to be clean.
+        setInitialNoteDate(date || null);
         setCurrentView('new-note');
     };
+
 
     const renderContent = () => {
         if (currentView === 'new-note') {
@@ -63,7 +68,9 @@ const App: React.FC = () => {
                 <NoteAuthoring 
                     personId={selectedPersonId || undefined} 
                     groupId={selectedGroupId || undefined}
+                    initialDate={initialNoteDate || undefined}
                     onComplete={() => {
+                        setInitialNoteDate(null);
                         if (selectedPersonId) setCurrentView('persons');
                         else if (selectedGroupId) setCurrentView('groups');
                         else setCurrentView('dashboard');
@@ -87,10 +94,15 @@ const App: React.FC = () => {
         }
 
         if (currentView === 'dashboard') {
-            return <Dashboard onSelectNote={(id) => {
-                setSelectedNoteId(id);
-                setCurrentView('note-detail');
-            }} />;
+            return <Dashboard 
+                onSelectNote={(id) => {
+                    setSelectedNoteId(id);
+                    setCurrentView('note-detail');
+                }} 
+                onStartNote={(date, pid, gid) => {
+                    startNewNote(pid, gid, date);
+                }}
+            />;
         }
 
         if (currentView === 'persons') {
