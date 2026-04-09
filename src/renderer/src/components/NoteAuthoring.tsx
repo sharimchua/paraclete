@@ -204,7 +204,12 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             });
 
             if (metadata.suggestedDate && !noteId) {
-                setSessionDate(metadata.suggestedDate);
+                // If the user hasn't touched the date (it's still 'Today'), allow the AI to suggest it.
+                // Otherwise, respect the user's explicit choice.
+                const today = new Date().toISOString().split('T')[0];
+                if (sessionDate === today) {
+                    setSessionDate(metadata.suggestedDate);
+                }
             }
             if (metadata.tags) {
                 setSuggestedTags(metadata.tags);
@@ -365,8 +370,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Breadcrumb Pill Navigation & Global Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ width: '120px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '24px' }}>
+                <div style={{ width: '300px' }}>
                     {noteId && (
                         <button 
                             className="btn-secondary" 
@@ -435,12 +440,31 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     </button>
                 </div>
 
-                <div style={{ width: '120px', display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ width: '300px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Date</label>
+                        <input
+                            type="date"
+                            value={sessionDate}
+                            onChange={(e) => setSessionDate(e.target.value)}
+                            className="input-field"
+                            style={{ 
+                                padding: '6px 10px', 
+                                borderRadius: '8px', 
+                                background: 'var(--bg-deep)', 
+                                border: '1px solid var(--border)',
+                                fontSize: '0.85rem',
+                                width: '130px',
+                                cursor: 'pointer',
+                                colorScheme: 'dark'
+                            }}
+                        />
+                    </div>
                     <button 
                         className="btn-primary" 
                         disabled={loading || isBriefing}
                         onClick={handleSaveNote}
-                        style={{ padding: '8px 24px', borderRadius: '12px' }}
+                        style={{ padding: '8px 24px', borderRadius: '12px', flexGrow: 1 }}
                     >
                         {noteId ? 'Update' : 'Save Draft'}
                     </button>
@@ -463,23 +487,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                             </div>
                             
                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Session Date</label>
-                                <input
-                                    type="date"
-                                    value={sessionDate}
-                                    onChange={(e) => setSessionDate(e.target.value)}
-                                    className="input-field"
-                                    style={{ 
-                                        padding: '8px 12px', 
-                                        borderRadius: '8px', 
-                                        background: 'var(--bg-deep)', 
-                                        border: '1px solid var(--border)',
-                                        fontSize: '1rem',
-                                        width: '180px',
-                                        cursor: 'pointer',
-                                        colorScheme: 'dark' // Ensures the picker is visible in dark mode
-                                    }}
-                                />
+                                {/* Date moved to global header */}
                             </div>
                         </div>
 
@@ -646,22 +654,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                             />
                                         </div>
 
-                                        {/* Date moved to Prepare stage but kept here for final verification */}
-                                        <div className="card" style={{ padding: '20px' }}>
-                                            <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Session Date</h4>
-                                            <input
-                                                type="date"
-                                                value={sessionDate}
-                                                onChange={(e) => setSessionDate(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '8px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid var(--border)',
-                                                    fontSize: '0.9rem'
-                                                }}
-                                            />
-                                        </div>
+                                        {/* Date moved to global header */}
 
                                         <div className="card" style={{ padding: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                             <div>
