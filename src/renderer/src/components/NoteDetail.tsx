@@ -103,6 +103,34 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                         </div>
                     </div>
 
+                    {note.session_brief && (
+                        <div style={{ 
+                            background: 'rgba(56, 189, 248, 0.03)', 
+                            borderLeft: '4px solid var(--primary)', 
+                            padding: '24px 32px', 
+                            marginTop: '24px', 
+                            borderRadius: '0 12px 12px 0' 
+                        }}>
+                            <h3 style={{ 
+                                fontSize: '0.8rem', 
+                                color: 'var(--primary)', 
+                                fontWeight: 700, 
+                                textTransform: 'uppercase', 
+                                letterSpacing: '0.1em',
+                                marginBottom: '16px'
+                            }}>
+                                PRE-SESSION BRIEFING
+                            </h3>
+                            <div className="markdown-brief" style={{ 
+                                fontSize: '1rem', 
+                                color: 'var(--text-secondary)',
+                                lineHeight: '1.6'
+                            }}>
+                                <ReactMarkdown>{note.session_brief}</ReactMarkdown>
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{ borderTop: '1px solid var(--border)', paddingTop: '32px', marginTop: '32px' }}>
                             <div className="markdown-content" style={{ 
                             fontSize: '1.1rem', 
