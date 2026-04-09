@@ -231,13 +231,36 @@ def create_person(person: schemas.PersonCreate, db: Session = Depends(get_db)):
 
 @app.get("/persons/", response_model=List[schemas.Person])
 def read_persons(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Person).options(joinedload(models.Person.persona)).offset(skip).limit(limit).all()
+    persons = db.query(models.Person).options(
+        joinedload(models.Person.persona),
+        joinedload(models.Person.groups).joinedload(models.Group.persona)
+    ).offset(skip).limit(limit).all()
+    
+    for p in persons:
+        if not p.persona:
+            # Try inheriting from groups
+            for group in p.groups:
+                if group.persona:
+                    p.inherited_persona = group.persona
+                    break
+    return persons
 
 @app.get("/persons/{person_id}", response_model=schemas.Person)
 def read_person(person_id: int, db: Session = Depends(get_db)):
-    db_person = db.query(models.Person).options(joinedload(models.Person.persona)).filter(models.Person.id == person_id).first()
+    db_person = db.query(models.Person).options(
+        joinedload(models.Person.persona),
+        joinedload(models.Person.groups).joinedload(models.Group.persona)
+    ).filter(models.Person.id == person_id).first()
+    
     if db_person is None:
         raise HTTPException(status_code=404, detail="Person not found")
+        
+    if not db_person.persona:
+        for group in db_person.groups:
+            if group.persona:
+                db_person.inherited_persona = group.persona
+                break
+                
     return db_person
 
 @app.patch("/persons/{person_id}", response_model=schemas.Person)

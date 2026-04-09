@@ -212,6 +212,13 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                                         <span className="tag-pill" style={{ background: 'var(--secondary-faded)', color: 'var(--secondary)', border: 'none' }}>
                                             👤 {person.persona.name}
                                         </span>
+                                    ) : person.inherited_persona ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span className="tag-pill" style={{ background: 'rgba(56, 189, 248, 0.05)', color: 'var(--text-muted)', border: '1px solid var(--border)', opacity: 0.8 }}>
+                                                👤 Inherited: {person.inherited_persona.name}
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>(From Group)</span>
+                                        </div>
                                     ) : (
                                         <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>Core Default</span>
                                     )}

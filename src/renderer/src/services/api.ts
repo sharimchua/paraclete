@@ -16,6 +16,7 @@ export interface Person {
     groups?: { name: string, id: number }[];
     persona_id?: number;
     persona?: Persona;
+    inherited_persona?: Persona;
 }
 
 export interface Group {

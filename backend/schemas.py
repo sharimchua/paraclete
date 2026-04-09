@@ -52,6 +52,7 @@ class Person(PersonBase):
     groups: List[GroupBadge] = []
     persona: Optional["Persona"] = None
     persona_id: Optional[int] = None
+    inherited_persona: Optional["Persona"] = None
     custom_framework_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
