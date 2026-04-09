@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api, Person, Note } from '../services/api';
+import { api, Person, Note, API_BASE } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -37,6 +37,12 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     const [isBriefing, setIsBriefing] = useState(false);
     const [isLlmReady, setIsLlmReady] = useState(true);
     const briefingFetchedFor = useRef<string | null>(null);
+
+    // Companion State
+    const [companionSessionId, setCompanionSessionId] = useState<string | null>(null);
+    const [companionUrl, setCompanionUrl] = useState<string | null>(null);
+    const [companionImages, setCompanionImages] = useState<any[]>([]);
+    const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
 
     // Load existing note if noteId is provided
     useEffect(() => {
@@ -87,6 +93,22 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             });
         }
     }, [personId, groupId, noteId]);
+
+    useEffect(() => {
+        if (!companionSessionId) return;
+        const socket = new WebSocket(`${API_BASE.replace('http', 'ws')}/ws`);
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.event === 'companion_image' && data.data.session_id === companionSessionId) {
+                    setCompanionImages(prev => [...prev, data.data]);
+                }
+            } catch (e) {
+                console.error('WS Error:', e);
+            }
+        };
+        return () => socket.close();
+    }, [companionSessionId]);
 
     useEffect(() => {
         const loadMainEntity = async () => {
@@ -286,12 +308,17 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ocr' | 'dictate') => {
-        if (!e.target.files?.[0]) return;
-        const file = e.target.files[0];
+        if (!e.target.files || e.target.files.length === 0) return;
         setLoading(true);
         try {
             const formData = new FormData();
-            formData.append('file', file);
+            if (type === 'ocr') {
+                for (let i = 0; i < e.target.files.length; i++) {
+                    formData.append('files', e.target.files[i]);
+                }
+            } else {
+                formData.append('file', e.target.files[0]);
+            }
 
             const endpoint = type === 'ocr' ? '/process/ocr' : '/process/dictate';
             const data = await api.postForm<{ text: string }>(endpoint, formData);
@@ -299,6 +326,35 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
         } catch (err) {
             console.error(`${type.toUpperCase()} failed:`, err);
             alert(`${type.toUpperCase()} processing failed. Check Developer Logs.`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleStartCompanion = async () => {
+        try {
+            const data = await api.post<any>('/companion/session', {});
+            setCompanionSessionId(data.session_id);
+            setCompanionUrl(data.url);
+            setIsCompanionModalOpen(true);
+        } catch (err) {
+            console.error('Failed to start companion:', err);
+            alert('Failed to start companion session.');
+        }
+    };
+
+    const handlePerformCompanionOCR = async () => {
+        if (!companionSessionId || companionImages.length === 0) return;
+        setLoading(true);
+        try {
+            const data = await api.post<{ text: string }>(`/process/ocr/companion?sid=${companionSessionId}`, {});
+            setRawText(prev => prev + (prev ? "\n\n" : "") + data.text);
+            setIsCompanionModalOpen(false);
+            setCompanionSessionId(null);
+            setCompanionImages([]);
+        } catch (err) {
+            console.error('Companion OCR failed:', err);
+            alert('OCR processing failed. Check Developer Logs.');
         } finally {
             setLoading(false);
         }
@@ -483,13 +539,16 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Direct focus scratchpad</p>
                             </div>
                             <div style={{ display: 'flex', gap: '12px' }}>
+                                <button className="btn-secondary" onClick={handleStartCompanion} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>📱</span> Phone
+                                </button>
                                 <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <span>🎤</span> Dictate
                                     <input type="file" hidden accept="audio/*" onChange={(e) => handleFileUpload(e, 'dictate')} />
                                 </label>
                                 <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <span>📄</span> OCR
-                                    <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'ocr')} />
+                                    <input type="file" hidden accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'ocr')} />
                                 </label>
                             </div>
 
@@ -701,6 +760,130 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     </div>
                 )}
             </div>
+
+            {/* Companion Modal */}
+            {isCompanionModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.85)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 2000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '24px'
+                }}>
+                    <div className="card" style={{
+                        width: '100%',
+                        maxWidth: '800px',
+                        background: 'var(--bg-deep)',
+                        border: '1px solid var(--primary)',
+                        padding: '40px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '24px',
+                        position: 'relative'
+                    }}>
+                        <button 
+                            onClick={() => setIsCompanionModalOpen(false)}
+                            style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                        >✕</button>
+
+                        <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+                            <div style={{ flex: '0 0 280px', textAlign: 'center', background: 'var(--bg-surface)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                                <h3 style={{ marginBottom: '16px', fontSize: '1rem', color: 'var(--primary)' }}>Scan with Phone</h3>
+                                <div style={{ 
+                                    background: 'white', 
+                                    padding: '12px', 
+                                    borderRadius: '8px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    minHeight: '224px',
+                                    minWidth: '224px',
+                                    margin: '0 auto'
+                                }}>
+                                    {companionUrl ? (
+                                        <img 
+                                            key={companionUrl}
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(companionUrl)}`} 
+                                            alt="QR Code" 
+                                            style={{ display: 'block', width: '200px', height: '200px' }}
+                                        />
+                                    ) : (
+                                        <div className="loader" style={{ scale: '0.5' }} />
+                                    )}
+                                </div>
+                                <div style={{ marginTop: '16px' }}>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                        Scanning this connects your phone to Paraclete.
+                                    </p>
+                                    <div style={{ 
+                                        fontSize: '0.65rem', 
+                                        wordBreak: 'break-all', 
+                                        color: 'var(--primary)', 
+                                        opacity: 0.8,
+                                        padding: '8px',
+                                        background: 'rgba(157, 129, 255, 0.1)',
+                                        borderRadius: '4px'
+                                    }}>
+                                        {companionUrl}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h3 style={{ fontSize: '1rem' }}>Captured Pages</h3>
+                                    <span style={{ fontSize: '0.8rem', background: 'var(--primary-faded)', color: 'var(--primary)', padding: '4px 12px', borderRadius: '100px' }}>
+                                        {companionImages.length} Active
+                                    </span>
+                                </div>
+
+                                <div style={{ 
+                                    flexGrow: 1, 
+                                    background: 'var(--bg-surface)', 
+                                    borderRadius: '12px', 
+                                    border: '1px solid var(--border)',
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                                    gap: '12px',
+                                    padding: '16px',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {companionImages.map((img, i) => (
+                                        <div key={i} style={{ 
+                                            aspectRatio: '3/4', 
+                                            borderRadius: '8px', 
+                                            overflow: 'hidden', 
+                                            border: '1px solid var(--border)',
+                                            background: '#000'
+                                        }}>
+                                            <img src={`${API_BASE}${img.url}`} alt="Capture" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </div>
+                                    ))}
+                                    {companionImages.length === 0 && (
+                                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                            No images captured yet. Scan the code to start.
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button 
+                                    className="btn-primary" 
+                                    disabled={companionImages.length === 0 || loading}
+                                    onClick={handlePerformCompanionOCR}
+                                    style={{ marginTop: '24px', padding: '12px' }}
+                                >
+                                    {loading ? 'Processing...' : `Perform OCR on ${companionImages.length} Page${companionImages.length === 1 ? '' : 's'}`}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

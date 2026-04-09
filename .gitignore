@@ -12,3 +12,4 @@ paraclete.db
 .env
 scripts/
 design/import/
+uploads/companion/

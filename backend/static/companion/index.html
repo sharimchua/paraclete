@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Paraclete Companion</title>
+    <style>
+        :root {
+            --primary: #9d81ff;
+            --bg-deep: #0f1117;
+            --bg-surface: #1a1d27;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 16px;
+            text-align: center;
+            border-bottom: 1px solid #2d313e;
+            background: var(--bg-surface);
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        #camera-container {
+            flex-grow: 1;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #controls {
+            padding: 24px;
+            background: var(--bg-surface);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #2d313e;
+        }
+
+        .btn-capture {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: white;
+            border: 6px solid #9d81ff;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(157, 129, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-capture:active {
+            transform: scale(0.95);
+            background: #f0f0f0;
+        }
+
+        .indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(157, 129, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+            display: none;
+        }
+
+        #gallery-preview {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            border: 2px solid white;
+            background-size: cover;
+            background-position: center;
+            display: none;
+        }
+
+        .status-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 20px;
+            width: 80%;
+            display: none;
+        }
+
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Paraclete Companion</h1>
+    </header>
+
+    <div id="camera-container">
+        <div id="preview-area" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--text-muted);">
+            <div id="status-icon" style="font-size: 4rem; marginBottom: 20px;">📸</div>
+            <p id="status-text">Ready to capture notes</p>
+            <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.6;">Tap the button below to take a photo</p>
+        </div>
+        <div id="indicator" class="indicator">Uploading...</div>
+        <div id="gallery-preview"></div>
+        
+        <div id="error-message" class="status-msg">
+            <p style="color: #ef4444;">Invalid session. Please scan the QR code again.</p>
+        </div>
+    </div>
+
+    <div id="controls">
+        <div style="width: 72px;"></div>
+        <label for="camera-input" id="capture-btn" class="btn-capture">
+            <div style="width: 30px; height: 30px; background: var(--primary); border-radius: 50%;"></div>
+        </label>
+        <input type="file" id="camera-input" accept="image/*" capture="camera" style="display: none;">
+        <div id="count-box" style="width: 72px; text-align: center; font-weight: 600; color: var(--text-muted);">
+            0 Pages
+        </div>
+    </div>
+
+    <script>
+        const cameraInput = document.getElementById('camera-input');
+        const indicator = document.getElementById('indicator');
+        const galleryPreview = document.getElementById('gallery-preview');
+        const countBox = document.getElementById('count-box');
+        const errorMsg = document.getElementById('error-message');
+        const statusText = document.getElementById('status-text');
+        const statusIcon = document.getElementById('status-icon');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('sid');
+        let captureCount = 0;
+
+        if (!sessionId) {
+            errorMsg.style.display = 'block';
+        }
+
+        cameraInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !sessionId) return;
+            
+            // UI feedback
+            indicator.style.display = 'block';
+            statusText.innerText = 'Uploading capture...';
+            statusIcon.innerText = '⏳';
+            
+            const formData = new FormData();
+            formData.append('file', file, `page_${Date.now()}.jpg`);
+            
+            try {
+                const response = await fetch(`/companion/${sessionId}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    captureCount++;
+                    countBox.innerText = `${captureCount} Page${captureCount === 1 ? '' : 's'}`;
+                    
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        galleryPreview.style.backgroundImage = `url(${ev.target.result})`;
+                        galleryPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    statusText.innerText = 'Page Synced!';
+                    statusIcon.innerText = '✅';
+                    setTimeout(() => {
+                        statusText.innerText = 'Ready to capture notes';
+                        statusIcon.innerText = '📸';
+                    }, 2000);
+                } else {
+                    alert("Sync failed. Session might be expired.");
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                alert("Network error: Could not connect to laptop.");
+            } finally {
+                indicator.style.display = 'none';
+                cameraInput.value = ''; // Reset for next capture
+            }
+        });
+    </script>
+</body>
+</html>

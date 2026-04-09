@@ -14,6 +14,9 @@ from datetime import datetime
 import asyncio
 import numpy as np
 import tempfile
+import uuid
+import shutil
+from fastapi.staticfiles import StaticFiles
 
 # Ensure database tables exist (simple startup for prototype)
 # In production, Alembic handles this.
@@ -50,27 +53,117 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@app.post("/process/ocr")
-async def process_ocr(file: UploadFile = File(...)):
-    # Write to a temporary file for the vision projector to read
-    temp_fd, temp_path = tempfile.mkstemp(suffix=os.path.splitext(file.filename)[1])
+# --- Companion & Upload Infrastructure ---
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+COMPANION_DIR = os.path.join(UPLOAD_DIR, "companion")
+os.makedirs(COMPANION_DIR, exist_ok=True)
+
+COMPANION_SESSIONS = {} # session_id -> list of file paths
+
+def get_local_ip():
     try:
-        with os.fdopen(temp_fd, 'wb') as tmp:
-            tmp.write(await file.read())
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+@app.post("/companion/session")
+async def create_companion_session():
+    sid = str(uuid.uuid4())
+    COMPANION_SESSIONS[sid] = []
+    local_ip = get_local_ip()
+    # Assuming port 8000 for now, but in Electron it might vary.
+    # In a real app we'd pass the actual port.
+    return {"session_id": sid, "url": f"http://{local_ip}:8000/static/companion/index.html?sid={sid}"}
+
+@app.post("/companion/{sid}/upload")
+async def companion_upload(sid: str, file: UploadFile = File(...)):
+    if sid not in COMPANION_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Save file
+    file_id = str(uuid.uuid4())
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    filename = f"{file_id}{ext}"
+    filepath = os.path.join(COMPANION_DIR, filename)
+    
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    COMPANION_SESSIONS[sid].append(filepath)
+    
+    # Broadcast to desktop
+    await manager.broadcast({
+        "event": "companion_image",
+        "data": {
+            "session_id": sid,
+            "image_id": file_id,
+            "filename": filename,
+            "url": f"/static/uploads/companion/{filename}"
+        }
+    })
+    
+    return {"status": "success", "image_id": file_id}
+
+@app.get("/companion/session/{sid}/images")
+async def get_companion_images(sid: str):
+    if sid not in COMPANION_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    images = []
+    for path in COMPANION_SESSIONS[sid]:
+        filename = os.path.basename(path)
+        images.append({
+            "filename": filename,
+            "url": f"/static/uploads/companion/{filename}"
+        })
+    return images
+
+@app.post("/process/ocr")
+async def process_ocr(files: List[UploadFile] = File(...)):
+    temp_paths = []
+    try:
+        for file in files:
+            temp_fd, temp_path = tempfile.mkstemp(suffix=os.path.splitext(file.filename)[1])
+            with os.fdopen(temp_fd, 'wb') as tmp:
+                tmp.write(await file.read())
+            temp_paths.append(temp_path)
             
-        await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": "Image Analysis"}})
+        await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(temp_paths)} image(s)"}})
         
-        # Use the specialized OCR workflow
-        result = await llm.workflows.run_ocr(temp_path)
+        # Use the specialized OCR workflow with multiple paths
+        result = await llm.workflows.run_ocr(temp_paths)
         
         await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
         return {"text": result}
     finally:
-        if os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except:
-                pass
+        for tp in temp_paths:
+            if os.path.exists(tp):
+                try: os.remove(tp)
+                except: pass
+
+@app.post("/process/ocr/companion")
+async def process_ocr_companion(sid: str):
+    if sid not in COMPANION_SESSIONS or not COMPANION_SESSIONS[sid]:
+        raise HTTPException(status_code=404, detail="Session or images not found")
+    
+    image_paths = COMPANION_SESSIONS[sid]
+    
+    await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(image_paths)} companion image(s)"}})
+    
+    try:
+        # Use the specialized OCR workflow
+        result = await llm.workflows.run_ocr(image_paths)
+        
+        await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
+        return {"text": result}
+    except Exception as e:
+        await manager.broadcast({"event": "llm_error", "data": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/process/dictate")
 async def process_dictate(file: UploadFile = File(...)):
@@ -88,6 +181,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for companion app and uploads
+static_companion_path = os.path.join(os.path.dirname(__file__), "static", "companion")
+app.mount("/static/companion", StaticFiles(directory=static_companion_path), name="companion")
+app.mount("/static/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 def get_db():
     db = database.SessionLocal()
@@ -971,19 +1069,12 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception:
         manager.disconnect(websocket) 
 
-def get_local_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
+ 
+# (Removed duplicate get_local_ip)
 
 if __name__ == "__main__":
     ip = get_local_ip()
-    expose = os.getenv("PARACLETE_EXPOSE", "0") == "1"
-    host = "0.0.0.0" if expose else "127.0.0.1"
+    # Force 0.0.0.0 so companion mobile app can connect
+    host = "0.0.0.0"
     print(f"Starting Paraclete Backend on {host}:8000 (Local IP: {ip})")
     uvicorn.run(app, host=host, port=8000)

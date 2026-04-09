@@ -100,7 +100,7 @@ class LLMManager:
             **kwargs
         )
 
-    def call(self, prompt: str, system: str = "You are a helpful assistant.", image_path: Optional[str] = None, grammar: Optional[Any] = None, **kwargs):
+    def call(self, prompt: str, system: str = "You are a helpful assistant.", image_paths: Optional[List[str]] = None, grammar: Optional[Any] = None, **kwargs):
         """
         Standardized high-level execution for Gemma 4.
         Handles vision, chat formatting, stop tokens, and artifact cleanup.
@@ -115,15 +115,14 @@ class LLMManager:
         max_tokens = kwargs.pop("max_tokens", 2048)
         
         # Prepare messages
-        if image_path:
-            import base64
-            with open(image_path, "rb") as f:
-                img_base64 = base64.b64encode(f.read()).decode("utf-8")
+        if image_paths:
+            user_content = []
+            for img_path in image_paths:
+                with open(img_path, "rb") as f:
+                    img_base64 = base64.b64encode(f.read()).decode("utf-8")
+                user_content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"}})
             
-            user_content = [
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"}},
-                {"type": "text", "text": prompt}
-            ]
+            user_content.append({"type": "text", "text": prompt})
         else:
             user_content = prompt
 

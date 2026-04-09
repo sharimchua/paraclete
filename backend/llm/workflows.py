@@ -5,8 +5,8 @@ from .core import llm_manager
 from . import templates
 
 
-async def run_ocr(image_path: str) -> str:
-    """Extract and compile text from an image."""
+async def run_ocr(image_paths: list[str]) -> str:
+    """Extract and compile text from one or more images."""
     try:
         # Use template for instructions
         prompt = templates.ocr_capture()
@@ -16,8 +16,8 @@ async def run_ocr(image_path: str) -> str:
             llm_manager.call,
             prompt=prompt,
             system="You are an expert data entry assistant for transcribing hand-written notes. Extract the requested text and any drawings or diagrams accurately, using the context of the image when needed.",
-            image_path=image_path,
-            max_tokens=1024
+            image_paths=image_paths,
+            max_tokens=2048
         )
 
     except Exception as e:
