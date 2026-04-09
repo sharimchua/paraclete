@@ -1,16 +1,16 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from typing import List
+from typing import List, Dict, Set
 import uvicorn
 import socket
 import os
 import json
 
 from . import models, schemas, database, llm
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio
 import numpy as np
 import tempfile
@@ -983,28 +983,71 @@ def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
 
 @app.get("/dashboard/trends", response_model=List[schemas.TrendPoint])
 def get_trends(db: Session = Depends(get_db)):
-    # 1. Find the tag key with the lowest cardinality (smallest number of unique values)
-    tag_counts = db.query(
-        models.Tag.key, 
-        func.count(models.Tag.id).label('val_count')
-    ).filter(models.Tag.key != None).group_by(models.Tag.key).all()
-    
-    selected_key = None
-    if tag_counts:
-        # Sort by val_count ascending
-        tag_counts.sort(key=lambda x: x.val_count)
-        selected_key = tag_counts[0].key
+    # 1. Fetch all notes with tags and entity tags in one go to avoid N+1
+    notes = db.query(models.Note).options(
+        joinedload(models.Note.tags),
+        joinedload(models.Note.person).joinedload(models.Person.tags),
+        joinedload(models.Note.group).joinedload(models.Group.tags)
+    ).all()
 
-    # 2. Get all notes to process trends
-    notes = db.query(models.Note).all()
-    
-    # Organize by Month-Year (YYYY-MM)
-    month_data = {}
+    if not notes:
+        return []
+
+    # 2. Analyze all available tag keys to find the "best" one for grouping
+    # Metrics: Cardinality (fewer is better) and Coverage (more notes with the tag is better)
+    key_metrics = {} # key -> {"values": Set, "coverage": int}
     
     for note in notes:
-        # Create a key like "2025-10"
-        m_key = note.date.strftime('%Y-%m')
+        # Collect all unique keys for this note (from note, person, or group)
+        keys_in_this_note = set()
         
+        # Helper to process tags
+        def process_tags(tags):
+            for t in tags:
+                if t.key:
+                    keys_in_this_note.add(t.key)
+                    if t.key not in key_metrics:
+                        key_metrics[t.key] = {"values": set(), "coverage": 0}
+                    key_metrics[t.key]["values"].add(t.value)
+
+        process_tags(note.tags)
+        if note.person:
+            process_tags(note.person.tags)
+        if note.group:
+            process_tags(note.group.tags)
+        
+        # Increment coverage for each key present in this note
+        for k in keys_in_this_note:
+            key_metrics[k]["coverage"] += 1
+
+    # 3. Pick the best key
+    # Preference: High coverage (minimize "None") and Low cardinality (clearer chart)
+    selected_key = None
+    best_score = -999999
+    total_notes = len(notes)
+
+    for k, metrics in key_metrics.items():
+        cardinality = len(metrics["values"])
+        coverage = metrics["coverage"]
+        
+        if cardinality == 0:
+            continue
+            
+        # Score formula: 
+        # (coverage_percent) - (cardinality * penalty)
+        # This rewards keys that cover most notes but penalizes those with too many unique values.
+        # Penalty of 5 means we'd trade 5% coverage for 1 fewer unique value.
+        score = (coverage / total_notes * 100) - (cardinality * 5)
+        
+        if score > best_score:
+            best_score = score
+            selected_key = k
+
+    # 4. Process trends by Month-Year (YYYY-MM)
+    month_data = {} # "YYYY-MM" -> {"count": int, "stacks": {val: count}}
+    
+    for note in notes:
+        m_key = note.date.strftime('%Y-%m')
         if m_key not in month_data:
             month_data[m_key] = {"count": 0, "stacks": {}}
         
@@ -1013,36 +1056,33 @@ def get_trends(db: Session = Depends(get_db)):
         # Determine stack value for the selected key
         stack_val = "None"
         if selected_key:
-            # Check note tags first
-            note_tag = next((t.value for t in note.tags if t.key == selected_key), None)
-            if note_tag:
-                stack_val = note_tag
-            elif note.person:
-                # Check person tags
-                person_tag = next((t.value for t in note.person.tags if t.key == selected_key), None)
-                if person_tag:
-                    stack_val = person_tag
+            # Priority: Note tags > Person tags > Group tags
+            found_tag = next((t.value for t in note.tags if t.key == selected_key), None)
+            if not found_tag and note.person:
+                found_tag = next((t.value for t in note.person.tags if t.key == selected_key), None)
+            if not found_tag and note.group:
+                found_tag = next((t.value for t in note.group.tags if t.key == selected_key), None)
+            
+            if found_tag:
+                stack_val = found_tag
         
         month_data[m_key]["stacks"][stack_val] = month_data[m_key]["stacks"].get(stack_val, 0) + 1
 
-    # Format result
-    # Sort keys (YYYY-MM) chronologically
+    # 5. Format result sorted chronologically
     sorted_keys = sorted(month_data.keys())
-    
     result = []
+    
     for k in sorted_keys:
-        # Convert "2025-10" to "Oct 2025"
         dt = datetime.strptime(k, '%Y-%m')
         label = dt.strftime('%b %Y')
         
-        stacks = [
-            {"name": name, "count": count} 
-            for name, count in month_data[k]["stacks"].items()
-        ]
         result.append({
             "label": label,
             "count": month_data[k]["count"],
-            "stacks": stacks
+            "stacks": [
+                {"name": name, "count": count} 
+                for name, count in month_data[k]["stacks"].items()
+            ]
         })
             
     return result
@@ -1075,6 +1115,23 @@ async def websocket_endpoint(websocket: WebSocket):
 
  
 # (Removed duplicate get_local_ip)
+
+@app.get("/dashboard/person-leaderboard", response_model=List[schemas.LeaderboardEntry])
+def get_leaderboard(db: Session = Depends(database.get_db)):
+    # People with most notes in the last 90 days
+    three_months_ago = datetime.now() - timedelta(days=90)
+    
+    leaderboard = db.query(
+        models.Person.id,
+        models.Person.name,
+        func.count(models.Note.id).label("note_count")
+    ).join(models.Note, models.Note.person_id == models.Person.id)\
+     .filter(models.Note.date >= three_months_ago)\
+     .group_by(models.Person.id)\
+     .order_by(func.count(models.Note.id).desc())\
+     .limit(5).all()
+    
+    return [{"id": l[0], "name": l[1], "note_count": l[2]} for l in leaderboard]
 
 if __name__ == "__main__":
     ip = get_local_ip()

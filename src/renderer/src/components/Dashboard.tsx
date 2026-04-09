@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, DashboardStats, CalendarDay, TrendPoint, ReferenceUsage, Note, Person, Group } from '../services/api';
+import { api, DashboardStats, CalendarDay, TrendPoint, LeaderboardEntry, Note, Person, Group } from '../services/api';
 import PracticeCalendar from './PracticeCalendar';
 
 interface Props {
@@ -11,7 +11,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
     const [trends, setTrends] = useState<TrendPoint[]>([]);
-    const [references, setReferences] = useState<ReferenceUsage[]>([]);
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [dateNotes, setDateNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -29,16 +29,16 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     useEffect(() => {
         const fetchBaseData = async () => {
             try {
-                const [s, c, t, r] = await Promise.all([
+                const [s, c, t, l] = await Promise.all([
                     api.get<DashboardStats>('/dashboard/stats'),
                     api.get<CalendarDay[]>('/dashboard/calendar'),
                     api.get<TrendPoint[]>('/dashboard/trends'),
-                    api.get<ReferenceUsage[]>('/dashboard/reference-usage')
+                    api.get<LeaderboardEntry[]>('/dashboard/person-leaderboard')
                 ]);
                 setStats(s);
                 setCalendarData(c);
                 setTrends(t);
-                setReferences(r);
+                setLeaderboard(l);
                 setLoading(false);
             } catch (err) {
                 console.error('Failed to fetch dashboard data', err);
@@ -132,7 +132,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'space-between',
-                                            border: '1px solid var(--border-color)'
+                                            border: '1px solid var(--border)'
                                         }}
                                         onClick={() => {
                                             if (target.type === 'person') onStartNote(selectedDate, target.id, undefined);
@@ -175,7 +175,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                 </div>
             )}
 
-            {/* Quick Stats Column */}
+            {/* Column 1: Stats and Trends */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div className="card">
                     <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px' }}>Practice Overview</h4>
@@ -199,43 +199,59 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                     </div>
                 </div>
 
-                <PracticeCalendar 
-                    data={calendarData} 
-                    selectedDate={selectedDate}
-                    onSelectDate={setSelectedDate}
-                />
-            </div>
-
-            {/* Trends and References */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div className="card">
                     <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '20px' }}>Session Trends</h4>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '140px', paddingBottom: '20px', paddingLeft: '8px', paddingRight: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '260px', paddingBottom: '20px', paddingLeft: '8px', paddingRight: '8px' }}>
                         {trends.length === 0 ? (
                             <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No data yet</div>
                         ) : (() => {
                             // Stable Color Mapping
                             const colors = ['var(--primary)', 'var(--secondary)', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6'];
-                            const allCategories = Array.from(new Set(trends.flatMap(t => t.stacks.map(s => s.name)))).sort();
-                            const categoryColorMap: Record<string, string> = {};
+                            const allCategories = Array.from(new Set(trends.flatMap(t => t.stacks.map(s => s.name))))
+                                .filter(c => c !== 'None')
+                                .sort();
+                            
+                            const categoryColorMap: Record<string, string> = {
+                                'None': 'rgba(255, 255, 255, 0.4)'
+                            };
                             allCategories.forEach((cat, i) => {
-                                categoryColorMap[cat] = cat === 'None' ? 'var(--bg-surface)' : colors[i % colors.length];
+                                categoryColorMap[cat] = colors[i % colors.length];
                             });
 
                             return trends.slice(-6).map(t => { // Last 6 months
                                 const max = Math.max(...trends.map(x => x.count), 1);
                                 return (
-                                    <div key={t.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%' }}>
+                                    <div key={t.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', position: 'relative' }}>
+                                        {/* Dynamic Height Stack Wrapper */}
                                         <div style={{ 
-                                            flex: 1, 
                                             width: '100%', 
+                                            height: `${(t.count / max) * 100}%`,
                                             display: 'flex', 
                                             flexDirection: 'column-reverse', 
-                                            justifyContent: 'flex-start',
-                                            paddingTop: '10px'
+                                            position: 'relative',
+                                            paddingBottom: '0px'
                                         }}>
-                                            {[...t.stacks].sort((a, b) => a.name.localeCompare(b.name)).map((stack, idx, sortedStacks) => {
-                                                const height = (stack.count / max) * 100;
+                                            {/* Floating Total Count */}
+                                            <div style={{ 
+                                                position: 'absolute', 
+                                                top: '-18px', 
+                                                width: '100%', 
+                                                textAlign: 'center',
+                                                fontSize: '0.65rem', 
+                                                fontWeight: 700, 
+                                                color: 'var(--text-secondary)', 
+                                                opacity: 0.9 
+                                            }}>
+                                                {t.count}
+                                            </div>
+
+                                            {[...t.stacks].sort((a, b) => {
+                                                if (a.name === 'None') return 1;
+                                                if (b.name === 'None') return -1;
+                                                return a.name.localeCompare(b.name);
+                                            }).map((stack, idx, sortedStacks) => {
+                                                // Calculate relative height inside this specific month's total
+                                                const height = (stack.count / t.count) * 100;
                                                 return (
                                                     <div 
                                                         key={stack.name}
@@ -243,17 +259,17 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                                                         style={{
                                                             width: '100%',
                                                             height: `${height}%`,
-                                                            background: categoryColorMap[stack.name],
-                                                            border: stack.name === 'None' ? '1px solid var(--border-color)' : 'none',
+                                                            background: categoryColorMap[stack.name] || 'var(--text-muted)',
+                                                            border: stack.name === 'None' ? '1px solid var(--text-muted)' : 'none',
                                                             borderRadius: idx === 0 ? '0 0 4px 4px' : (idx === sortedStacks.length - 1 ? '4px 4px 0 0' : '0'),
                                                             opacity: 0.85,
-                                                            transition: 'height 0.4s ease'
+                                                            transition: 'all 0.4s ease'
                                                         }}
                                                     />
                                                 );
                                             })}
                                         </div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t.label}</div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px' }}>{t.label}</div>
                                     </div>
                                 );
                             });
@@ -262,36 +278,59 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                     {/* Tiny Legend */}
                     {trends.length > 0 && (() => {
                         const colors = ['var(--primary)', 'var(--secondary)', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6'];
-                        const allCategories = Array.from(new Set(trends.flatMap(t => t.stacks.map(s => s.name)))).sort();
+                        const allCategories = Array.from(new Set(trends.flatMap(t => t.stacks.map(s => s.name))))
+                            .sort((a, b) => {
+                                if (a === 'None') return 1;
+                                if (b === 'None') return -1;
+                                return a.localeCompare(b);
+                            });
+                        
+                        const categoryColorMap: Record<string, string> = {
+                            'None': 'rgba(255, 255, 255, 0.4)'
+                        };
+                        allCategories.filter(c => c !== 'None').forEach((cat, i) => {
+                            categoryColorMap[cat] = colors[i % colors.length];
+                        });
                         
                         return (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '14px', padding: '0 8px' }}>
-                                {allCategories.map((stackName, i) => (
+                                {allCategories.map((stackName) => (
                                     <div key={stackName} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <div style={{ 
                                             width: '8px', 
                                             height: '8px', 
                                             borderRadius: '2px', 
-                                            background: stackName === 'None' ? 'var(--bg-surface)' : colors[i % colors.length], 
-                                            border: stackName === 'None' ? '1px solid var(--border-color)' : 'none' 
+                                            background: categoryColorMap[stackName], 
+                                            border: stackName === 'None' ? '1px solid var(--text-muted)' : 'none' 
                                         }} />
-                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{stackName}</span>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                            {stackName === 'None' ? 'Untagged' : stackName}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                         );
                     })()}
                 </div>
+            </div>
+
+            {/* Column 2: Calendar and Leaderboard */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <PracticeCalendar 
+                    data={calendarData} 
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                />
 
                 <div className="card" style={{ flex: 1 }}>
-                    <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px' }}>Top References</h4>
+                    <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px' }}>Top People (Last 3m)</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {references.length === 0 ? (
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '24px' }}>No references linked yet.</div>
+                        {leaderboard.length === 0 ? (
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '24px' }}>No session activity yet.</div>
                         ) : (
-                            references.map(r => (
-                                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--bg-surface)', borderRadius: '6px' }}>
-                                    <div style={{ fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{r.title}</div>
+                            leaderboard.map(p => (
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--bg-surface)', borderRadius: '6px' }}>
+                                    <div style={{ fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{p.name}</div>
                                     <div style={{ 
                                         padding: '2px 8px', 
                                         borderRadius: '12px', 
@@ -300,7 +339,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                                         fontWeight: 700,
                                         border: '1px solid var(--primary-faded)'
                                     }}>
-                                        {r.usage_count} uses
+                                        {p.note_count} sessions
                                     </div>
                                 </div>
                             ))
@@ -309,7 +348,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                 </div>
             </div>
 
-            {/* Recent Activity */}
+            {/* Column 3: Recent Activity */}
             <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>

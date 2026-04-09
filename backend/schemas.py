@@ -185,3 +185,8 @@ class ReferenceUsage(BaseModel):
     id: int
     title: str
     usage_count: int
+
+class LeaderboardEntry(BaseModel):
+    id: int
+    name: str
+    note_count: int

@@ -64,10 +64,10 @@ export interface TrendPoint {
     stacks: TrendStack[];
 }
 
-export interface ReferenceUsage {
+export interface LeaderboardEntry {
     id: number;
-    title: string;
-    usage_count: number;
+    name: string;
+    note_count: number;
 }
 
 export const api = {
