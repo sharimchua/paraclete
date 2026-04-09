@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, Note } from '../services/api';
+import ReactMarkdown from 'react-markdown';
 
 interface Props {
     onSelectNote: (id: number) => void;
@@ -93,16 +94,17 @@ const NotesList: React.FC<Props> = ({ onSelectNote }) => {
                                 </div>
 
                                 <div style={{ 
-                                    fontSize: '0.8rem', 
-                                    color: 'var(--text-secondary)', 
-                                    display: '-webkit-box', 
-                                    WebkitLineClamp: 2, 
-                                    WebkitBoxOrient: 'vertical', 
-                                    overflow: 'hidden',
-                                    lineHeight: '1.4',
+                                    maxHeight: '60px', 
+                                    overflow: 'hidden', 
+                                    maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                                    WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
                                     marginBottom: '10px'
                                 }}>
-                                    {note.cleaned_text || note.raw_capture}
+                                    <div className="markdown-content" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                        <ReactMarkdown>
+                                            {note.cleaned_text || note.raw_capture || (note.session_brief ? `**Brief:** ${note.session_brief}` : 'No content')}
+                                        </ReactMarkdown>
+                                    </div>
                                 </div>
 
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'right' }}>

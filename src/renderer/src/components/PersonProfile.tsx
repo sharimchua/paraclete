@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, Person, Note } from '../services/api';
 import TagSelectionModal from './TagSelectionModal';
+import ReactMarkdown from 'react-markdown';
 
 interface Props {
     personId: number;
@@ -21,12 +22,12 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
         // Fetch person details and notes tied to them
         Promise.all([
             api.get<Person>(`/persons/${personId}`),
-            api.get<any[]>(`/notes/`)
-        ]).then(([personData, allNotes]) => {
+            api.get<Note[]>(`/notes/?person_id=${personId}`)
+        ]).then(([personData, personNotes]) => {
             setPerson(personData);
             setEditName(personData.name);
             setEditContact(personData.contact_method || '');
-            setNotes(allNotes.filter(n => n.person_id === personId));
+            setNotes(personNotes);
             setLoading(false);
         }).catch(err => {
             console.error(err);
@@ -81,6 +82,33 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
     if (loading) return <div className="loader" />;
     if (!person) return <div>Person not found.</div>;
 
+    const noteStats = {
+        total: notes.length,
+        earliest: notes.length > 0 ? [...notes].sort((a, b) => a.date.localeCompare(b.date))[0].date : null,
+        latest: notes.length > 0 ? [...notes].sort((a, b) => b.date.localeCompare(a.date))[0].date : null
+    };
+
+    const calculateTenure = () => {
+        if (!noteStats.earliest || !noteStats.latest) return 'N/A';
+        const first = new Date(noteStats.earliest);
+        const last = new Date(noteStats.latest);
+        const today = new Date();
+        const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+        const isActive = (today.getTime() - last.getTime()) <= oneMonthMs;
+        const end = isActive ? today : last;
+        
+        const diffMs = end.getTime() - first.getTime();
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const months = Math.floor(days / 30.44);
+        const years = Math.floor(months / 12);
+        
+        if (years > 0) return `${years}y ${months % 12}m`;
+        if (months > 0) return `${months} month${months > 1 ? 's' : ''}`;
+        return `${days} day${days !== 1 ? 's' : ''}`;
+    };
+
+    const isActive = noteStats.latest ? (new Date().getTime() - new Date(noteStats.latest).getTime()) <= (30 * 24 * 60 * 60 * 1000) : false;
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <div className="card">
@@ -104,70 +132,118 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                         <button type="submit" className="btn-primary" style={{ alignSelf: 'flex-end' }}>Save Changes</button>
                     </form>
                 ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                         <div style={{ 
-                            width: '80px', 
-                            height: '80px', 
-                            background: 'linear-gradient(135deg, var(--primary), var(--secondary))', 
-                            borderRadius: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '2rem',
-                            color: 'var(--bg-deep)',
-                            fontWeight: 700
-                        }}>
-                            {person.name.charAt(0)}
-                        </div>
-                        <div>
-                            <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>{person.name}</h1>
-                            <p style={{ color: 'var(--text-secondary)' }}>{person.contact_method || 'No contact method specified'}</p>
-                            
-                            <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                                {person.tags.map(tag => (
-                                    <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
-                                        {tag.key ? `${tag.key}: ` : ''}{tag.value}
-                                    </span>
-                                ))}
-                                <button 
-                                    className="tag-pill" 
-                                    style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}
-                                    onClick={() => setShowTagModal(true)}
-                                >
-                                    + Add Tag
-                                </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                            <div style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                background: 'linear-gradient(135deg, var(--primary), var(--secondary))', 
+                                borderRadius: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '2rem',
+                                color: 'var(--bg-deep)',
+                                fontWeight: 700
+                            }}>
+                                {person.name.charAt(0)}
+                            </div>
+                            <div style={{ flexGrow: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>{person.name}</h1>
+                                        <p style={{ color: 'var(--text-secondary)' }}>{person.contact_method || 'No contact method specified'}</p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '24px', textAlign: 'right', alignItems: 'center' }}>
+                                        <div>
+                                            <div style={{ 
+                                                fontSize: '0.65rem', 
+                                                padding: '2px 8px', 
+                                                borderRadius: '20px', 
+                                                background: isActive ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                color: isActive ? '#22c55e' : '#ef4444',
+                                                fontWeight: 800,
+                                                marginBottom: '8px',
+                                                display: 'inline-block'
+                                            }}>
+                                                {isActive ? '● ACTIVE' : '○ INACTIVE'}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Tenure</div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 600 }}>{calculateTenure()}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Notes</div>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{noteStats.total}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Last Session</div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 600 }}>{noteStats.latest || 'Never'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                                    {person.tags.map(tag => (
+                                        <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
+                                            {tag.key ? `${tag.key}: ` : ''}{tag.value}
+                                        </span>
+                                    ))}
+                                    <button 
+                                        className="tag-pill" 
+                                        style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}
+                                        onClick={() => setShowTagModal(true)}
+                                    >
+                                        + Add Tag
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <h3>Session History</h3>
-                    {notes.length === 0 ? (
-                        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-                            <p style={{ color: 'var(--text-muted)' }}>No notes found for this person.</p>
-                        </div>
-                    ) : (
-                        notes.map(note => (
-                            <div key={note.id} className="card" style={{ cursor: 'pointer' }} onClick={() => onSelectNote(note.id)}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Session History</h3>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Showing last 20 sessions</span>
+                </div>
+                
+                {notes.length === 0 ? (
+                    <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+                        <p style={{ color: 'var(--text-muted)' }}>No notes found for this person.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {notes.slice(0, 20).map(note => (
+                            <div key={note.id} className="card" style={{ cursor: 'pointer', transition: 'transform 0.2s' }} onClick={() => onSelectNote(note.id)}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{note.date}</span>
-                                    <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)' }}>{note.stage.toUpperCase()}</span>
+                                    <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>{note.stage.toUpperCase()}</span>
                                 </div>
-                                <h4 style={{ fontSize: '1.1rem' }}>{note.title}</h4>
-                                <p style={{ marginTop: '12px', fontSize: '0.9rem', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                    {note.cleaned_text || note.raw_capture || 'No content yet.'}
-                                </p>
+                                <h4 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{note.title}</h4>
+                                <div style={{ 
+                                    marginTop: '12px', 
+                                    maxHeight: '120px', 
+                                    overflow: 'hidden', 
+                                    maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+                                    WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)'
+                                }}>
+                                    <div className="markdown-content" style={{ 
+                                        fontSize: '0.9rem', 
+                                        color: note.cleaned_text || note.raw_capture ? 'var(--text-secondary)' : 'var(--primary)', 
+                                        fontStyle: note.cleaned_text || note.raw_capture ? 'normal' : 'italic'
+                                    }}>
+                                        <ReactMarkdown>
+                                            {note.cleaned_text || note.raw_capture || (note.session_brief ? `**Briefing:** ${note.session_brief}` : 'No content yet.')}
+                                        </ReactMarkdown>
+                                    </div>
+                                </div>
                             </div>
-                        ))
-                    )}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    {/* Universal Tags moved to header card */}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {showTagModal && (

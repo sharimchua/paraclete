@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, Group, Person, Note } from '../services/api';
 import TagSelectionModal from './TagSelectionModal';
+import ReactMarkdown from 'react-markdown';
 
 interface Props {
     groupId: number;
@@ -25,13 +26,13 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         Promise.all([
             api.get<Group>(`/groups/${groupId}`),
             api.get<Person[]>('/persons/'),
-            api.get<Note[]>('/notes/')
+            api.get<Note[]>(`/notes/?group_id=${groupId}`)
         ]).then(([groupData, personsData, notesData]) => {
             setGroup(groupData);
             setEditName(groupData.name);
             setEditDesc(groupData.description || '');
             setAllPersons(personsData);
-            setGroupNotes(notesData.filter(n => n.group_id === groupId));
+            setGroupNotes(notesData);
             setLoading(false);
         }).catch(err => {
             console.error(err);
@@ -110,6 +111,33 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     if (!group) return <div>Group not found.</div>;
 
     const availablePersons = allPersons.filter(p => !group.members.some(m => m.id === p.id));
+    
+    const noteStats = {
+        total: groupNotes.length,
+        earliest: groupNotes.length > 0 ? [...groupNotes].sort((a, b) => a.date.localeCompare(b.date))[0].date : null,
+        latest: groupNotes.length > 0 ? [...groupNotes].sort((a, b) => b.date.localeCompare(a.date))[0].date : null
+    };
+
+    const calculateTenure = () => {
+        if (!noteStats.earliest || !noteStats.latest) return 'N/A';
+        const first = new Date(noteStats.earliest);
+        const last = new Date(noteStats.latest);
+        const today = new Date();
+        const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+        const isActive = (today.getTime() - last.getTime()) <= oneMonthMs;
+        const end = isActive ? today : last;
+        
+        const diffMs = end.getTime() - first.getTime();
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const months = Math.floor(days / 30.44);
+        const years = Math.floor(months / 12);
+        
+        if (years > 0) return `${years}y ${months % 12}m`;
+        if (months > 0) return `${months} month${months > 1 ? 's' : ''}`;
+        return `${days} day${days !== 1 ? 's' : ''}`;
+    };
+
+    const isActive = noteStats.latest ? (new Date().getTime() - new Date(noteStats.latest).getTime()) <= (30 * 24 * 60 * 60 * 1000) : false;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -128,11 +156,42 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                         <button type="submit" className="btn-primary" style={{ alignSelf: 'flex-end' }}>Save Changes</button>
                     </form>
                 ) : (
-                    <div>
-                        <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>{group.name}</h1>
-                        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>{group.description || 'No description'}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flexGrow: 1 }}>
+                                <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>{group.name}</h1>
+                                <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>{group.description || 'No description'}</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '24px', textAlign: 'right', background: 'rgba(56, 189, 248, 0.03)', padding: '16px', borderRadius: '12px', alignItems: 'center' }}>
+                                <div>
+                                    <div style={{ 
+                                        fontSize: '0.6rem', 
+                                        padding: '2px 8px', 
+                                        borderRadius: '20px', 
+                                        background: isActive ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                        color: isActive ? '#22c55e' : '#ef4444',
+                                        fontWeight: 800,
+                                        marginBottom: '4px'
+                                    }}>
+                                        {isActive ? '● ACTIVE' : '○ INACTIVE'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Tenure</div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{calculateTenure()}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Notes</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{noteStats.total}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Latest</div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{noteStats.latest || 'Never'}</div>
+                                </div>
+                            </div>
+                        </div>
                         
-                        <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                             {group.tags.map(tag => (
                                 <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
                                     {tag.key ? `${tag.key}: ` : ''}{tag.value}
@@ -150,26 +209,26 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                 )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3>Group Members ({group.members.length})</h3>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Group Members ({group.members.length})</h3>
                         <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => setShowAddMember(true)}>+ Add Member</button>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                         {group.members.length === 0 ? (
-                            <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1' }}>No members in this group yet.</p>
+                            <p style={{ color: 'var(--text-muted)' }}>No members in this group yet.</p>
                         ) : (
                             group.members.map(member => (
-                                <div key={member.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div key={member.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
                                     <div style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(member.id)}>
-                                        <h4 style={{ fontSize: '1rem' }}>{member.name}</h4>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{member.contact_method || 'No contact'}</p>
+                                        <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{member.name}</h4>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{member.contact_method || 'No contact'}</p>
                                     </div>
                                     <button 
                                         onClick={() => handleRemoveMember(member.id)}
-                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem' }}
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem', padding: '4px' }}
                                         title="Remove from group"
                                     >
                                         &times;
@@ -179,26 +238,45 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                         )}
                     </div>
 
-                    <h3 style={{ marginTop: '24px' }}>Group Session History</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Group Session History</h3>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Showing last 20 sessions</span>
+                    </div>
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {groupNotes.length === 0 ? (
-                            <p style={{ color: 'var(--text-muted)' }}>No notes linked specifically to this group.</p>
+                            <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>No notes linked specifically to this group.</p>
+                            </div>
                         ) : (
-                            groupNotes.map(note => (
-                                <div key={note.id} className="card" style={{ cursor: 'pointer' }} onClick={() => onSelectNote(note.id)}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{note.date}</span>
-                                        <span className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)' }}>{note.stage}</span>
+                            groupNotes.slice(0, 20).map(note => (
+                                <div key={note.id} className="card" style={{ cursor: 'pointer', transition: 'transform 0.2s' }} onClick={() => onSelectNote(note.id)}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{note.date}</span>
+                                        <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>{note.stage.toUpperCase()}</span>
                                     </div>
-                                    <h4 style={{ fontSize: '1.1rem' }}>{note.title}</h4>
+                                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{note.title}</h4>
+                                    <div style={{ 
+                                        marginTop: '12px', 
+                                        maxHeight: '120px', 
+                                        overflow: 'hidden', 
+                                        maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+                                        WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)'
+                                    }}>
+                                        <div className="markdown-content" style={{ 
+                                            fontSize: '0.9rem', 
+                                            color: note.cleaned_text || note.raw_capture ? 'var(--text-secondary)' : 'var(--primary)', 
+                                            fontStyle: note.cleaned_text || note.raw_capture ? 'normal' : 'italic'
+                                        }}>
+                                            <ReactMarkdown>
+                                                {note.cleaned_text || note.raw_capture || (note.session_brief ? `**Briefing:** ${note.session_brief}` : 'No content yet.')}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </div>
                                 </div>
                             ))
                         )}
                     </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    {/* Group Tags moved to header card */}
                 </div>
             </div>
 

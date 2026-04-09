@@ -459,8 +459,12 @@ def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     return db_note
 
 @app.get("/notes/", response_model=List[schemas.Note])
-def read_notes(search: str = None, skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+def read_notes(person_id: int = None, group_id: int = None, search: str = None, skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)):
     query = db.query(models.Note)
+    if person_id:
+        query = query.filter(models.Note.person_id == person_id)
+    if group_id:
+        query = query.filter(models.Note.group_id == group_id)
     if search:
         query = query.filter(
             (models.Note.title.ilike(f"%{search}%")) | 
