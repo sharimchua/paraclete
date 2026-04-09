@@ -104,7 +104,9 @@ class Note(Base):
     actions = relationship("Action", back_populates="note", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="note", cascade="all, delete-orphan")
     references = relationship("Reference", secondary=note_references, back_populates="linked_notes")
-    generated_references = relationship("Reference", back_populates="source_note")
+    generated_references = relationship("Reference", back_populates="source_note", cascade="all, delete-orphan")
+    embedding = relationship("NoteEmbedding", back_populates="note", cascade="all, delete-orphan", uselist=False)
+
 
 class ReferenceType(str, enum.Enum):
     CONCEPT = "Concept"
@@ -119,7 +121,8 @@ class Reference(Base):
     title = Column(String, index=True)
     type = Column(Enum(ReferenceType), default=ReferenceType.CONCEPT)
     body = Column(Text, nullable=True)
-    source_note_id = Column(Integer, ForeignKey("notes.id"), nullable=True)
+    source_note_id = Column(Integer, ForeignKey("notes.id", ondelete="SET NULL"), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -133,7 +136,8 @@ class Action(Base):
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String)
     resolved = Column(Boolean, default=False)
-    note_id = Column(Integer, ForeignKey("notes.id"))
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"))
+
 
     # Relationships
     note = relationship("Note", back_populates="actions")
@@ -143,17 +147,19 @@ class Message(Base):
     id = Column(Integer, primary_key=True, index=True)
     draft_text = Column(Text)
     sent_at = Column(DateTime, nullable=True)
-    note_id = Column(Integer, ForeignKey("notes.id"))
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"))
+
 
     # Relationships
     note = relationship("Note", back_populates="messages")
 
 class NoteEmbedding(Base):
     __tablename__ = "note_embeddings"
-    note_id = Column(Integer, ForeignKey("notes.id"), primary_key=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
     vector = Column(Text) # JSON string of float list
     
-    note = relationship("Note", backref="embedding")
+    note = relationship("Note", back_populates="embedding")
+
 
 class ReferenceEmbedding(Base):
     __tablename__ = "reference_embeddings"
