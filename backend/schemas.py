@@ -104,6 +104,7 @@ class NoteBase(BaseModel):
     stage: NoteStage
     raw_capture: Optional[str] = None
     cleaned_text: Optional[str] = None
+    session_brief: Optional[str] = None
     person_id: Optional[int] = None
     group_id: Optional[int] = None
 
@@ -115,6 +116,7 @@ class NoteUpdate(BaseModel):
     stage: Optional[NoteStage] = None
     raw_capture: Optional[str] = None
     cleaned_text: Optional[str] = None
+    session_brief: Optional[str] = None
     date: Optional[dt_date] = None
 
 class Note(NoteBase):

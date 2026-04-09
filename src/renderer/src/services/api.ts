@@ -33,6 +33,7 @@ export interface Note {
     stage: 'Prepare' | 'Capture' | 'Clean' | 'Published' | 'Archived';
     raw_capture?: string;
     cleaned_text?: string;
+    session_brief?: string;
     person_id?: number;
     group_id?: number;
     tags: Tag[];

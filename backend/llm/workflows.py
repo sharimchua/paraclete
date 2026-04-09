@@ -104,3 +104,15 @@ async def run_session_brief(person_name: str, previous_notes: str) -> str:
         max_tokens=1024
     )
 
+
+async def run_suggest_title(text: str) -> str:
+    """Generate a short theme-based title for a note."""
+    prompt = templates.suggest_title(text=text)
+    
+    return await asyncio.to_thread(
+        llm_manager.call,
+        prompt=prompt,
+        system="You are an expert practitioner assistant.",
+        max_tokens=100
+    )
+

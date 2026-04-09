@@ -123,3 +123,14 @@ Based on the previous sessions' trends, summarise what topics have been covered 
 Provide a concise, professional briefing for the practitioner to read before starting the session.
 
 ### AI Session Brief:"""
+
+def suggest_title(text: str) -> str:
+    """Generate a short, scannable title for a note."""
+    return f"""Analyze the following session note and provide a recommended short title (3-6 words) that captures the primary theme or focal point. 
+The title should be professional and easy to scan.
+Do not include the date or the person's name in the title.
+
+SESSION NOTE:
+{text}
+
+RECOMMENDED TITLE:"""

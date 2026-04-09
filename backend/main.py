@@ -233,9 +233,19 @@ class AnalysisRequest(BaseModel):
 class SessionBriefRequest(BaseModel):
     person_id: int | None = None
     group_id: int | None = None
+    note_id: int | None = None
+
+class TitleSuggestionRequest(BaseModel):
+    text: str
 
 @app.post("/analysis/session-brief")
 async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_db)):
+    # 0. Check if we already have a brief for this note
+    if req.note_id:
+        db_note = db.query(models.Note).filter(models.Note.id == req.note_id).first()
+        if db_note and db_note.session_brief:
+            return {"result": db_note.session_brief}
+
     person_name = "General"
     history_text = "No previous history."
 
@@ -257,6 +267,16 @@ async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_
     try:
         brief = await llm.workflows.run_session_brief(person_name, history_text)
         return {"result": brief}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analysis/suggest-title")
+async def suggest_note_title(req: TitleSuggestionRequest):
+    try:
+        title = await llm.workflows.run_suggest_title(req.text)
+        # Cleanup quotes if any
+        title = title.strip().strip('"').strip("'")
+        return {"result": title}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

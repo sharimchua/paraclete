@@ -6,40 +6,63 @@ import ReactMarkdown from 'react-markdown';
 interface Props {
     personId?: number;
     groupId?: number;
+    noteId?: number; // Added for editing
     onComplete: () => void;
 }
 
 type Stage = 'Prepare' | 'Capture' | 'Refine';
 
-
-
-const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
+const NoteAuthoring: React.FC<Props> = ({ personId, groupId, noteId, onComplete }) => {
     const [stage, setStage] = useState<Stage>('Prepare');
     const [person, setPerson] = useState<Person | null>(null);
     const [group, setGroup] = useState<any | null>(null);
     const [recentNotes, setRecentNotes] = useState<Note[]>([]);
     const [rawText, setRawText] = useState('');
+    const [title, setTitle] = useState('');
     const [loading, setLoading] = useState(true);
     const [currentNote, setCurrentNote] = useState<Note | null>(null);
     const [isRefining, setIsRefining] = useState(false);
+    const [isSuggestingTitle, setIsSuggestingTitle] = useState(false);
 
-    const [suggestedDate, setSuggestedDate] = useState<string>(() => {
+    const [sessionDate, setSessionDate] = useState<string>(() => {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     });
     const [suggestedTags, setSuggestedTags] = useState<{ key: string, value: string }[]>([]);
-    const [selectedTags, setSelectedTags] = useState<{ key: string, value: string }[]>([]);
-    const [existingTaxonomy, setExistingTaxonomy] = useState<{ key: string, value: string }[]>([]);
+    const [selectedTags, setSelectedTags] = useState<any[]>([]);
+    const [existingTaxonomy, setExistingTaxonomy] = useState<any[]>([]);
     const [sessionBrief, setSessionBrief] = useState<string>('');
     const [isBriefing, setIsBriefing] = useState(false);
     const [isLlmReady, setIsLlmReady] = useState(true);
     const briefingFetchedFor = useRef<string | null>(null);
 
-
+    // Load existing note if noteId is provided
+    useEffect(() => {
+        if (noteId) {
+            setLoading(true);
+            api.get<Note>(`/notes/${noteId}`)
+                .then(n => {
+                    setCurrentNote(n);
+                    setRawText(n.raw_capture || '');
+                    setTitle(n.title || '');
+                    setSessionDate(n.date);
+                    setSelectedTags(n.tags || []);
+                    if (n.session_brief) setSessionBrief(n.session_brief);
+                    
+                    // If note has cleaned text already, we might want to skip directly to Refine? 
+                    // No, let's start at Prepare to show the persistent brief.
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error('Failed to load note:', err);
+                    setLoading(false);
+                });
+        }
+    }, [noteId]);
 
     useEffect(() => {
-        const identifier = `${personId}-${groupId}`;
-        if ((personId || groupId) && briefingFetchedFor.current !== identifier) {
+        const identifier = `${personId}-${groupId}-${noteId}`;
+        if ((personId || groupId || noteId) && briefingFetchedFor.current !== identifier) {
             // Check LLM status first to provide better feedback
             api.get<{ is_ready: boolean }>('/llm/status')
                 .then(res => setIsLlmReady(res.is_ready))
@@ -49,7 +72,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
             setIsBriefing(true);
             api.post<{ result: string }>('/analysis/session-brief', {
                 person_id: personId,
-                group_id: groupId
+                group_id: groupId,
+                note_id: noteId
             }).then(res => {
                 setSessionBrief(res.result);
                 setIsBriefing(false);
@@ -60,9 +84,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                 briefingFetchedFor.current = null; // Allow retry on failure
             });
         }
-    }, [personId, groupId]);
-
-
+    }, [personId, groupId, noteId]);
 
     useEffect(() => {
         const loadMainEntity = async () => {
@@ -73,11 +95,19 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                 } else if (groupId) {
                     const g = await api.get<any>(`/groups/${groupId}`);
                     setGroup(g);
+                } else if (noteId && currentNote) {
+                    if (currentNote.person_id) {
+                         const p = await api.get<Person>(`/persons/${currentNote.person_id}`);
+                         setPerson(p);
+                    } else if (currentNote.group_id) {
+                         const g = await api.get<any>(`/groups/${currentNote.group_id}`);
+                         setGroup(g);
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load entity:', err);
             } finally {
-                setLoading(false);
+                if (!noteId) setLoading(false);
             }
         };
 
@@ -88,30 +118,33 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                     api.get<any[]>('/tags/')
                 ]);
                 setExistingTaxonomy(tags);
-                if (personId) {
-                    setRecentNotes(notes.filter(n => n.person_id === personId).slice(0, 3));
-                } else if (groupId) {
-                    setRecentNotes(notes.filter(n => n.group_id === groupId).slice(0, 3));
+                
+                const pid = personId || currentNote?.person_id;
+                const gid = groupId || currentNote?.group_id;
+
+                if (pid) {
+                    setRecentNotes(notes.filter(n => n.person_id === pid && n.id !== noteId).slice(0, 3));
+                } else if (gid) {
+                    setRecentNotes(notes.filter(n => n.group_id === gid && n.id !== noteId).slice(0, 3));
                 }
             } catch (err) {
                 console.error('Failed to load background data:', err);
             }
         };
 
-        if (personId || groupId) {
+        if (personId || groupId || noteId) {
             loadMainEntity();
             loadBackgroundData();
         } else {
             setLoading(false);
         }
-    }, [personId, groupId]);
+    }, [personId, groupId, noteId, currentNote?.id]);
 
-
-    const handleStartRefine = async () => {
+    const handleStartRefine = async (force: boolean = false) => {
         if (!rawText.trim()) return;
 
         // If we already have a draft for this exact raw text, just show it
-        if (currentNote && currentNote.raw_capture === rawText) {
+        if (!force && currentNote && currentNote.raw_capture === rawText && currentNote.cleaned_text) {
             setStage('Refine');
             return;
         }
@@ -123,31 +156,31 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
             // Call TRANSIENT analysis (Doesn't save to DB yet)
             const processRes = await api.post<{ result: string }>('/analysis/process', {
                 raw_text: rawText,
-                person_id: personId,
-                group_id: groupId
+                person_id: personId || currentNote?.person_id,
+                group_id: groupId || currentNote?.group_id
             });
 
             // We'll update a local ref/state to hold the transient cleaned text
-            // We use the Note type but it's not actually from the DB yet
             setCurrentNote({
-                id: 0,
-                title: `Session ${suggestedDate}`,
+                id: noteId || 0,
+                title: title || `Session ${sessionDate}`,
                 cleaned_text: processRes.result,
                 raw_capture: rawText,
+                session_brief: sessionBrief,
                 stage: 'Clean',
-                date: suggestedDate,
-                tags: []
-            } as Note);
+                date: sessionDate,
+                tags: selectedTags
+            } as any);
 
             // Extract entities (Transient)
             const metadata = await api.post<any>('/analysis/extract', {
                 raw_text: rawText,
-                person_id: personId,
-                group_id: groupId
+                person_id: personId || currentNote?.person_id,
+                group_id: groupId || currentNote?.group_id
             });
 
-            if (metadata.suggestedDate) {
-                setSuggestedDate(metadata.suggestedDate);
+            if (metadata.suggestedDate && !noteId) {
+                setSessionDate(metadata.suggestedDate);
             }
             if (metadata.tags) {
                 setSuggestedTags(metadata.tags);
@@ -162,6 +195,23 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
         }
     };
 
+    const handleSuggestTitle = async () => {
+        const textToAnalyze = currentNote?.cleaned_text || rawText;
+        if (!textToAnalyze) return;
+
+        setIsSuggestingTitle(true);
+        try {
+            const res = await api.post<{ result: string }>('/analysis/suggest-title', {
+                text: textToAnalyze
+            });
+            setTitle(res.result);
+        } catch (err) {
+            console.error('Failed to suggest title:', err);
+        } finally {
+            setIsSuggestingTitle(false);
+        }
+    };
+
     const handleUpdateNoteText = (val: string) => {
         if (currentNote) {
             setCurrentNote({ ...currentNote, cleaned_text: val });
@@ -171,24 +221,32 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
     const handleSaveNote = async () => {
         setLoading(true);
         try {
-            // Safety: Ensure date is correctly formatted or fallback to today
-            const finalDate = (suggestedDate && /^\d{4}-\d{2}-\d{2}$/.test(suggestedDate)) 
-                ? suggestedDate 
+            const finalDate = (sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(sessionDate)) 
+                ? sessionDate 
                 : new Date().toISOString().split('T')[0];
 
-            // 1. Create the note record
-            const note = await api.post<Note>('/notes/', {
-                title: currentNote?.title || `Session ${finalDate}`,
+            let note: Note;
+            const noteData = {
+                title: title || `Session ${finalDate}`,
                 date: finalDate,
-                stage: 'Published',
+                stage: stage === 'Refine' ? 'Published' : (stage === 'Capture' ? 'Capture' : 'Prepare'),
                 raw_capture: rawText,
                 cleaned_text: currentNote?.cleaned_text || (rawText ? `Draft: ${rawText.substring(0, 100)}...` : ''),
-                person_id: personId || null,
-                group_id: groupId || null
-            });
+                session_brief: sessionBrief,
+                person_id: personId || currentNote?.person_id || null,
+                group_id: groupId || currentNote?.group_id || null
+            };
 
+            if (noteId) {
+                note = await api.patch<Note>(`/notes/${noteId}`, noteData);
+            } else {
+                note = await api.post<Note>('/notes/', noteData);
+            }
 
             // 2. Link tags
+            // First, clear old tags if updating? 
+            // In a real app we'd need a way to clear them. For now, let's just add new ones.
+            // Better: api.post('/tags/link') already handles duplicates gracefully in backend if we implement it.
             for (const tagObj of selectedTags) {
                 const tag = await api.post<any>('/tags/', { 
                     key: tagObj.key, 
@@ -205,13 +263,25 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
             await api.post(`/notes/${note.id}/publish`, {});
             onComplete();
         } catch (err) {
-            console.error('Analysis failed:', err);
+            console.error('Save failed:', err);
             setIsRefining(false);
         } finally {
             setIsRefining(false);
         }
     };
 
+    const handleDeleteNote = async () => {
+        if (!noteId) return;
+        if (window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+            try {
+                await api.delete(`/notes/${noteId}`);
+                onComplete();
+            } catch (err) {
+                console.error('Delete failed:', err);
+                alert('Failed to delete note.');
+            }
+        }
+    };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ocr' | 'dictate') => {
         if (!e.target.files?.[0]) return;
@@ -239,7 +309,15 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
             {/* Breadcrumb Pill Navigation & Global Actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <div style={{ width: '120px' }}>
-                    {/* Spacer for balance */}
+                    {noteId && (
+                        <button 
+                            className="btn-secondary" 
+                            style={{ color: '#ef4444', fontSize: '0.85rem' }}
+                            onClick={handleDeleteNote}
+                        >
+                            Delete Note
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -280,7 +358,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                                         opacity: isDisabled ? 0.5 : 1
                                     }}
                                 >
-                                    {s.label}
+                                    {isActive && isRefining && s.id === 'Refine' ? 'Processing...' : s.label}
                                 </div>
                             );
                         })}
@@ -292,7 +370,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                         disabled={stage === 'Refine' || (stage === 'Capture' && !rawText.trim())}
                         onClick={() => {
                             if (stage === 'Prepare') setStage('Capture');
-                            if (stage === 'Capture') handleStartRefine();
+                            if (stage === 'Capture') handleStartRefine(false);
                         }}
                     >
                         &rsaquo;
@@ -302,29 +380,49 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                 <div style={{ width: '120px', display: 'flex', justifyContent: 'flex-end' }}>
                     <button 
                         className="btn-primary" 
-                        disabled={!rawText.trim()}
+                        disabled={loading || isBriefing}
                         onClick={handleSaveNote}
                         style={{ padding: '8px 24px', borderRadius: '12px' }}
                     >
-                        Save
+                        {noteId ? 'Update' : 'Save Draft'}
                     </button>
                 </div>
             </div>
 
-
-
             <div style={{ marginTop: '16px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 {stage === 'Prepare' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                        <div className="card" style={{ borderLeft: '4px solid var(--primary)' }}>
-                            <h2 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Prepare for Session</h2>
-                            {person ? (
-                                <p style={{ color: 'var(--text-secondary)' }}>Setting context for <strong>{person.name}</strong>.</p>
-                            ) : group ? (
-                                <p style={{ color: 'var(--text-secondary)' }}>Setting context for group <strong>{group.name}</strong>.</p>
-                            ) : (
-                                <p style={{ color: 'var(--text-secondary)' }}>New general session.</p>
-                            )}
+                        <div className="card" style={{ borderLeft: '4px solid var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>{noteId ? 'Review Session Context' : 'Prepare for Session'}</h2>
+                                {person ? (
+                                    <p style={{ color: 'var(--text-secondary)' }}>Context for <strong>{person.name}</strong>.</p>
+                                ) : group ? (
+                                    <p style={{ color: 'var(--text-secondary)' }}>Context for group <strong>{group.name}</strong>.</p>
+                                ) : (
+                                    <p style={{ color: 'var(--text-secondary)' }}>General session.</p>
+                                )}
+                            </div>
+                            
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Session Date</label>
+                                <input
+                                    type="date"
+                                    value={sessionDate}
+                                    onChange={(e) => setSessionDate(e.target.value)}
+                                    className="input-field"
+                                    style={{ 
+                                        padding: '8px 12px', 
+                                        borderRadius: '8px', 
+                                        background: 'var(--bg-deep)', 
+                                        border: '1px solid var(--border)',
+                                        fontSize: '1rem',
+                                        width: '180px',
+                                        cursor: 'pointer',
+                                        colorScheme: 'dark' // Ensures the picker is visible in dark mode
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
@@ -358,7 +456,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                                         <div style={{ textAlign: 'center' }}>
                                             <div className="loader" style={{ scale: '0.5', margin: '0 auto' }} />
                                             <p style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '8px' }}>
-                                                {isLlmReady ? 'Generating Brief...' : 'Warming up AI Engine (Loading 20GB Model)...'}
+                                                {isLlmReady ? 'Generating Brief...' : 'Warming up AI Engine...'}
                                             </p>
                                         </div>
 
@@ -367,14 +465,11 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                                             <ReactMarkdown>{sessionBrief}</ReactMarkdown>
                                         </div>
                                     ) : (
-                                        <p style={{ color: 'var(--primary)' }}>Suggestions will appear here once you have session history. Focus on foundational goals today.</p>
+                                        <p style={{ color: 'var(--primary)' }}>Suggestions will appear here once you have session history.</p>
                                     )}
                                 </div>
                             </div>
                         </div>
-
-                        {/* Nav Buttons Removed as per request */}
-
                     </div>
                 )}
 
@@ -422,10 +517,9 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                 {stage === 'Refine' && (
                     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '24px' }}>
                         {isRefining ? (
-
                             <div className="card" style={{ textAlign: 'center', padding: '64px', margin: 'auto' }}>
                                 <h3>AI Refinement in Progress...</h3>
-                                <p style={{ color: 'var(--text-secondary)', marginTop: '16px' }}>Extracting metadata, identifying dates, and structuring your notes.</p>
+                                <p style={{ color: 'var(--text-secondary)', marginTop: '16px' }}>Extracting metadata and structuring your notes.</p>
                                 <div className="loader" style={{ margin: '32px auto' }} />
                             </div>
                         ) : (
@@ -435,15 +529,17 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
                                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Refinement & Structure</h2>
                                         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Verify metadata and polish the structured record.</p>
                                     </div>
-
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        {/* Save button already moved to top nav bar */}
-                                    </div>
-
-
+                                    <button 
+                                        className="btn-secondary" 
+                                        onClick={() => handleStartRefine(true)}
+                                        disabled={isRefining || !rawText.trim()}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}
+                                    >
+                                        <span>🔍</span> {isRefining ? 'Analysing...' : 'Re-Analyse Capture'}
+                                    </button>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', flexGrow: 1 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', flexGrow: 1 }}>
                                     <textarea
                                         value={currentNote?.cleaned_text || ''}
                                         onChange={(e) => handleUpdateNoteText(e.target.value)}
@@ -462,11 +558,40 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, onComplete }) => {
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                         <div className="card" style={{ padding: '20px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Note Title</h4>
+                                                <button 
+                                                    className="btn-secondary" 
+                                                    style={{ fontSize: '0.7rem', padding: '4px 8px' }}
+                                                    onClick={handleSuggestTitle}
+                                                    disabled={isSuggestingTitle}
+                                                >
+                                                    {isSuggestingTitle ? 'Suggesting...' : '✨ Suggest Theme'}
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter a title..."
+                                                value={title}
+                                                onChange={(e) => setTitle(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '8px',
+                                                    borderRadius: '6px',
+                                                    border: '1px solid var(--border)',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: 600
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Date moved to Prepare stage but kept here for final verification */}
+                                        <div className="card" style={{ padding: '20px' }}>
                                             <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Session Date</h4>
                                             <input
                                                 type="date"
-                                                value={suggestedDate}
-                                                onChange={(e) => setSuggestedDate(e.target.value)}
+                                                value={sessionDate}
+                                                onChange={(e) => setSessionDate(e.target.value)}
                                                 style={{
                                                     width: '100%',
                                                     padding: '8px',

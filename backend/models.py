@@ -93,6 +93,7 @@ class Note(Base):
     stage = Column(Enum(NoteStage), default=NoteStage.PREPARE)
     raw_capture = Column(Text, nullable=True)
     cleaned_text = Column(Text, nullable=True)
+    session_brief = Column(Text, nullable=True)
     person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
