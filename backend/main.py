@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -12,12 +13,21 @@ from . import models, schemas, database, llm
 from datetime import datetime
 import asyncio
 import numpy as np
+import tempfile
 
 # Ensure database tables exist (simple startup for prototype)
 # In production, Alembic handles this.
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Paraclete Backend")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-load the 20GB MoE model into VRAM on startup
+    print(">>> Pre-loading Gemma 4 26B MoE into VRAM...")
+    # Run in thread to not block the event loop
+    asyncio.create_task(asyncio.to_thread(llm.llm_manager.load_model))
+    yield
+
+app = FastAPI(title="Paraclete Backend", lifespan=lifespan)
 manager = None
 
 class ConnectionManager:
@@ -42,25 +52,39 @@ manager = ConnectionManager()
 
 @app.post("/process/ocr")
 async def process_ocr(file: UploadFile = File(...)):
-    # In a real multimodal setup, we'd pass the image bytes to Gemma 4
-    # For now, we simulate the logic.
-    prompt = llm.TEMPLATES["ocr_capture"].format(text=f"[Image: {file.filename}]")
-    await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": prompt}})
-    
-    await asyncio.sleep(2) # Simulate processing
-    result = f"[Extracted from {file.filename}]: This is a simulated OCR result from Gemma 4 Vision based on the prompt template."
-    
-    await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
-    return {"text": result}
+    # Write to a temporary file for the vision projector to read
+    temp_fd, temp_path = tempfile.mkstemp(suffix=os.path.splitext(file.filename)[1])
+    try:
+        with os.fdopen(temp_fd, 'wb') as tmp:
+            tmp.write(await file.read())
+            
+        # Send a clean direct instruction for the multimodal MoE model.
+        prompt = "Carefully transcribe all the text found in this image. Format it clearly, using markdown lists or headers if it looks like a structured note or schedule. If you see any drawings, diagrams, or graphs, provide a brief description of what they depict in brackets [like this]. Output ONLY the transcription and descriptions, without any conversational filler or meta-notes."
+        await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": prompt}})
+        
+        loop = asyncio.get_event_loop()
+        # Pass image_path to the manager which uses the vision projector
+        response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt, image_path=temp_path))
+        result = response["choices"][0]["text"].strip()
+        
+        await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
+        return {"text": result}
+    finally:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass
 
 @app.post("/process/dictate")
 async def process_dictate(file: UploadFile = File(...)):
-    # In a real setup, we'd pass audio to Gemma 4
-    prompt = llm.TEMPLATES["dictation_capture"].format(text=f"[Audio: {file.filename}]")
+    # Gemma 4 26B MoE handles dictation cleanup as text-to-text
+    prompt = llm.TEMPLATES["dictation_capture"].format(text=f"[Audio Input: {file.filename}]")
     await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "prompt": prompt}})
     
-    await asyncio.sleep(3) # Simulate transcribing
-    result = "This is a simulated transcription from Gemma 4 Multimodal audio processing based on the prompt template."
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt))
+    result = response["choices"][0]["text"].strip()
     
     await manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
     return {"text": result}

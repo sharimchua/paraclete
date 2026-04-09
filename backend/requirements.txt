@@ -6,3 +6,4 @@ llama-cpp-python
 numpy
 python-multipart
 websockets
+huggingface-hub

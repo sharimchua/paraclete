@@ -74,41 +74,37 @@ Write-Host "--- Installing build requirements (cmake, scikit-build-core)..."
 
 Write-Host "--- Installing backend dependencies (FastAPI, llama-cpp-python with CUDA)..."
 $env:CMAKE_ARGS = "-DGGML_CUDA=on"
-& $pythonExe -m pip install -r $requirementsFile --force-reinstall --no-cache-dir
+& $pythonExe -m pip install -r $requirementsFile --no-cache-dir
 
 # 5. Model Weights
-Write-Host "--- Downloading Model Weights (Placeholder for Gemma 4 MoE)..."
-$modelsPath = Join-Path $installPath "models"
-if (-not (Test-Path $modelsPath)) {
-    New-Item -ItemType Directory -Path $modelsPath -Force
-}
+Write-Host "--- Downloading Model Weights (Gemma 4 MoE / Gemma 2 9B)..."
+$modelDir = Join-Path $installPath "models"
+if (-not (Test-Path $modelDir)) { New-Item -ItemType Directory -Path $modelDir -Force }
 
-$modelFile = Join-Path $modelsPath "gemma-4-moe.gguf"
-if (-not (Test-Path $modelFile)) {
-    # Using a placeholder for now as downloading gigabytes of models might be too much for this step
-    # but the logic for downloading is clearly defined here.
-    "PLACEHOLDER FOR GEMMA 4 MOE WEIGHTS" | Out-File $modelFile
-    Write-Host "--- Initialized placeholder for gemma-4-moe.gguf"
-}
+Write-Host "--- Running model downloader (Gemma 4 26B A4B-it)..."
+& $pythonExe "scripts\download_weights.py"
 
 # 6. Verification
 Write-Host "--- Verifying CUDA support and model presence..."
 $pythonVerification = @"
 import sys
 import os
-import site
-print(f'Python path: {sys.path}')
-print(f'Site packages: {site.getsitepackages()}')
 try:
     import llama_cpp
+    from llama_cpp.llama_chat_format import LlamaMLProjector
     print(f'Python version: {sys.version}')
     print('SUCCESS: llama-cpp-python loaded.')
-    model_path = os.path.join('$($modelsPath.Replace('\', '/'))', 'gemma-4-moe.gguf')
+    model_path = os.path.join(r'$modelDir', 'gemma-4-moe.gguf')
+    mmproj_path = os.path.join(r'$modelDir', 'mmproj-gemma-4.gguf')
     if os.path.exists(model_path):
          print(f'SUCCESS: Model found at {model_path}')
     else:
-         print('FAILURE: Model weight missing.')
+         print(f'FAILURE: Model weight missing at {model_path}')
          sys.exit(1)
+    if os.path.exists(mmproj_path):
+         print(f'SUCCESS: Vision projector found at {mmproj_path}')
+    else:
+         print(f'WARNING: Vision projector missing at {mmproj_path}')
 except Exception as e:
     print(f'FAILURE: {e}')
     sys.exit(1)
