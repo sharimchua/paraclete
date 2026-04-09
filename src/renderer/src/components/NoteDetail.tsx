@@ -14,6 +14,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editText, setEditText] = useState('');
+    const [editDate, setEditDate] = useState('');
 
     const fetchData = async () => {
         setLoading(true);
@@ -22,6 +23,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
             setNote(noteData);
             setEditTitle(noteData.title);
             setEditText(noteData.cleaned_text || noteData.raw_capture || '');
+            setEditDate(noteData.date);
 
             if (noteData.person_id) {
                 const p = await api.get<Person>(`/persons/${noteData.person_id}`);
@@ -48,7 +50,8 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
         try {
             await api.patch(`/notes/${noteId}`, { 
                 title: editTitle, 
-                cleaned_text: editText 
+                cleaned_text: editText,
+                date: editDate
             });
             setIsEditing(false);
             fetchData();
@@ -93,6 +96,16 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                                 className="input-field" 
                                 value={editTitle} 
                                 onChange={e => setEditTitle(e.target.value)} 
+                                required 
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Session Date</label>
+                            <input 
+                                type="date"
+                                className="input-field" 
+                                value={editDate} 
+                                onChange={e => setEditDate(e.target.value)} 
                                 required 
                             />
                         </div>

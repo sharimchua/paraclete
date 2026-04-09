@@ -58,14 +58,10 @@ async def process_ocr(file: UploadFile = File(...)):
         with os.fdopen(temp_fd, 'wb') as tmp:
             tmp.write(await file.read())
             
-        # Send a clean direct instruction for the multimodal MoE model.
-        prompt = "Carefully transcribe all the text found in this image. Format it clearly, using markdown lists or headers if it looks like a structured note or schedule. If you see any drawings, diagrams, or graphs, provide a brief description of what they depict in brackets [like this]. Output ONLY the transcription and descriptions, without any conversational filler or meta-notes."
-        await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": prompt}})
+        await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": "Image Analysis"}})
         
-        loop = asyncio.get_event_loop()
-        # Pass image_path to the manager which uses the vision projector
-        response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt, image_path=temp_path))
-        result = response["choices"][0]["text"].strip()
+        # Use the specialized OCR workflow
+        result = await llm.workflows.run_ocr(temp_path)
         
         await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
         return {"text": result}
@@ -78,13 +74,9 @@ async def process_ocr(file: UploadFile = File(...)):
 
 @app.post("/process/dictate")
 async def process_dictate(file: UploadFile = File(...)):
-    # Gemma 4 26B MoE handles dictation cleanup as text-to-text
-    prompt = llm.TEMPLATES["dictation_capture"].format(text=f"[Audio Input: {file.filename}]")
-    await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "prompt": prompt}})
+    await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "prompt": "Cleaning Audio Capture"}})
     
-    loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt))
-    result = response["choices"][0]["text"].strip()
+    result = await llm.workflows.run_dictation(file.filename)
     
     await manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
     return {"text": result}
@@ -221,6 +213,85 @@ def remove_group_member(group_id: int, person_id: int, db: Session = Depends(get
         db.commit()
     return {"status": "success"}
 
+# --- Transient Analysis (Review then Save) ---
+from pydantic import BaseModel
+
+class AnalysisRequest(BaseModel):
+    raw_text: str
+    person_id: int | None = None
+    group_id: int | None = None
+
+@app.post("/analysis/process")
+async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db)):
+    # Gather context
+    person_name = "General"
+    person_tags = "None"
+    history_text = "No previous history."
+    references_text = "None"
+
+    if req.person_id:
+        person = db.query(models.Person).filter(models.Person.id == req.person_id).first()
+        if person:
+            person_name = person.name
+            person_tags = ", ".join([f"{t.key}: {t.value}" for t in person.tags])
+            
+            # History
+            notes = db.query(models.Note).filter(models.Note.person_id == req.person_id).order_by(models.Note.date.desc()).limit(5).all()
+            if notes:
+                history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:200]}..." for n in notes])
+            
+            # Person References
+            if person.references:
+                refs = [f"- {r.title}: {r.body[:200]}..." for r in person.references]
+                references_text = "\n".join(refs)
+
+    # Taxonomy context
+    existing_tags = db.query(models.Tag).all()
+    tag_taxonomy = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "None"
+
+    context = {
+        "person_name": person_name,
+        "person_tags": person_tags,
+        "references": references_text,
+        "previous_notes": history_text,
+        "existing_tags": tag_taxonomy
+    }
+
+    try:
+        cleaned_text = await llm.workflows.run_note_cleanse(req.raw_text, context)
+        return {"result": cleaned_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analysis/extract")
+async def transient_extract(req: AnalysisRequest, db: Session = Depends(get_db)):
+    grammar = r'''
+    root   ::= object
+    object ::= "{" space ( pair ( "," space pair )* )? "}"
+    pair   ::= string ":" space value
+    string ::= "\"" ( [^"] | "\\" ["\\/bfnrt] | "\\u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] )* "\""
+    value  ::= string | number | object | array | "true" | "false" | "null"
+    array  ::= "[" space ( value ( "," space value )* )? "]"
+    number ::= "-"? ([0-9]+ | [0-9]+ "." [0-9]+)
+    space  ::= [ \t\n\r]*
+    '''
+    
+    existing_tags = db.query(models.Tag).all()
+    tag_context = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "No tags."
+    
+    current_date = datetime.now()
+    date_context = f"CURRENT DATE: {current_date.strftime('%Y-%m-%d')} (Year: {current_date.year})"
+
+    try:
+        data = await llm.workflows.run_entity_extraction(
+            text=f"EXISTING TAGS: {tag_context}\n\nRAW SESSION NOTE: {req.raw_text}", 
+            context=date_context,
+            grammar=grammar
+        )
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Note CRUD ---
 @app.post("/notes/", response_model=schemas.Note)
 def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
@@ -283,25 +354,153 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     
-    # 1. Cleaning
-    clean_prompt = llm.TEMPLATES["clean_note"].format(text=db_note.raw_capture)
-    await manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": clean_prompt}})
+    # 1. Gathering Context
+    person_name = "Unknown"
+    person_tags = "None"
+    references_text = "None"
+    history_text = "None"
     
-    loop = asyncio.get_event_loop()
-    clean_response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(clean_prompt, max_tokens=1000))
-    if "error" in clean_response:
-        await manager.broadcast({"event": "llm_error", "data": clean_response["error"]})
-        raise HTTPException(status_code=500, detail=clean_response["error"])
+    if db_note.person:
+        person = db_note.person
+        person_name = person.name
+        person_tags = ", ".join([f"{t.key}: {t.value}" if t.key else t.value for t in person.tags])
         
-    cleaned_text = clean_response["choices"][0]["text"].strip()
-    await manager.broadcast({"event": "llm_finish", "data": {"type": "clean_note", "result": cleaned_text}})
+        # References
+        if person.references:
+            refs = []
+            for r in person.references:
+                refs.append(f"- {r.title} ({r.type}): {r.body[:200]}...")
+            references_text = "\n".join(refs)
+            
+        # History (Previous 3 notes)
+        prev_notes = db.query(models.Note).filter(
+            models.Note.person_id == person.id,
+            models.Note.id != note_id,
+            models.Note.cleaned_text != None
+        ).order_by(models.Note.date.desc()).limit(3).all()
+        
+        if prev_notes:
+            hist = []
+            for pn in prev_notes:
+                summary = pn.cleaned_text[:300].replace('\n', ' ')
+                hist.append(f"- {pn.date}: {summary}...")
+            history_text = "\n".join(hist)
 
-    # 2. Embedding (Phase 5.4)
-    embed_text = llm.TEMPLATES["embed_note"].format(title=db_note.title, text=cleaned_text)
+    # 2. Semantic Search for Relevant References (RAG)
+    loop = asyncio.get_event_loop()
+    relevant_refs = []
+    query = db_note.raw_capture[:500] if db_note.raw_capture else db_note.title
+    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+    if query_embedding_resp:
+        q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
+        all_ref_embs = db.query(models.ReferenceEmbedding).all()
+        scored_refs = []
+        for re in all_ref_embs:
+            r_vec = np.array(json.loads(re.vector))
+            norm_q = np.linalg.norm(q_vec)
+            norm_r = np.linalg.norm(r_vec)
+            if norm_q > 0 and norm_r > 0:
+                score = np.dot(q_vec, r_vec) / (norm_q * norm_r)
+                if score > 0.4:
+                    scored_refs.append((score, re.reference))
+        
+        scored_refs.sort(key=lambda x: x[0], reverse=True)
+        for score, ref in scored_refs[:3]:
+            ref_str = f"- {ref.title} ({ref.type}): {ref.body[:300]}..."
+            # Check if already present from person references
+            if references_text == "None" or ref.title not in references_text:
+                relevant_refs.append(ref_str)
+    
+    if relevant_refs:
+        if references_text == "None":
+            references_text = "\n".join(relevant_refs)
+        else:
+            references_text += "\n" + "\n".join(relevant_refs)
+
+    # 3. Taxonomy
+    existing_tags = db.query(models.Tag).all()
+    tag_taxonomy = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "None"
+
+    # 4. Cleaning
+    context = {
+        "person_name": person_name,
+        "person_tags": person_tags,
+        "references": references_text,
+        "previous_notes": history_text,
+        "existing_tags": tag_taxonomy
+    }
+    
+    await manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": "Expansion with Context"}})
+    
+    try:
+        cleaned_text = await llm.workflows.run_note_cleanse(db_note.raw_capture, context)
+        await manager.broadcast({"event": "llm_finish", "data": {"type": "clean_note", "result": cleaned_text}})
+    except Exception as e:
+        await manager.broadcast({"event": "llm_error", "data": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Update note with the AI draft, but keep it in CLEAN (Review) stage
+    db_note.cleaned_text = cleaned_text
+    db_note.stage = "Clean"
+    db.commit()
+    db.refresh(db_note)
+    return db_note
+
+@app.post("/notes/{note_id}/draft-message", response_model=schemas.Message)
+async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    # Gather history for the message
+    prev_notes = db.query(models.Note).filter(
+        models.Note.person_id == db_note.person.id,
+        models.Note.id != note_id,
+        models.Note.cleaned_text != None
+    ).order_by(models.Note.date.desc()).limit(2).all()
+    
+    history_text = "No previous session history available."
+    if prev_notes:
+        history_text = "\n".join([f"- {n.date}: {n.title}" for n in prev_notes])
+
+    context = {
+        "person_name": db_note.person.name,
+        "summary": db_note.cleaned_text or db_note.raw_capture,
+        "history": history_text
+    }
+    
+    await manager.broadcast({"event": "llm_start", "data": {"type": "draft_message", "prompt": "Drafting Follow-up"}})
+    
+    try:
+        draft_text = await llm.workflows.run_draft_message(context)
+        await manager.broadcast({"event": "llm_finish", "data": {"type": "draft_message", "result": draft_text}})
+    except Exception as e:
+        await manager.broadcast({"event": "llm_error", "data": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    # Create and save message
+    db_msg = models.Message(draft_text=draft_text, note_id=note_id)
+    db.add(db_msg)
+    db.commit()
+    db.refresh(db_msg)
+    return db_msg
+
+@app.post("/notes/{note_id}/publish", response_model=schemas.Note)
+async def publish_note(note_id: int, db: Session = Depends(get_db)):
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not db_note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    # 1. Update Stage
+    db_note.stage = "Published"
+    
+    # 2. Generate/Update Embedding based on FINAL text
+    loop = asyncio.get_event_loop()
+    embed_text = llm.templates.embed_note(
+        title=db_note.title, 
+        text=db_note.cleaned_text or db_note.raw_capture
+    )
+    
     embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
     if embed_response:
         vector = embed_response["data"][0]["embedding"]
-        # Save or update embedding
         db_emb = db.query(models.NoteEmbedding).filter(models.NoteEmbedding.note_id == note_id).first()
         if not db_emb:
             db_emb = models.NoteEmbedding(note_id=note_id, vector=json.dumps(vector))
@@ -309,8 +508,6 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
         else:
             db_emb.vector = json.dumps(vector)
             
-    db_note.cleaned_text = cleaned_text
-    db_note.stage = "Clean"
     db.commit()
     db.refresh(db_note)
     return db_note
@@ -354,16 +551,6 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     
-    prompt = llm.TEMPLATES["extract_entities"].format(text=db_note.cleaned_text or db_note.raw_capture)
-    
-    await manager.broadcast({
-        "event": "llm_start",
-        "data": {
-            "type": "extract_entities",
-            "prompt": prompt
-        }
-    })
-
     # Simple JSON grammar
     grammar = r'''
     root   ::= object
@@ -376,15 +563,18 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
     space  ::= [ \t\n\r]*
     '''
     
-    loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(None, lambda: llm.llm_manager.generate(prompt, grammar=grammar, max_tokens=1000))
-    
-    if "error" in response:
-        await manager.broadcast({"event": "llm_error", "data": response["error"]})
-        raise HTTPException(status_code=500, detail=response["error"])
-        
     try:
-        data = json.loads(response["choices"][0]["text"])
+        # Fetch existing tags to help AI reuse them
+        existing_tags = db.query(models.Tag).all()
+        tag_context = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "No existing tags."
+        
+        # We can append this context to the note text or handle it in templates
+        # For now, let's just use the current workflow but we might need a custom template call
+        # Let's update templates.extract_entities to accept existing_tags
+        data = await llm.workflows.run_entity_extraction(
+            text=f"EXISTING TAGS: {tag_context}\n\nRAW SESSION NOTE: {db_note.raw_capture}", 
+            grammar=grammar
+        )
         await manager.broadcast({
             "event": "llm_finish",
             "data": {
@@ -394,8 +584,8 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
         })
         return data
     except Exception as e:
-        await manager.broadcast({"event": "llm_error", "data": f"JSON Parse Error: {e}"})
-        raise HTTPException(status_code=500, detail=f"Failed to parse LLM JSON: {e}")
+        await manager.broadcast({"event": "llm_error", "data": f"Workflow Error: {e}"})
+        raise HTTPException(status_code=500, detail=f"Failed to extract entities: {e}")
 
 @app.delete("/notes/{note_id}")
 def delete_note(note_id: int, db: Session = Depends(get_db)):
@@ -408,11 +598,22 @@ def delete_note(note_id: int, db: Session = Depends(get_db)):
 
 # --- Reference CRUD ---
 @app.post("/references/", response_model=schemas.Reference)
-def create_reference(reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):
+async def create_reference(reference: schemas.ReferenceCreate, db: Session = Depends(get_db)):
     db_ref = models.Reference(**reference.model_dump())
     db.add(db_ref)
     db.commit()
     db.refresh(db_ref)
+    
+    # Generate embedding
+    loop = asyncio.get_event_loop()
+    embed_text = f"{db_ref.title} {db_ref.body}"
+    embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+    if embed_response:
+        vector = embed_response["data"][0]["embedding"]
+        db_emb = models.ReferenceEmbedding(reference_id=db_ref.id, vector=json.dumps(vector))
+        db.add(db_emb)
+        db.commit()
+        
     return db_ref
 
 @app.get("/references/", response_model=List[schemas.Reference])

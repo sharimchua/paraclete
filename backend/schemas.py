@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime, date
+from datetime import datetime, date as dt_date
 from typing import List, Optional
 from enum import Enum
 
@@ -100,7 +100,7 @@ class Message(MessageBase):
 
 class NoteBase(BaseModel):
     title: str
-    date: date
+    date: dt_date
     stage: NoteStage
     raw_capture: Optional[str] = None
     cleaned_text: Optional[str] = None
@@ -115,6 +115,7 @@ class NoteUpdate(BaseModel):
     stage: Optional[NoteStage] = None
     raw_capture: Optional[str] = None
     cleaned_text: Optional[str] = None
+    date: Optional[dt_date] = None
 
 class Note(NoteBase):
     id: int
@@ -166,7 +167,7 @@ class DashboardStats(BaseModel):
     reference_count: int
 
 class CalendarDay(BaseModel):
-    date: date
+    date: dt_date
     count: int
 
 class TrendStack(BaseModel):

@@ -154,3 +154,10 @@ class NoteEmbedding(Base):
     vector = Column(Text) # JSON string of float list
     
     note = relationship("Note", backref="embedding")
+
+class ReferenceEmbedding(Base):
+    __tablename__ = "reference_embeddings"
+    reference_id = Column(Integer, ForeignKey("references.id"), primary_key=True)
+    vector = Column(Text) # JSON string of float list
+    
+    reference = relationship("Reference", backref="embedding")
