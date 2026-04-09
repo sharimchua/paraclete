@@ -209,24 +209,26 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                         </div>
 
                         <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '8px' }}>PERSONAS:</span>
-                            {group.personas?.map(persona => (
-                                <span key={persona.id} className="tag-pill" style={{ background: 'var(--secondary-faded)', color: 'var(--secondary)', border: 'none' }}>
-                                    👤 {persona.name}
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '8px' }}>PERSONA:</span>
+                            {group.persona ? (
+                                <span className="tag-pill" style={{ background: 'var(--secondary-faded)', color: 'var(--secondary)', border: 'none' }}>
+                                    👤 {group.persona.name}
                                 </span>
-                            ))}
+                            ) : (
+                                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>Core Default</span>
+                            )}
                             <button 
                                 className="tag-pill" 
-                                style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                                style={{ border: '1px dashed var(--border)', background: 'none', cursor: 'pointer', fontSize: '0.75rem', marginLeft: 'auto' }}
                                 onClick={() => window.dispatchEvent(new CustomEvent('trigger-link-persona', { 
                                     detail: { 
                                         type: 'group', 
                                         id: groupId,
-                                        existingPersonaIds: group.personas?.map(p => p.id) || []
+                                        existingPersonaIds: group.persona ? [group.persona.id] : []
                                     } 
                                 }))}
                             >
-                                + Link Persona
+                                {group.persona ? 'Change linked persona' : '+ Link custom persona'}
                             </button>
                         </div>
                     </div>

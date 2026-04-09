@@ -50,6 +50,8 @@ class Person(PersonBase):
     updated_at: datetime
     tags: List[Tag] = []
     groups: List[GroupBadge] = []
+    persona: Optional["Persona"] = None
+    persona_id: Optional[int] = None
     custom_framework_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +68,8 @@ class Group(GroupBase):
     updated_at: datetime
     tags: List[Tag] = []
     members: List[Person] = []
+    persona: Optional["Persona"] = None
+    persona_id: Optional[int] = None
     custom_framework_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 

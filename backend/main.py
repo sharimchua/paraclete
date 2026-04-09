@@ -231,11 +231,11 @@ def create_person(person: schemas.PersonCreate, db: Session = Depends(get_db)):
 
 @app.get("/persons/", response_model=List[schemas.Person])
 def read_persons(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Person).offset(skip).limit(limit).all()
+    return db.query(models.Person).options(joinedload(models.Person.persona)).offset(skip).limit(limit).all()
 
 @app.get("/persons/{person_id}", response_model=schemas.Person)
 def read_person(person_id: int, db: Session = Depends(get_db)):
-    db_person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    db_person = db.query(models.Person).options(joinedload(models.Person.persona)).filter(models.Person.id == person_id).first()
     if db_person is None:
         raise HTTPException(status_code=404, detail="Person not found")
     return db_person
@@ -274,11 +274,11 @@ def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
 
 @app.get("/groups/", response_model=List[schemas.Group])
 def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Group).offset(skip).limit(limit).all()
+    return db.query(models.Group).options(joinedload(models.Group.persona)).offset(skip).limit(limit).all()
 
 @app.get("/groups/{group_id}", response_model=schemas.Group)
 def read_group(group_id: int, db: Session = Depends(get_db)):
-    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    db_group = db.query(models.Group).options(joinedload(models.Group.persona)).filter(models.Group.id == group_id).first()
     if db_group is None:
         raise HTTPException(status_code=404, detail="Group not found")
     return db_group

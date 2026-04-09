@@ -198,20 +198,16 @@ class PersonaLink(BaseModel):
 def link_persona_to_entity(link: PersonaLink, db: Session = Depends(get_db)):
     if link.entity_type == "person":
         person = db.query(models.Person).filter(models.Person.id == link.entity_id).first()
-        persona = db.query(models.Persona).filter(models.Persona.id == link.persona_id).first()
-        if not person or not persona:
-            raise HTTPException(status_code=404, detail="Person or Persona not found")
-        if persona not in person.personas:
-            person.personas.append(persona)
-            db.commit()
+        if not person:
+            raise HTTPException(status_code=404, detail="Person not found")
+        person.persona_id = link.persona_id
+        db.commit()
     elif link.entity_type == "group":
         group = db.query(models.Group).filter(models.Group.id == link.entity_id).first()
-        persona = db.query(models.Persona).filter(models.Persona.id == link.persona_id).first()
-        if not group or not persona:
-            raise HTTPException(status_code=404, detail="Group or Persona not found")
-        if persona not in group.personas:
-            group.personas.append(persona)
-            db.commit()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+        group.persona_id = link.persona_id
+        db.commit()
     else:
         raise HTTPException(status_code=400, detail="Invalid entity_type")
     

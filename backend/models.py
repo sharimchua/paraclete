@@ -45,16 +45,7 @@ person_references = Table('person_references', Base.metadata,
     Column('reference_id', Integer, ForeignKey('references.id'))
 )
 
-# Phase 6: Practise Framework & Persona Junctions
-person_personas = Table('person_personas', Base.metadata,
-    Column('person_id', Integer, ForeignKey('persons.id')),
-    Column('persona_id', Integer, ForeignKey('personas.id'))
-)
-
-group_personas = Table('group_personas', Base.metadata,
-    Column('group_id', Integer, ForeignKey('groups.id')),
-    Column('persona_id', Integer, ForeignKey('personas.id'))
-)
+# Phase 6: Practise Framework & Persona Junctions (OLD - REMOVED)
 
 class Tag(Base):
     __tablename__ = "tags"
@@ -79,7 +70,8 @@ class Person(Base):
     groups = relationship("Group", secondary=group_members, back_populates="members")
     notes = relationship("Note", back_populates="person")
     references = relationship("Reference", secondary=person_references, back_populates="persons")
-    personas = relationship("Persona", secondary=person_personas, backref="associated_persons")
+    persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
+    persona = relationship("Persona", backref="associated_persons")
     custom_framework = relationship("PractiseFramework")
 
 class Group(Base):
@@ -95,7 +87,8 @@ class Group(Base):
     tags = relationship("Tag", secondary=group_tags, backref="groups")
     members = relationship("Person", secondary=group_members, back_populates="groups")
     notes = relationship("Note", back_populates="group")
-    personas = relationship("Persona", secondary=group_personas, backref="associated_groups")
+    persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
+    persona = relationship("Persona", backref="associated_groups")
     custom_framework = relationship("PractiseFramework")
 
 class NoteStage(str, enum.Enum):

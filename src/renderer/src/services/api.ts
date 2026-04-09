@@ -14,7 +14,8 @@ export interface Person {
     updated_at: string;
     tags: Tag[];
     groups?: { name: string, id: number }[];
-    personas?: Persona[];
+    persona_id?: number;
+    persona?: Persona;
 }
 
 export interface Group {
@@ -25,7 +26,8 @@ export interface Group {
     updated_at: string;
     tags: Tag[];
     members: Person[];
-    personas?: Persona[];
+    persona_id?: number;
+    persona?: Persona;
 }
 
 export interface Note {
