@@ -10,7 +10,7 @@ import os
 import json
 
 from . import models, schemas, database, llm
-from .routers import references, framework, messages
+from .routers import references, framework, messages, admin
 from datetime import datetime, timedelta
 import asyncio
 import numpy as np
@@ -38,11 +38,13 @@ manager = None
 app.include_router(references.router, prefix="/api")
 app.include_router(framework.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 # Also include without prefix for legacy compatibility if needed, 
 # but the plan specifies /api for new features.
 app.include_router(references.router)
 app.include_router(framework.router)
 app.include_router(messages.router)
+app.include_router(admin.router)
 
 class ConnectionManager:
     def __init__(self):

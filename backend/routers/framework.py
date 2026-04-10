@@ -35,35 +35,76 @@ async def get_pending_count(
 async def trigger_framework_analysis(
     person_id: Optional[int] = None,
     group_id: Optional[int] = None,
-    persona_id: Optional[int] = None
+    persona_id: Optional[int] = None,
+    db: Session = Depends(get_db)
 ):
-    """Triggers the background framework analysis job with optional scoping."""
-    # We create a internal worker function that manages the session
-    async def worker(interrupt_event):
-        db = SessionLocal()
-        try:
-            from ..services.framework_analysis_job import run_framework_analysis
-            await run_framework_analysis(
-                db, 
-                interrupt_event=interrupt_event,
-                person_id=person_id,
-                group_id=group_id,
-                persona_id=persona_id
+    """Triggers the background framework analysis for each un-analyzed entity."""
+    from ..services.framework_analysis_job import run_item_analysis_task
+    from sqlalchemy import or_
+
+    # 1. Fetch un-analyzed entries
+    note_query = db.query(models.Note.id).filter(or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None))
+    msg_query = db.query(models.Message.id).filter(or_(models.Message.analyzed_for_framework == False, models.Message.analyzed_for_framework == None))
+    ref_query = db.query(models.Reference.id).filter(or_(models.Reference.analyzed_for_framework == False, models.Reference.analyzed_for_framework == None))
+
+    if person_id:
+        note_query = note_query.filter(models.Note.person_id == person_id)
+        msg_query = msg_query.join(models.Note).filter(models.Note.person_id == person_id)
+        ref_query = ref_query.filter(models.Reference.persons.any(models.Person.id == person_id))
+    elif group_id:
+        group_filter = or_(
+            models.Note.group_id == group_id,
+            models.Note.person.has(models.Person.groups.any(models.Group.id == group_id))
+        )
+        note_query = note_query.filter(group_filter)
+        msg_query = msg_query.join(models.Note).filter(group_filter)
+        ref_query = ref_query.filter(
+            or_(
+                models.Reference.linked_notes.any(group_filter),
+                models.Reference.persons.any(models.Person.groups.any(models.Group.id == group_id))
             )
+        )
+    elif persona_id:
+        note_query = note_query.filter(
+            or_(models.Note.person.has(models.Person.persona_id == persona_id), models.Note.group.has(models.Group.persona_id == persona_id))
+        )
+        msg_query = msg_query.join(models.Note).filter(
+            or_(models.Note.person.has(models.Person.persona_id == persona_id), models.Note.group.has(models.Group.persona_id == persona_id))
+        )
+        ref_query = ref_query.filter(
+            models.Reference.linked_notes.any(
+                or_(models.Note.person.has(models.Person.persona_id == persona_id), models.Note.group.has(models.Group.persona_id == persona_id))
+            )
+        )
+
+    # 2. Worker wrapper to handle DB session injection
+    async def worker_wrapper(item_type, item_id, interrupt_event):
+        # We need a fresh session for each job because they run in the background worker loop
+        local_db = SessionLocal()
+        try:
+             await run_item_analysis_task(local_db, item_type, item_id, interrupt_event=interrupt_event)
         finally:
-            db.close()
+            local_db.close()
 
-    scope_str = ""
-    if person_id: scope_str = f" (Person: {person_id})"
-    elif group_id: scope_str = f" (Group: {group_id})"
-    elif persona_id: scope_str = f" (Persona: {persona_id})"
+    # 3. Queue jobs
+    job_ids = []
+    
+    # Notes
+    for (nid,) in note_query.all():
+        jid = background_manager.add_job(f"Analyze Note {nid}", worker_wrapper, item_type="note", item_id=nid, interrupt_event=True)
+        job_ids.append(jid)
+    
+    # Messages
+    for (mid,) in msg_query.all():
+        jid = background_manager.add_job(f"Analyze Message {mid}", worker_wrapper, item_type="message", item_id=mid, interrupt_event=True)
+        job_ids.append(jid)
+        
+    # References
+    for (rid,) in ref_query.all():
+        jid = background_manager.add_job(f"Analyze Reference {rid}", worker_wrapper, item_type="reference", item_id=rid, interrupt_event=True)
+        job_ids.append(jid)
 
-    job_id = background_manager.add_job(
-        f"Framework Analysis{scope_str}", 
-        worker,
-        interrupt_event=True
-    )
-    return {"status": "started", "job_id": job_id}
+    return {"status": "started", "job_count": len(job_ids), "job_ids": job_ids}
 
 # --- Core Framework ---
 @router.get("/core", response_model=schemas.PractiseFramework)
