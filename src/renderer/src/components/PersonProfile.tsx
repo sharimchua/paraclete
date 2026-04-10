@@ -11,6 +11,7 @@ interface Props {
 }
 
 const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
+    const [pendingCount, setPendingCount] = useState<number>(0);
     const [person, setPerson] = useState<Person | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -26,13 +27,15 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
             Promise.all([
                 api.get<Person>(`/persons/${personId}`),
                 api.get<Note[]>(`/notes/?person_id=${personId}`),
-                api.get<Message[]>(`/api/messages/?person_id=${personId}`)
-            ]).then(([personData, personNotes, personMessages]) => {
+                api.get<Message[]>(`/api/messages/?person_id=${personId}`),
+                api.get<{ count: number }>(`/api/framework/pending-count?person_id=${personId}`)
+            ]).then(([personData, personNotes, personMessages, pendingData]) => {
                 setPerson(personData);
                 setEditName(personData.name);
                 setEditContact(personData.contact_method || '');
                 setNotes(personNotes);
                 setMessages(personMessages);
+                setPendingCount(pendingData.count);
                 setLoading(false);
             }).catch(err => {
                 console.error(err);
@@ -192,6 +195,12 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Notes</div>
                                             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{noteStats.total}</div>
                                         </div>
+                                        {pendingCount > 0 && (
+                                            <div style={{ cursor: 'pointer' }} onClick={() => window.dispatchEvent(new CustomEvent('open-paraclete'))}>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700 }}>Pending IQ</div>
+                                                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{pendingCount}</div>
+                                            </div>
+                                        )}
                                         <div>
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Last Session</div>
                                             <div style={{ fontSize: '1rem', fontWeight: 600 }}>{noteStats.latest || 'Never'}</div>

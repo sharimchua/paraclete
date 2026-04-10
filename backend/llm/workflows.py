@@ -32,7 +32,8 @@ async def run_note_cleanse(text: str, context: dict) -> str:
         person_tags=context.get("person_tags", "None"),
         references=context.get("references", "No relevant references found."),
         previous_notes=context.get("previous_notes", "No previous session history."),
-        existing_tags=context.get("existing_tags", "None")
+        existing_tags=context.get("existing_tags", "None"),
+        framework_expectations=context.get("framework_expectations", "")
     )
     
     # call() returns the cleaned string directly

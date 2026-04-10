@@ -12,6 +12,7 @@ interface Props {
 }
 
 const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSelectNote }) => {
+    const [pendingCount, setPendingCount] = useState<number>(0);
     const [group, setGroup] = useState<Group | null>(null);
     const [allPersons, setAllPersons] = useState<Person[]>([]);
     const [groupNotes, setGroupNotes] = useState<Note[]>([]);
@@ -29,14 +30,16 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
             api.get<Group>(`/groups/${groupId}`),
             api.get<Person[]>('/persons/'),
             api.get<Note[]>(`/notes/?group_id=${groupId}`),
-            api.get<Message[]>(`/api/messages/?group_id=${groupId}`)
-        ]).then(([groupData, personsData, notesData, messagesData]) => {
+            api.get<Message[]>(`/api/messages/?group_id=${groupId}`),
+            api.get<{ count: number }>(`/api/framework/pending-count?group_id=${groupId}`)
+        ]).then(([groupData, personsData, notesData, messagesData, pendingData]) => {
             setGroup(groupData);
             setEditName(groupData.name);
             setEditDesc(groupData.description || '');
             setAllPersons(personsData);
             setGroupNotes(notesData);
             setGroupMessages(messagesData);
+            setPendingCount(pendingData.count);
             setLoading(false);
         }).catch(err => {
             console.error(err);
@@ -194,6 +197,12 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Notes</div>
                                     <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{noteStats.total}</div>
                                 </div>
+                                {pendingCount > 0 && (
+                                    <div style={{ cursor: 'pointer' }} onClick={() => window.dispatchEvent(new CustomEvent('open-paraclete'))}>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700 }}>Pending IQ</div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{pendingCount}</div>
+                                    </div>
+                                )}
                                 <div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Latest</div>
                                     <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{noteStats.latest || 'Never'}</div>

@@ -12,10 +12,14 @@ RAW NOTE:
 
 CLEANED NOTE:"""
 
-def clean_session_note(text: str, person_name: str, person_tags: str, references: str, previous_notes: str, existing_tags: str) -> str:
-    """Advanced RAG-based session expansion."""
-    return f"""You are an expert practitioner assistant. 
-Your goal is to transform raw, fragmented session notes into a high-fidelity, comprehensive summary that incorporates relevant professional context.
+def clean_session_note(text: str, person_name: str, person_tags: str, references: str, previous_notes: str, existing_tags: str, framework_expectations: str = "") -> str:
+    """Advanced RAG-based session expansion with framework adherence."""
+    framework_section = ""
+    if framework_expectations:
+        framework_section = f"### Practice Framework Style & Tone Constraints (STRICT ADHERENCE)\n{framework_expectations}\n\n"
+
+    return f"""{framework_section}You are an expert practitioner assistant. 
+Your goal is to transform raw, fragmented session notes into a high-fidelity, comprehensive summary that incorporates relevant professional context and adheres to the practitioner's established style.
 
 ### Context
 Person: {person_name} ({person_tags})
@@ -36,7 +40,8 @@ Person: {person_name} ({person_tags})
 1. Expand the raw data into a coherent professional summary.
 2. DO NOT include the person's name, the date, or any introductory summary lines.
 3. START your response directly with the session's focal points or primary themes.
-4. Do not include metadata that belongs in separate fields (like tags or dates).
+4. APPLY the established Practice Framework style (tone, idioms, formatting) perfectly.
+5. If the framework suggests specific sections (e.g. "Focus Areas", "Next Steps"), use them.
 
 ### High-Fidelity Draft:
 """
@@ -205,27 +210,19 @@ JSON:"""
 
 # Note: persona_draft preserved for older calls if necessary, but professional_draft is preferred.
 def synthesize_proposals(proposals_text: str) -> str:
-    return f"""You are an expert at distilling professional insights. Your task is to take a list of raw proposals for a Practice Framework and merge them into a smaller, unique, and high-impact set.
+    return f"""You are an expert at distilling professional practice insights. Your goal is to take a collection of potentially overlapping framework proposals and synthesize them into a lean, non-redundant set of high-impact principles.
     
     ### RAW PROPOSALS:
     {proposals_text}
     
     ### INSTRUCTIONS:
-    1. Group similar entries by their "aspect" (Tone, Formatting, etc.).
-    2. De-duplicate redundant observations.
-    3. Combine related minor points into broader, more actionable principles.
-    4. Keep the output professional and concise.
-    5. Return valid JSON in the and match the format of the input.
-
-    Format:
-    {{
-      "proposals": [
-        {{
-          "aspect": "Tone & Idioms",
-          "action": "Add",
-          "value": "Consolidated observation text..."
-        }}
-      ]
-    }}
+    1. CATEGORIZE: Group by aspect (Tone, Idioms, Formatting, Workflow, Principles).
+    2. MERGE: Combine overlapping observations. For example, "Uses metaphors" and "Uses weaving analogies" should be merged into "Uses weave-related metaphors".
+    3. DISCARD: Remove generic advice (like "Be professional") unless it has specific practitioner flavor.
+    4. ACTION: Ensure every "value" is a specific, actionable rule or idiom.
+    5. FORMAT: Return VALID JSON only. Match the input schema exactly.
+    
+    ### Synthesis Goal:
+    Output 3-5 unique, high-fidelity items that truly define this practitioner's specific edge.
 
     JSON:"""

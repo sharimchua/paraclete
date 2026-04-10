@@ -10,7 +10,7 @@ import os
 import json
 
 from . import models, schemas, database, llm
-from .routers import references, framework, messages, admin
+from .routers import references, framework, messages, admin, paraclete
 from datetime import datetime, timedelta
 import asyncio
 import numpy as np
@@ -39,12 +39,14 @@ app.include_router(references.router, prefix="/api")
 app.include_router(framework.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(paraclete.router, prefix="/api")
 # Also include without prefix for legacy compatibility if needed, 
 # but the plan specifies /api for new features.
 app.include_router(references.router)
 app.include_router(framework.router)
 app.include_router(messages.router)
 app.include_router(admin.router)
+app.include_router(paraclete.router)
 
 class ConnectionManager:
     def __init__(self):
@@ -414,22 +416,27 @@ async def suggest_note_title(req: TitleSuggestionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from .services.framework_resolver import resolve_framework_items
+
 @app.post("/analysis/process")
 async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db)):
     # Gather context
+    person_id = req.person_id
+    group_id = req.group_id
+    
     person_name = "General"
     person_tags = "None"
     history_text = "No previous history."
     references_text = "None"
 
-    if req.person_id:
-        person = db.query(models.Person).filter(models.Person.id == req.person_id).first()
+    if person_id:
+        person = db.query(models.Person).filter(models.Person.id == person_id).first()
         if person:
             person_name = person.name
             person_tags = ", ".join([f"{t.key}: {t.value}" for t in person.tags])
             
             # History
-            notes = db.query(models.Note).filter(models.Note.person_id == req.person_id).order_by(models.Note.date.desc()).limit(5).all()
+            notes = db.query(models.Note).filter(models.Note.person_id == person_id).order_by(models.Note.date.desc()).limit(5).all()
             if notes:
                 history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:200]}..." for n in notes if n.cleaned_text])
             
@@ -437,6 +444,17 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
             if person.references:
                 refs = [f"- {r.title}: {r.body[:200]}..." for r in person.references]
                 references_text = "\n".join(refs)
+    elif group_id:
+        group = db.query(models.Group).filter(models.Group.id == group_id).first()
+        if group:
+            person_name = f"Group: {group.name}"
+            # History for group
+            notes = db.query(models.Note).filter(models.Note.group_id == group_id).order_by(models.Note.date.desc()).limit(5).all()
+            if notes:
+                history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:200]}..." for n in notes if n.cleaned_text])
+
+    # Hierarchy-aware Practise Framework
+    framework_context = resolve_framework_items(db, person_id=person_id, group_id=group_id)
 
     # Taxonomy context
     existing_tags = db.query(models.Tag).all()
@@ -447,7 +465,8 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
         "person_tags": person_tags,
         "references": references_text,
         "previous_notes": history_text,
-        "existing_tags": tag_taxonomy
+        "existing_tags": tag_taxonomy,
+        "framework_expectations": framework_context
     }
 
     try:
@@ -650,13 +669,17 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     existing_tags = db.query(models.Tag).all()
     tag_taxonomy = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "None"
 
+    # Hierarchy-aware Practise Framework
+    framework_context = resolve_framework_items(db, person_id=db_note.person_id, group_id=db_note.group_id)
+
     # 4. Cleaning
     context = {
         "person_name": person_name,
         "person_tags": person_tags,
         "references": references_text,
         "previous_notes": history_text,
-        "existing_tags": tag_taxonomy
+        "existing_tags": tag_taxonomy,
+        "framework_expectations": framework_context
     }
     
     await manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": "Expansion with Context"}})

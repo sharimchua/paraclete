@@ -15,6 +15,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [dateNotes, setDateNotes] = useState<Note[]>([]);
     const [dateMessages, setDateMessages] = useState<Message[]>([]);
+    const [pendingCount, setPendingCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<string>(() => {
         const d = new Date();
@@ -27,16 +28,18 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     useEffect(() => {
         const fetchBaseData = async () => {
             try {
-                const [s, c, t, l] = await Promise.all([
+                const [s, c, t, l, p] = await Promise.all([
                     api.get<DashboardStats>('/dashboard/stats'),
                     api.get<CalendarDay[]>('/dashboard/calendar'),
                     api.get<TrendPoint[]>('/dashboard/trends'),
-                    api.get<LeaderboardEntry[]>('/dashboard/person-leaderboard')
+                    api.get<LeaderboardEntry[]>('/dashboard/person-leaderboard'),
+                    api.get<{ count: number }>('/api/framework/pending-count')
                 ]);
                 setStats(s);
                 setCalendarData(c);
                 setTrends(t);
                 setLeaderboard(l);
+                setPendingCount(p.count);
                 setLoading(false);
             } catch (err) {
                 console.error('Failed to fetch dashboard data', err);
@@ -111,6 +114,16 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                         <div style={{ padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
                             <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fbbf24' }}>{stats?.message_count || 0}</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Messages</div>
+                        </div>
+                        <div style={{ 
+                            padding: '12px', 
+                            background: pendingCount > 0 ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-surface)', 
+                            borderRadius: '8px',
+                            border: pendingCount > 0 ? '1px solid var(--primary-faded)' : '1px solid transparent',
+                            cursor: 'pointer'
+                        }} onClick={() => window.dispatchEvent(new CustomEvent('open-paraclete'))}>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>{pendingCount}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Pending IQ</div>
                         </div>
                     </div>
                 </div>

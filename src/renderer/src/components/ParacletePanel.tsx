@@ -23,6 +23,122 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [shouldRender, setShouldRender] = useState(isOpen);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [chatInput, setChatInput] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [chatMessages]);
+
+    const handleSendChat = async () => {
+        if (!chatInput.trim() || isSending) return;
+
+        const newMsg = { role: 'user', content: chatInput };
+        setChatMessages(prev => [...prev, newMsg]);
+        setChatInput('');
+        setIsSending(true);
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/paraclete/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: [...chatMessages, newMsg] })
+            });
+
+            if (!response.body) throw new Error('No body');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let assistantMsg = { role: 'assistant', content: '' };
+            setChatMessages(prev => [...prev, assistantMsg]);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                assistantMsg.content += chunk;
+                setChatMessages(prev => {
+                    const next = [...prev];
+                    next[next.length - 1] = { ...assistantMsg };
+                    return next;
+                });
+            }
+        } catch (err) {
+            console.error('Chat error:', err);
+            setChatMessages(prev => [...prev, { role: 'system', content: 'Failed to communicate with Paraclete.' }]);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const renderChat = () => (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {chatMessages.length === 0 && (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3, gap: '16px' }}>
+                        <div style={{ width: '48px', opacity: 0.5 }}>
+                            <Logo />
+                        </div>
+                        <span style={{ fontSize: '0.8rem' }}>How can I help with your practice today?</span>
+                    </div>
+                )}
+                {chatMessages.map((msg, i) => (
+                    <div key={i} style={{
+                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: '85%',
+                        background: msg.role === 'user' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                        color: msg.role === 'user' ? 'white' : 'inherit',
+                        padding: '12px 16px',
+                        borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.5,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}>
+                        {msg.content}
+                    </div>
+                ))}
+                <div ref={chatEndRef} />
+            </div>
+            <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <input 
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+                    placeholder="Ask Paraclete..."
+                    style={{
+                        flexGrow: 1,
+                        background: 'none',
+                        border: 'none',
+                        color: 'white',
+                        padding: '8px 12px',
+                        fontSize: '0.85rem',
+                        outline: 'none'
+                    }}
+                />
+                <button 
+                    onClick={handleSendChat}
+                    disabled={isSending}
+                    style={{
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        opacity: isSending ? 0.5 : 1
+                    }}
+                >
+                    {isSending ? '...' : 'SEND'}
+                </button>
+            </div>
+        </div>
+    );
 
     useEffect(() => {
         if (isOpen) {
@@ -272,24 +388,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                 >
                     {activeTab === 'jobs' && renderJobs()}
                     {activeTab === 'forensics' && renderForensics()}
-                    {activeTab === 'chat' && (
-                        <div style={{ 
-                            flex: 1, 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            opacity: 0.5,
-                            gap: '20px' 
-                        }}>
-                            <div style={{ width: '64px', opacity: 0.3 }}>
-                                <Logo />
-                            </div>
-                            <div style={{ fontSize: '0.9rem', maxWidth: '300px', textAlign: 'center', lineHeight: 1.6 }}>
-                                Interactive Reasoning & Direct Chat is being calibrated.
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'chat' && renderChat()}
                 </div>
 
                 <footer style={{ 
