@@ -157,137 +157,167 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '380px',
-            height: '70vh',
-            maxHeight: '800px',
-            background: 'rgba(15, 23, 42, 0.95)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-            zIndex: 2000,
-            overflow: 'hidden',
-            animation: 'slideIn 0.3s ease-out'
-        }}>
-            <header style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: 'rgba(255,255,255,0.02)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px' }}>
-                        <Logo />
-                    </div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                        Paraclete Panel
-                    </span>
-                </div>
-                <button 
-                    onClick={onClose}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '1.2rem' }}
-                >
-                    &times;
-                </button>
-            </header>
-
+        <>
+            <div 
+                onClick={onClose}
+                style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(2, 6, 23, 0.7)',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 1999,
+                    animation: 'fadeIn 0.3s ease-out'
+                }}
+            />
             <div style={{
+                position: 'fixed',
+                top: '10vh',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '800px',
+                maxWidth: '90vw',
+                height: '75vh',
+                background: 'rgba(15, 23, 42, 0.98)',
+                backdropFilter: 'blur(30px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '24px',
                 display: 'flex',
-                padding: '0 10px',
-                background: 'rgba(0,0,0,0.2)',
-                borderBottom: '1px solid rgba(255,255,255,0.05)'
+                flexDirection: 'column',
+                boxShadow: '0 32px 128px rgba(0,0,0,0.8)',
+                zIndex: 2000,
+                overflow: 'hidden',
+                animation: 'paracleteExpand 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                transformOrigin: '-20% -10%' // Aim towards the sidebar logo area
             }}>
-                {(['jobs', 'forensics', 'chat'] as const).map(tab => (
-                    <div 
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        style={{
-                            padding: '10px 15px',
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            letterSpacing: '0.05em',
-                            textTransform: 'uppercase',
+                <header style={{
+                    padding: '20px 24px',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'rgba(255,255,255,0.02)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '24px' }}>
+                            <Logo isThinking={isThinking} />
+                        </div>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                            Paraclete Global Intelligence
+                        </span>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '1.5rem' }}
+                    >
+                        &times;
+                    </button>
+                </header>
+
+                <div style={{
+                    display: 'flex',
+                    padding: '0 20px',
+                    background: 'rgba(0,0,0,0.2)',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)'
+                }}>
+                    {(['jobs', 'forensics', 'chat'] as const).map(tab => (
+                        <div 
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            style={{
+                                padding: '15px 20px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                letterSpacing: '0.1em',
+                                textTransform: 'uppercase',
+                                cursor: 'pointer',
+                                color: activeTab === tab ? 'var(--primary)' : 'rgba(255,255,255,0.4)',
+                                borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            {tab}
+                        </div>
+                    ))}
+                </div>
+
+                <div 
+                    ref={scrollRef}
+                    style={{
+                        flexGrow: 1,
+                        overflowY: 'auto',
+                        padding: '32px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                >
+                    {activeTab === 'jobs' && renderJobs()}
+                    {activeTab === 'forensics' && renderForensics()}
+                    {activeTab === 'chat' && (
+                        <div style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            opacity: 0.5,
+                            gap: '20px' 
+                        }}>
+                            <div style={{ width: '64px', opacity: 0.3 }}>
+                                <Logo />
+                            </div>
+                            <div style={{ fontSize: '0.9rem', maxWidth: '300px', textAlign: 'center', lineHeight: 1.6 }}>
+                                Interactive Reasoning & Direct Chat is being calibrated.
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <footer style={{ 
+                    padding: '16px 24px', 
+                    borderTop: '1px solid rgba(255,255,255,0.05)', 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'rgba(0,0,0,0.2)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ 
+                            width: '8px', height: '8px', borderRadius: '4px', 
+                            background: isThinking ? 'var(--primary)' : '#22c55e',
+                            boxShadow: isThinking ? '0 0 12px var(--primary)' : '0 0 8px rgba(34, 197, 94, 0.4)'
+                        }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.8 }}>
+                            {isThinking ? 'NEURAL ENGINE ACTIVE' : 'PARACLETE CORE STABLE'}
+                        </span>
+                    </div>
+                    <button 
+                        onClick={() => setEvents([])}
+                        style={{ 
+                            background: 'rgba(255,255,255,0.05)', 
+                            border: '1px solid rgba(255,255,255,0.1)', 
+                            color: 'rgba(255,255,255,0.4)', 
+                            fontSize: '0.7rem', 
                             cursor: 'pointer',
-                            color: activeTab === tab ? 'var(--primary)' : 'rgba(255,255,255,0.4)',
-                            borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-                            transition: 'all 0.2s ease'
+                            padding: '6px 12px',
+                            borderRadius: '6px'
                         }}
                     >
-                        {tab}
-                    </div>
-                ))}
+                        CLEAR LOGS
+                    </button>
+                </footer>
+
+                <style>{`
+                    @keyframes paracleteExpand {
+                        from { transform: translateX(-50%) scale(0.1); opacity: 0; filter: blur(10px); }
+                        to { transform: translateX(-50%) scale(1); opacity: 1; filter: blur(0); }
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                `}</style>
             </div>
-
-            <div 
-                ref={scrollRef}
-                style={{
-                    flexGrow: 1,
-                    overflowY: 'auto',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}
-            >
-                {activeTab === 'jobs' && renderJobs()}
-                {activeTab === 'forensics' && renderForensics()}
-                {activeTab === 'chat' && (
-                    <div style={{ opacity: 0.5, textAlign: 'center', marginTop: '40px', fontSize: '0.8rem' }}>
-                        Interactive Chat coming later in Phase 2.
-                    </div>
-                )}
-            </div>
-
-            <footer style={{ 
-                padding: '12px 20px', 
-                borderTop: '1px solid rgba(255,255,255,0.05)', 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: 'rgba(0,0,0,0.2)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ 
-                        width: '6px', height: '6px', borderRadius: '3px', 
-                        background: isThinking ? 'var(--primary)' : '#22c55e',
-                        boxShadow: isThinking ? '0 0 8px var(--primary)' : 'none'
-                    }} />
-                    <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>
-                        {isThinking ? 'PARACLETE IS THINKING...' : 'PARACLETE READY'}
-                    </span>
-                </div>
-                <button 
-                    onClick={() => setEvents([])}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', fontSize: '0.65rem', cursor: 'pointer' }}
-                >
-                    CLEAR LOGS
-                </button>
-            </footer>
-
-            <style>{`
-                @keyframes pulse {
-                    0% { transform: scale(1); opacity: 0.5; }
-                    50% { transform: scale(1.1); opacity: 0.2; }
-                    100% { transform: scale(1); opacity: 0.5; }
-                }
-                @keyframes slideIn {
-                    from { transform: translateY(20px); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-                .paraclete-trigger:hover {
-                    transform: scale(1.05);
-                    box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-                    border-color: var(--primary);
-                }
-            `}</style>
-        </div>
+        </>
     );
 };
 
