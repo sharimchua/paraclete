@@ -20,7 +20,27 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [events, setEvents] = useState<any[]>([]);
     const [jobs, setJobs] = useState<BackgroundJob[]>([]);
     const [isThinking, setIsThinking] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(isOpen);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            setIsClosing(false);
+        } else {
+            setIsClosing(true);
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+            }, 400); // Match animation duration
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(onClose, 350);
+    };
 
     const fetchJobs = async () => {
         try {
@@ -154,19 +174,19 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         </div>
     );
 
-    if (!isOpen) return null;
+    if (!shouldRender) return null;
 
     return (
         <>
             <div 
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(2, 6, 23, 0.7)',
                     backdropFilter: 'blur(4px)',
                     zIndex: 1999,
-                    animation: 'fadeIn 0.3s ease-out'
+                    animation: isClosing ? 'fadeOut 0.3s ease-in forwards' : 'fadeIn 0.3s ease-out forwards'
                 }}
             />
             <div style={{
@@ -186,8 +206,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                 boxShadow: '0 32px 128px rgba(0,0,0,0.8)',
                 zIndex: 2000,
                 overflow: 'hidden',
-                animation: 'paracleteExpand 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                transformOrigin: '-20% -10%' // Aim towards the sidebar logo area
+                animation: isClosing ? 'paracleteContract 0.4s cubic-bezier(0.7, 0, 0.84, 0) forwards' : 'paracleteExpand 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                transformOrigin: '-20% -10%' // Origin at Logo area
             }}>
                 <header style={{
                     padding: '20px 24px',
@@ -206,7 +226,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                         </span>
                     </div>
                     <button 
-                        onClick={onClose}
+                        onClick={handleClose}
                         style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '1.5rem' }}
                     >
                         &times;
@@ -311,9 +331,17 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                         from { transform: translateX(-50%) scale(0.1); opacity: 0; filter: blur(10px); }
                         to { transform: translateX(-50%) scale(1); opacity: 1; filter: blur(0); }
                     }
+                    @keyframes paracleteContract {
+                        from { transform: translateX(-50%) scale(1); opacity: 1; filter: blur(0); }
+                        to { transform: translateX(-50%) scale(0.05); opacity: 0; filter: blur(20px); }
+                    }
                     @keyframes fadeIn {
                         from { opacity: 0; }
                         to { opacity: 1; }
+                    }
+                    @keyframes fadeOut {
+                        from { opacity: 1; }
+                        to { opacity: 0; }
                     }
                 `}</style>
             </div>
