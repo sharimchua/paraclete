@@ -252,7 +252,7 @@ class FrameworkProposalBase(BaseModel):
     aspect: str
     action: str
     value: str
-    observation_count: int = 1
+    observation_count: Optional[int] = 1
     source_context: Optional[str] = None # Hydrated dynamically
     source_owner: Optional[str] = None # Hydrated dynamically
     source_date: Optional[str] = None # Hydrated dynamically
