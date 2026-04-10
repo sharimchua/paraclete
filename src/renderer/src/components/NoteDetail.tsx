@@ -89,6 +89,22 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
             <div className="card" style={{ padding: '40px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
+                        <button 
+                            className="btn-primary" 
+                            onClick={() => {
+                                window.dispatchEvent(new CustomEvent('navigate', { 
+                                    detail: { 
+                                        view: 'message-authoring', 
+                                        noteId: note.id,
+                                        personId: note.person_id,
+                                        groupId: note.group_id
+                                    } 
+                                }));
+                            }}
+                            style={{ background: 'var(--secondary)' }}
+                        >
+                            📩 Draft Message
+                        </button>
                         <button className="btn-secondary" onClick={() => setIsEditing(true)}>
                             Edit Note
                         </button>

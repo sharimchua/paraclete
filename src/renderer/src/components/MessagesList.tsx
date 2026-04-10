@@ -40,28 +40,31 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
     return (
         <div className="messages-list-container" style={{ padding: '24px' }}>
             <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '100%' }}>
-                    <input 
-                        type="text" 
-                        className="search-input" 
-                        placeholder="Search messages..." 
-                        style={{ flex: 1, margin: 0 }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <select 
-                        className="search-input" 
-                        style={{ width: '180px', margin: 0 }}
-                        value={filter}
-                        onChange={(e: any) => setFilter(e.target.value)}
-                    >
-                        <option value="all">All Status</option>
-                        <option value="draft">Drafts</option>
-                        <option value="sent">Sent</option>
-                        <option value="archived">Archived</option>
-                    </select>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
+                        <input 
+                            type="text" 
+                            className="search-input" 
+                            placeholder="Search messages..." 
+                            style={{ flex: 1, maxWidth: '400px', margin: 0 }}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <select 
+                            className="search-input" 
+                            style={{ width: '180px', margin: 0 }}
+                            value={filter}
+                            onChange={(e: any) => setFilter(e.target.value)}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="draft">Drafts</option>
+                            <option value="sent">Sent</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
                 </div>
             </div>
+
 
             {isLoading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
@@ -91,7 +94,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                                    {msg.person?.name || msg.group?.name || 'Unknown Recipient'}
+                                    {msg.person?.name || msg.group?.name || 'Unknown Contact'}
                                 </div>
                                 <div style={{ 
                                     fontSize: '0.75rem', 

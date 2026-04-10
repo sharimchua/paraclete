@@ -18,6 +18,7 @@ import StandardNavbar from './components/StandardNavbar';
 import MessagesList from './components/MessagesList';
 import MessageAuthoring from './components/MessageAuthoring';
 import PersonaSelectionModal from './components/PersonaSelectionModal';
+import EntitySelectionModal from './components/EntitySelectionModal';
 import { api } from './services/api';
 
 const App: React.FC = () => {
@@ -26,9 +27,11 @@ const App: React.FC = () => {
     const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+    const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
     const [initialNoteDate, setInitialNoteDate] = useState<string | null>(null);
     const [viewHistory, setViewHistory] = useState<string[]>(['dashboard']);
     const [personaLinkingTarget, setPersonaLinkingTarget] = useState<{ type: 'person' | 'group', id: number, existingPersonaIds: number[] } | null>(null);
+    const [showContactSelection, setShowContactSelection] = useState(false);
 
     useEffect(() => {
         // Query if setup is complete
@@ -45,14 +48,37 @@ const App: React.FC = () => {
             setPersonaLinkingTarget(e.detail);
         };
         window.addEventListener('trigger-link-persona' as any, handleLinkPersona);
-        return () => window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
+
+        const handleNavigate = (e: any) => {
+            const { view, personId, groupId, noteId, date, messageId } = e.detail;
+            navigateTo(view, personId, groupId, noteId, date, false, messageId);
+        };
+        window.addEventListener('navigate' as any, handleNavigate);
+
+        const handleTriggerMessageModal = () => setShowContactSelection(true);
+        window.addEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
+
+        return () => {
+            window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
+            window.removeEventListener('navigate' as any, handleNavigate);
+            window.removeEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
+        };
     }, []);
 
-    const navigateTo = (view: string, personId: number | null = null, groupId: number | null = null, noteId: number | null = null, date: string | null = null, resetHistory: boolean = false) => {
+    const navigateTo = (
+        view: string, 
+        personId: number | null = null, 
+        groupId: number | null = null, 
+        noteId: number | null = null, 
+        date: string | null = null, 
+        resetHistory: boolean = false,
+        messageId: number | null = null
+    ) => {
         setCurrentView(view);
         setSelectedPersonId(personId);
         setSelectedGroupId(groupId);
         setSelectedNoteId(noteId);
+        setSelectedMessageId(messageId);
         setInitialNoteDate(date);
         
         if (resetHistory) {
@@ -85,12 +111,12 @@ const App: React.FC = () => {
         setCurrentView(previousView);
         
         // Reset specific context if moving away from detail views
-        // This logic remains to ensure we don't have stale IDs when returning to list views
         if (previousView === 'dashboard' || previousView === 'notes' || previousView === 'tags' || previousView === 'admin' || 
-           (previousView === 'persons' && !selectedPersonId) || (previousView === 'groups' && !selectedGroupId)) {
+           previousView === 'messages' || (previousView === 'persons' && !selectedPersonId) || (previousView === 'groups' && !selectedGroupId)) {
             setSelectedPersonId(null);
             setSelectedGroupId(null);
             setSelectedNoteId(null);
+            setSelectedMessageId(null);
             setInitialNoteDate(null);
         }
     };
@@ -209,17 +235,23 @@ const App: React.FC = () => {
         }
 
         if (currentView === 'messages') {
-            return <MessagesList onSelectMessage={(id) => navigateTo('message-authoring', null, null, id)} />;
+            return (
+                <MessagesList 
+                    onSelectMessage={(id) => navigateTo('message-authoring', null, null, null, null, false, id)} 
+                />
+            );
         }
 
         if (currentView === 'message-authoring') {
             return (
                 <MessageAuthoring 
-                    messageId={selectedNoteId || undefined} 
+                    messageId={selectedMessageId || undefined} 
+                    noteId={selectedNoteId || undefined}
                     personId={selectedPersonId || undefined}
                     groupId={selectedGroupId || undefined}
                     initialDate={initialNoteDate || undefined}
                     onComplete={() => goBack()}
+                    onViewNote={(id) => navigateTo('note-detail', null, null, id)}
                 />
             );
         }
@@ -242,7 +274,7 @@ const App: React.FC = () => {
         if (currentView === 'messages') {
             actions.push({
                 label: '+ Create Message',
-                onClick: () => navigateTo('message-authoring')
+                onClick: () => window.dispatchEvent(new CustomEvent('trigger-message-modal'))
             });
         } else if (currentView === 'persons' && !selectedPersonId) {
             actions.push({
@@ -371,6 +403,22 @@ const App: React.FC = () => {
                             console.error(err);
                             alert('Failed to link persona');
                         }
+                    }}
+                />
+            )}
+
+            {showContactSelection && (
+                <EntitySelectionModal
+                    title="New Outreach"
+                    subtitle="Select a contact to start drafting a message."
+                    allowGeneral={false}
+                    onClose={() => setShowContactSelection(false)}
+                    onSelect={(target) => {
+                        navigateTo('message-authoring', 
+                            target.type === 'person' ? target.id : null,
+                            target.type === 'group' ? target.id : null
+                        );
+                        setShowContactSelection(false);
                     }}
                 />
             )}

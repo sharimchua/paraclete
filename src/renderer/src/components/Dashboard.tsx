@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { api, DashboardStats, CalendarDay, TrendPoint, LeaderboardEntry, Note, Person, Group, Message } from '../services/api';
+import { api, DashboardStats, CalendarDay, TrendPoint, LeaderboardEntry, Note, Message } from '../services/api';
 import PracticeCalendar from './PracticeCalendar';
+import EntitySelectionModal from './EntitySelectionModal';
 
 interface Props {
     onSelectNote: (id: number) => void;
@@ -22,10 +23,6 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [people, setPeople] = useState<Person[]>([]);
-    const [groups, setGroups] = useState<Group[]>([]);
-    const [isFetchingTargets, setIsFetchingTargets] = useState(false);
 
     useEffect(() => {
         const fetchBaseData = async () => {
@@ -55,7 +52,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
             try {
                 const [notes, messages] = await Promise.all([
                     api.get<Note[]>(`/notes/by-date/${selectedDate}`),
-                    api.get<Message[]>(`/api/messages/by-date/${selectedDate}`)
+                    api.get<Message[]>(`/messages/by-date/${selectedDate}`)
                 ]);
                 setDateNotes(notes);
                 setDateMessages(messages);
@@ -67,29 +64,9 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
         fetchDayActivity();
     }, [selectedDate]);
 
-    const handleOpenModal = async () => {
+    const handleOpenModal = () => {
         setShowModal(true);
-        if (people.length === 0 && groups.length === 0) {
-            setIsFetchingTargets(true);
-            try {
-                const [p, g] = await Promise.all([
-                    api.get<Person[]>('/persons/'),
-                    api.get<Group[]>('/groups/')
-                ]);
-                setPeople(p);
-                setGroups(g);
-            } catch (err) {
-                console.error('Failed to fetch targets', err);
-            } finally {
-                setIsFetchingTargets(false);
-            }
-        }
     };
-
-    const filteredTargets = [
-        ...people.map(p => ({ ...p, type: 'person' as const })),
-        ...groups.map(g => ({ ...g, type: 'group' as const }))
-    ].filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     if (loading) return <div className="loader" />;
 
@@ -97,87 +74,17 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
         <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr) minmax(280px, 0.8fr)', gap: '24px' }}>
             {/* Target Selection Modal */}
             {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content card" style={{ width: '450px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: '24px' }}>
-                        <header style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Select Session Target</h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Who is this session for on {selectedDate}?</p>
-                            </div>
-                            <button onClick={() => setShowModal(false)} className="btn-secondary" style={{ padding: '4px 8px' }}>&times;</button>
-                        </header>
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <input 
-                                className="input-field" 
-                                placeholder="Search people or groups..." 
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                autoFocus
-                                style={{ width: '100%', padding: '12px' }}
-                            />
-                        </div>
-
-                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {isFetchingTargets ? (
-                                <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="loader" style={{ scale: '0.6' }} /></div>
-                            ) : filteredTargets.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                                    {searchQuery ? 'No results found.' : 'No entities available. Create a person or group first.'}
-                                </div>
-                            ) : (
-                                filteredTargets.map(target => (
-                                    <div 
-                                        key={`${target.type}-${target.id}`} 
-                                        className="clickable-card" 
-                                        style={{ 
-                                            padding: '12px 16px', 
-                                            background: 'var(--bg-surface)', 
-                                            borderRadius: '8px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            border: '1px solid var(--border)'
-                                        }}
-                                        onClick={() => {
-                                            if (target.type === 'person') onStartNote(selectedDate, target.id, undefined);
-                                            else onStartNote(selectedDate, undefined, target.id);
-                                            setShowModal(false);
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <span style={{ fontSize: '1.2rem' }}>{target.type === 'person' ? '👤' : '👥'}</span>
-                                            <div>
-                                                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{target.name}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{target.type}</div>
-                                            </div>
-                                        </div>
-                                        <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.8rem' }}>Select</span>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-
-                        <div 
-                            style={{ 
-                                marginTop: '16px', 
-                                padding: '12px', 
-                                background: 'var(--primary-faded)', 
-                                borderRadius: '8px', 
-                                border: '1px dashed var(--primary)',
-                                display: 'flex',
-                                justifyContent: 'center',
-                                cursor: 'pointer'
-                            }}
-                            onClick={() => {
-                                onStartNote(selectedDate, undefined, undefined);
-                                setShowModal(false);
-                            }}
-                        >
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>+ Create General Session (No Target)</span>
-                        </div>
-                    </div>
-                </div>
+                <EntitySelectionModal
+                    title="Select Session Target"
+                    subtitle={`Who is this session for on ${selectedDate}?`}
+                    onClose={() => setShowModal(false)}
+                    onSelect={(target) => {
+                        if (target.type === 'person') onStartNote(selectedDate, target.id, undefined);
+                        else if (target.type === 'group') onStartNote(selectedDate, undefined, target.id);
+                        else onStartNote(selectedDate, undefined, undefined);
+                        setShowModal(false);
+                    }}
+                />
             )}
 
             {/* Column 1: Stats and Trends */}
@@ -427,7 +334,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                             {dateMessages.map(msg => (
                                 <div 
                                     key={msg.id} 
-                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', noteId: msg.id } }))}
+                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', messageId: msg.id } }))}
                                     style={{ 
                                         padding: '12px', 
                                         background: 'var(--bg-surface)', 

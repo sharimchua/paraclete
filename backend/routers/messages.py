@@ -89,6 +89,7 @@ def create_message(msg: schemas.MessageCreate, db: Session = Depends(get_db)):
 class MessageIterateRequest(schemas.BaseModel):
     feedback: str
     highlight_text: Optional[str] = None
+    highlighted_text: Optional[str] = None # Support both variants
 
 @router.post("/{message_id}/iterate")
 async def iterate_message(
@@ -97,8 +98,13 @@ async def iterate_message(
     db: Session = Depends(get_db)
 ):
     feedback = request.feedback
-    highlight_text = request.highlight_text
-    db_msg = db.query(models.Message).options(joinedload(models.Message.note)).filter(models.Message.id == message_id).first()
+    highlight_text = request.highlight_text or request.highlighted_text
+    db_msg = db.query(models.Message).options(
+        joinedload(models.Message.note),
+        joinedload(models.Message.person),
+        joinedload(models.Message.group)
+    ).filter(models.Message.id == message_id).first()
+    
     if not db_msg:
         raise HTTPException(status_code=404, detail="Message not found")
     
@@ -107,28 +113,68 @@ async def iterate_message(
     if db_msg.note:
         note_context = f"CONTEXT NOTE:\n{db_msg.note.title}\n{db_msg.note.cleaned_text or db_msg.note.raw_capture}"
     
-    current_draft = db_msg.draft_text
-    
-    prompt = f"""You are an expert professional assistant. You are refining a message to a client or colleague.
-    
-    {note_context}
-    
-    CURRENT DRAFT:
-    {current_draft}
-    
-    USER FEEDBACK:
-    {feedback}
-    """
-    
-    if highlight_text:
-        prompt += f"\nSPECIFIC FOCUS ON THIS SECTION:\n{highlight_text}"
+    person_name = "Friend"
+    if db_msg.person:
+        person_name = db_msg.person.name
+    elif db_msg.group:
+        person_name = db_msg.group.name
         
-    prompt += "\n\nPlease provide an updated draft of the message based on this feedback."
+    # Gather history if note exists (Matching main.py logic)
+    history_text = "No prior history available."
+    if db_msg.note and db_msg.person:
+        prev_notes = db.query(models.Note).filter(
+            models.Note.person_id == db_msg.person_id,
+            models.Note.id != db_msg.note_id,
+            models.Note.cleaned_text != None
+        ).order_by(models.Note.date.desc()).limit(2).all()
+        if prev_notes:
+            history_text = "\n".join([f"- {n.date}: {n.title}" for n in prev_notes])
+
+    current_draft = db_msg.draft_text or ""
+    
+    # Use workflow-like templating if starting fresh, otherwise raw iterate
+    if feedback == "Draft a professional follow-up based on the available context." and not current_draft:
+        # Fetch persona if available
+        persona_name = ""
+        persona_bio = ""
+        if db_msg.persona:
+            persona_name = db_msg.persona.name
+            persona_bio = db_msg.persona.description or ""
+        elif db_msg.person and db_msg.person.persona:
+            persona_name = db_msg.person.persona.name
+            persona_bio = db_msg.person.persona.description or ""
+        elif db_msg.group and db_msg.group.persona:
+            persona_name = db_msg.group.persona.name
+            persona_bio = db_msg.group.persona.description or ""
+
+        prompt = llm.templates.professional_draft(
+            person_name=person_name,
+            summary=db_msg.note.cleaned_text if db_msg.note else "Professional outreach",
+            history=history_text,
+            persona_name=persona_name,
+            persona_bio=persona_bio
+        )
+    else:
+        # Surgical refinement
+        prompt = llm.templates.iterate_professional_draft(
+            current_draft=current_draft,
+            feedback=feedback,
+            person_name=person_name,
+            note_context=note_context,
+            history=history_text,
+            highlight_text=highlight_text
+        )
     
     try:
-        new_draft = await llm.llm_manager.call(prompt=prompt)
+        # FIX: Must use asyncio.to_thread because llm_manager.call is synchronous
+        new_draft = await asyncio.to_thread(
+            llm.llm_manager.call, 
+            prompt=prompt,
+            system=f"Refining professional outreach for {person_name}."
+        )
         db_msg.draft_text = new_draft
         db.commit()
         return {"draft_text": new_draft}
     except Exception as e:
+        print(f"DEBUG: Message iteration failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

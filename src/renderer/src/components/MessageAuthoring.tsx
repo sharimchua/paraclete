@@ -8,6 +8,7 @@ interface MessageAuthoringProps {
     groupId?: number;
     initialDate?: string;
     onComplete: () => void;
+    onViewNote?: (noteId: number) => void;
 }
 
 const MessageAuthoring: React.FC<MessageAuthoringProps> = ({ 
@@ -16,7 +17,8 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     personId, 
     groupId, 
     initialDate,
-    onComplete 
+    onComplete,
+    onViewNote
 }) => {
     const [message, setMessage] = useState<Partial<Message>>({
         status: 'draft',
@@ -31,8 +33,6 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     const [noteContext, setNoteContext] = useState<Note | null>(null);
     const [personContext, setPersonContext] = useState<Person | null>(null);
     const [groupContext, setGroupContext] = useState<Group | null>(null);
-    const [allPeople, setAllPeople] = useState<Person[]>([]);
-    const [allGroups, setAllGroups] = useState<Group[]>([]);
     
     const [feedback, setFeedback] = useState('');
     const [isIterating, setIsIterating] = useState(false);
@@ -46,14 +46,6 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         const loadContexts = async () => {
             setLoading(true);
             try {
-                // Load target options for recipient selection
-                const [pList, gList] = await Promise.all([
-                    api.get<Person[]>('/persons/'),
-                    api.get<Group[]>('/groups/')
-                ]);
-                setAllPeople(pList);
-                setAllGroups(gList);
-
                 let currentMessage = { ...message };
 
                 if (messageId) {
@@ -62,21 +54,20 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                     setMessage(existing);
                 }
 
-                const mid = messageId || currentMessage.id;
                 const nid = noteId || currentMessage.note_id;
                 const pid = personId || currentMessage.person_id;
                 const gid = groupId || currentMessage.group_id;
 
                 if (nid) {
-                    const n = await api.get<Note>(`/api/notes/${nid}`);
+                    const n = await api.get<Note>(`/notes/${nid}`);
                     setNoteContext(n);
                 }
                 
                 if (pid) {
-                    const p = await api.get<Person>(`/api/persons/${pid}`);
+                    const p = await api.get<Person>(`/persons/${pid}`);
                     setPersonContext(p);
                 } else if (gid) {
-                    const g = await api.get<Group>(`/api/groups/${gid}`);
+                    const g = await api.get<Group>(`/groups/${gid}`);
                     setGroupContext(g);
                 }
             } catch (err) {
@@ -93,9 +84,9 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         try {
             const data = {
                 ...message,
-                note_id: noteContext?.id || null,
-                person_id: personContext?.id || null,
-                group_id: groupContext?.id || null,
+                note_id: noteId || message.note_id || noteContext?.id || null,
+                person_id: personId || message.person_id || personContext?.id || null,
+                group_id: groupId || message.group_id || groupContext?.id || null,
             };
 
             if (message.id) {
@@ -114,15 +105,14 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     };
 
     const handleGenerateDraft = async () => {
-        // Ensure we have a persisted message ID for iteration
         let msgId = message.id;
         if (!msgId) {
             try {
                 const created = await api.post<Message>('/api/messages/', {
                     ...message,
-                    note_id: noteContext?.id || null,
-                    person_id: personContext?.id || null,
-                    group_id: groupContext?.id || null
+                    note_id: noteId || message.note_id || noteContext?.id || null,
+                    person_id: personId || message.person_id || personContext?.id || null,
+                    group_id: groupId || message.group_id || groupContext?.id || null
                 });
                 setMessage(created);
                 msgId = created.id;
@@ -130,6 +120,11 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                 console.error('Initial save for draft failed:', err);
                 return;
             }
+        }
+
+        if (message.draft_text && message.draft_text.trim().length > 0) {
+            const confirmOverwrite = window.confirm("You already have an existing draft. Starting a new AI draft will overwrite your current progress. Do you wish to continue?");
+            if (!confirmOverwrite) return;
         }
 
         setIsIterating(true);
@@ -147,7 +142,6 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
 
     const handleIterate = async () => {
         if (!message.id) {
-             // Save first if not exists
              await handleSave();
              return;
         }
@@ -181,8 +175,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div className="toolbar">
                 <div style={{ width: '250px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                     <button className="btn-secondary" onClick={onComplete}>&lsaquo; Back</button>
-                     <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Composer</h2>
+                     <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Message Composer</h2>
                 </div>
 
                 <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '4px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
@@ -266,29 +259,10 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                                 resize: 'none',
                                 outline: 'none',
                                 fontFamily: 'inherit',
-                                color: 'var(--text-main)'
+                                color: 'var(--text-main)',
+                                transition: 'all 0.2s ease'
                             }}
                         />
-                        
-                        {!message.draft_text && !isIterating && !message.is_inbound && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                textAlign: 'center',
-                                pointerEvents: 'none'
-                            }}>
-                                <button 
-                                    className="btn-primary" 
-                                    onClick={(e) => { e.stopPropagation(); handleGenerateDraft(); }}
-                                    style={{ pointerEvents: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
-                                >
-                                    ✨ Start with AI Draft
-                                </button>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '12px' }}>Or simply start typing to manual entry</p>
-                            </div>
-                        )}
 
                         {isIterating && (
                             <div style={{
@@ -340,62 +314,99 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className="card" style={{ padding: '20px' }}>
-                        <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>Recipient</h4>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <select 
-                                    className="search-input"
-                                    style={{ margin: 0, flex: 1, padding: '8px' }}
-                                    value={personContext?.id || ''}
-                                    onChange={(e) => {
-                                        const p = allPeople.find(x => x.id === parseInt(e.target.value));
-                                        setPersonContext(p || null);
-                                        setGroupContext(null);
-                                    }}
-                                >
-                                    <option value="">Select Person...</option>
-                                    {allPeople.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
-                            </div>
-
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>— OR —</div>
-
-                            <select 
-                                className="search-input"
-                                style={{ margin: 0, padding: '8px' }}
-                                value={groupContext?.id || ''}
-                                onChange={(e) => {
-                                    const g = allGroups.find(x => x.id === parseInt(e.target.value));
-                                    setGroupContext(g || null);
-                                    setPersonContext(null);
+                    {!message.is_inbound && (
+                        <div className="card" style={{ padding: '20px', border: '1px solid var(--primary-faded)', background: 'var(--primary-faded-more)' }}>
+                            <button 
+                                className="btn-primary" 
+                                onClick={handleGenerateDraft}
+                                disabled={isIterating}
+                                style={{ 
+                                    width: '100%', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    gap: '8px', 
+                                    opacity: isIterating ? 0.7 : 1,
+                                    cursor: isIterating ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                <option value="">Select Group...</option>
-                                {allGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    {noteContext && (
-                        <div className="card" style={{ padding: '20px', borderLeft: '3px solid var(--primary)' }}>
-                            <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Source Note</h4>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{noteContext.title}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '12px' }}>{noteContext.date}</div>
-                            <div style={{ 
-                                fontSize: '0.85rem', 
-                                opacity: 0.8, 
-                                lineHeight: '1.5',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 8,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden'
-                            }}>
-                                {noteContext.cleaned_text || noteContext.raw_capture}
-                            </div>
+                                {isIterating ? 'Working...' : '✨ Perform AI Draft'}
+                            </button>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
+                                Generates a fresh professional draft using the source context and history.
+                            </p>
                         </div>
                     )}
+
+                    <div className="card" style={{ padding: '20px' }}>
+                        <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>Contact</h4>
+                        <div style={{ 
+                            padding: '12px', 
+                            border: '1px solid var(--border)', 
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            background: 'var(--bg-surface-elevated)'
+                        }}>
+                            {personContext ? (
+                                <>
+                                    <span style={{ fontSize: '1.2rem' }}>👤</span>
+                                    <div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>{personContext.name}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Person</div>
+                                </div>
+                            </>
+                        ) : groupContext ? (
+                            <>
+                                <span style={{ fontSize: '1.2rem' }}>👥</span>
+                                <div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>{groupContext.name}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Group</div>
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No Contact Assigned</div>
+                        )}
+                    </div>
+                </div>
+
+                    <div className="card" style={{ padding: '20px', borderLeft: noteContext ? '3px solid var(--primary)' : '3px solid var(--text-muted)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Source Note</h4>
+                            {noteContext && onViewNote && (
+                                <button 
+                                    className="btn-secondary" 
+                                    onClick={() => onViewNote(noteContext.id)}
+                                    style={{ padding: '2px 8px', fontSize: '0.65rem' }}
+                                >
+                                    View Note &rsaquo;
+                                </button>
+                            )}
+                        </div>
+                        
+                        {noteContext ? (
+                            <>
+                                <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{noteContext.title}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '12px' }}>{noteContext.date}</div>
+                                <div style={{ 
+                                    fontSize: '0.85rem', 
+                                    opacity: 0.8, 
+                                    lineHeight: '1.5',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 8,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                }}>
+                                    {noteContext.cleaned_text || noteContext.raw_capture}
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', padding: '12px 0' }}>
+                                No source note associated with this message.
+                            </div>
+                        )}
+                    </div>
 
                     <div className="card" style={{ padding: '20px' }}>
                         <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>Status Lifecycle</h4>

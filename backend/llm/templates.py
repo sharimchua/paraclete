@@ -69,9 +69,13 @@ SESSION CONTENT:
 
 JSON:"""
 
-def draft_message(person_name: str, summary: str, history: str) -> str:
-    """Follow-up message drafting."""
-    return f"""### Professional Context
+def professional_draft(person_name: str, summary: str, history: str, persona_name: str = "", persona_bio: str = "") -> str:
+    """Consolidated professional message drafting template."""
+    persona_context = ""
+    if persona_name:
+        persona_context = f"### Writing as Persona: {persona_name}\n{persona_bio}\n\n"
+        
+    return f"""{persona_context}### Professional Context
 Person: {person_name}
 Summary of Today's Session:
 {summary}
@@ -81,8 +85,36 @@ Summary of Today's Session:
 
 ### Goal
 Draft a warm, professional follow-up message to the person. Refer to specific insights or actions discussed today and maintain continuity with their historical progress. Encourage them and confirm the next steps.
+Adhere to the persona style if provided above.
 
 ### Draft Message:"""
+
+def iterate_professional_draft(current_draft: str, feedback: str, person_name: str, note_context: str = "", history: str = "", highlight_text: str = "") -> str:
+    """Surgical refinement of an existing draft."""
+    focus_context = ""
+    if highlight_text:
+        focus_context = f"\n### SPECIFIC FOCUS ON THIS SECTION:\n{highlight_text}\n"
+        
+    return f"""You are an expert professional assistant refining a message to {person_name}.
+
+### CONTEXT
+{note_context}
+
+### PREVIOUS HISTORY
+{history}
+
+### CURRENT DRAFT
+{current_draft}
+
+### USER FEEDBACK
+{feedback}
+{focus_context}
+
+### INSTRUCTIONS
+Please provide an updated version of the message that addresses the feedback while maintaining the existing professional tone and context.
+Provide ONLY the updated message text.
+
+### NEW DRAFT:"""
 
 def embed_note(title: str, text: str) -> str:
     """Text to be embedded for note search."""
@@ -165,28 +197,7 @@ Return valid JSON in the format:
 
 JSON:"""
 
-def persona_draft(note_content: str, persona_name: str, persona_bio: str, references: str) -> str:
-    """Draft a message using a specific persona and references."""
-    return f"""You are drafting a professional follow-up message as the persona: "{persona_name}".
-
-### Persona Description & Style:
-{persona_bio}
-
-### Relevant Professional Knowledge & References:
-{references}
-
-### Session Context:
-{note_content}
-
-### Instructions:
-1. Write a warm, professional, and ACTIONABLE follow-up message based on the session context.
-2. Adopt the specific style and tone described in the Persona bio.
-3. Incorporate relevant details from the Professional Knowledge/References if helpful for the recipient.
-4. Keep the message concise (2-3 paragraphs max).
-5. DO NOT include placeholders like [Name]. If the recipient is unclear, use a neutral greeting.
-
-### DRAFT MESSAGE:
-"""
+# Note: persona_draft preserved for older calls if necessary, but professional_draft is preferred.
 def synthesize_proposals(proposals_text: str) -> str:
     return f"""You are an expert at distilling professional insights. Your task is to take a list of raw proposals for a Practice Framework and merge them into a smaller, unique, and high-impact set.
     
