@@ -89,9 +89,13 @@ const PracticeFramework: React.FC = () => {
     }, []);
 
 
-    const resolveProposal = async (id: number, approved: boolean) => {
+    const resolveProposal = async (id: number, approved: boolean, targetPersonaId?: number | null, isCore?: boolean) => {
         try {
-            await api.post(`/api/framework/proposals/${id}/resolve`, { approved });
+            await api.post(`/api/framework/proposals/${id}/resolve`, { 
+                approved,
+                override_persona_id: targetPersonaId,
+                override_is_core: isCore
+            });
             setProposals(proposals.filter(p => p.id !== id));
             if (approved) fetchData();
         } catch (err) {
@@ -218,6 +222,12 @@ const PracticeFramework: React.FC = () => {
                             value={core.principles_tenets || ''} 
                             onSave={(val) => saveCoreSection('principles_tenets', val)}
                         />
+                        <FrameworkSection 
+                            title="Common Phrasing" 
+                            description="Specific words, signatures, or phrases you frequently use."
+                            value={core.common_phrasing || ''} 
+                            onSave={(val) => saveCoreSection('common_phrasing', val)}
+                        />
                     </div>
                 )}
 
@@ -303,6 +313,12 @@ const PracticeFramework: React.FC = () => {
                                     value={selectedPersona.framework.principles_tenets || ''} 
                                     onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'principles_tenets', val)}
                                 />
+                                <FrameworkSection 
+                                    title="Common Phrasing" 
+                                    description={`Preferred vocabulary or stylistic markers for ${selectedPersona.name}.`}
+                                    value={selectedPersona.framework.common_phrasing || ''} 
+                                    onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'common_phrasing', val)}
+                                />
 
                                 <div style={{ marginTop: '24px' }}>
                                     <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px' }}>Targeted Evolution</h3>
@@ -331,7 +347,7 @@ const PracticeFramework: React.FC = () => {
                             </div>
                         ) : (
                             proposals.map(proposal => (
-                                <div key={proposal.id} className="card" style={{ borderLeft: '4px solid var(--primary)' }}>
+                                <div key={proposal.id} className="card" style={{ borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', marginBottom: '8px' }}>
@@ -350,12 +366,38 @@ const PracticeFramework: React.FC = () => {
                                             <p style={{ fontSize: '1.1rem', fontWeight: 500, margin: '0 0 12px 0' }}>{proposal.value}</p>
                                             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                                 Source: {proposal.source_type} #{proposal.source_id}
-                                                {proposal.persona_id ? ` (Persona ID: ${proposal.persona_id})` : ' (Global Core)'}
                                             </p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', borderTop: '1px solid var(--border)', paddingTop: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Target Scope:</label>
+                                            <select 
+                                                className="input-field" 
+                                                style={{ width: 'auto', padding: '4px 8px', fontSize: '0.8rem' }}
+                                                value={proposal.is_core ? 'core' : (proposal.persona_id || 'core')}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    const updated = proposals.map(p => {
+                                                        if (p.id === proposal.id) {
+                                                            if (val === 'core') return { ...p, is_core: true, persona_id: undefined };
+                                                            return { ...p, is_core: false, persona_id: parseInt(val) };
+                                                        }
+                                                        return p;
+                                                    });
+                                                    setProposals(updated);
+                                                }}
+                                            >
+                                                <option value="core">Global Core</option>
+                                                {personas.map(p => (
+                                                    <option key={p.id} value={p.id}>Persona: {p.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => resolveProposal(proposal.id, false)}>Reject</button>
-                                            <button className="btn-primary" onClick={() => resolveProposal(proposal.id, true)}>Approve</button>
+                                            <button className="btn-primary" onClick={() => resolveProposal(proposal.id, true, proposal.persona_id, proposal.is_core)}>Approve & Apply</button>
                                         </div>
                                     </div>
                                 </div>

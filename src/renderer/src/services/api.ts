@@ -62,6 +62,7 @@ export interface PractiseFramework {
     tone_idioms?: string;
     formatting_preferences?: string;
     principles_tenets?: string;
+    common_phrasing?: string;
     created_at: string;
     updated_at: string;
 }

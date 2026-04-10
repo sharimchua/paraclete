@@ -166,6 +166,8 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
 
 class ProposalResolution(BaseModel):
     approved: bool
+    override_persona_id: Optional[int] = None
+    override_is_core: Optional[bool] = None
 
 @router.post("/proposals/{proposal_id}/resolve")
 def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Session = Depends(get_db)):
@@ -177,12 +179,16 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
     if approved:
         proposal.status = models.FrameworkProposalStatus.ACCEPTED
         
+        # Use overrides if provided, otherwise fall back to proposal defaults
+        effective_is_core = resolution.override_is_core if resolution.override_is_core is not None else proposal.is_core
+        effective_persona_id = resolution.override_persona_id if resolution.override_persona_id is not None else proposal.persona_id
+
         # Determine which framework to update
         target_framework = None
-        if proposal.is_core:
+        if effective_is_core:
             target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
-        elif proposal.persona_id:
-            persona = db.query(models.Persona).filter(models.Persona.id == proposal.persona_id).first()
+        elif effective_persona_id:
+            persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
             if persona:
                 target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == persona.framework_id).first()
         
