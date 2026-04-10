@@ -32,6 +32,8 @@ const App: React.FC = () => {
     const [viewHistory, setViewHistory] = useState<string[]>(['dashboard']);
     const [personaLinkingTarget, setPersonaLinkingTarget] = useState<{ type: 'person' | 'group', id: number, existingPersonaIds: number[] } | null>(null);
     const [showContactSelection, setShowContactSelection] = useState(false);
+    const [isParacletePanelOpen, setIsParacletePanelOpen] = useState(false);
+    const [isThinking, setIsThinking] = useState(false);
 
     useEffect(() => {
         // Query if setup is complete
@@ -58,10 +60,14 @@ const App: React.FC = () => {
         const handleTriggerMessageModal = () => setShowContactSelection(true);
         window.addEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
 
+        const handleThinking = (e: any) => setIsThinking(e.detail);
+        window.addEventListener('paraclete-thinking' as any, handleThinking);
+
         return () => {
             window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
             window.removeEventListener('navigate' as any, handleNavigate);
             window.removeEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
+            window.removeEventListener('paraclete-thinking' as any, handleThinking);
         };
     }, []);
 
@@ -304,9 +310,13 @@ const App: React.FC = () => {
     return (
         <div className="app-container">
             <aside className="sidebar">
-                <div className="logo-area">
+                <div 
+                    className="logo-area" 
+                    onClick={() => setIsParacletePanelOpen(true)}
+                    style={{ cursor: 'pointer' }}
+                >
                     <div className="logo-icon">
-                        <Logo />
+                        <Logo isThinking={isThinking} />
                     </div>
                     <span className="app-name">Paraclete</span>
                 </div>
@@ -382,7 +392,7 @@ const App: React.FC = () => {
                     {renderContent()}
                 </div>
             </main>
-            <ParacletePanel />
+            <ParacletePanel isOpen={isParacletePanelOpen} onClose={() => setIsParacletePanelOpen(false)} />
             
             {personaLinkingTarget && (
                 <PersonaSelectionModal 

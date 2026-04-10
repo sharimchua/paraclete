@@ -10,8 +10,12 @@ interface BackgroundJob {
     error?: string;
 }
 
-const ParacletePanel: React.FC = () => {
-    const [isOpen, setIsOpen] = useState(false);
+interface ParacletePanelProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<'jobs' | 'forensics' | 'chat'>('jobs');
     const [events, setEvents] = useState<any[]>([]);
     const [jobs, setJobs] = useState<BackgroundJob[]>([]);
@@ -36,8 +40,14 @@ const ParacletePanel: React.FC = () => {
                 
                 if (data.event?.startsWith('llm_')) {
                     setEvents(prev => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }]);
-                    if (data.event === 'llm_start') setIsThinking(true);
-                    if (data.event === 'llm_finish') setIsThinking(false);
+                    if (data.event === 'llm_start') {
+                        setIsThinking(true);
+                        window.dispatchEvent(new CustomEvent('paraclete-thinking', { detail: true }));
+                    }
+                    if (data.event === 'llm_finish') {
+                        setIsThinking(false);
+                        window.dispatchEvent(new CustomEvent('paraclete-thinking', { detail: false }));
+                    }
                 } 
                 
                 if (data.event === 'background_job_update') {
@@ -144,45 +154,7 @@ const ParacletePanel: React.FC = () => {
         </div>
     );
 
-    if (!isOpen) {
-        return (
-            <div 
-                onClick={() => setIsOpen(true)}
-                style={{
-                    position: 'fixed',
-                    bottom: '24px',
-                    right: '24px',
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '24px',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 2000,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    overflow: 'hidden'
-                }}
-                className="paraclete-trigger"
-            >
-                <div style={{ width: '28px', opacity: isThinking ? 1 : 0.7, transform: isThinking ? 'scale(1.1)' : 'scale(1)' }}>
-                    <Logo />
-                </div>
-                {isThinking && (
-                    <div style={{
-                        position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        border: '2px solid var(--primary)',
-                        borderRadius: '24px',
-                        animation: 'pulse 1.5s infinite'
-                    }} />
-                )}
-            </div>
-        );
-    }
+    if (!isOpen) return null;
 
     return (
         <div style={{
@@ -220,7 +192,7 @@ const ParacletePanel: React.FC = () => {
                     </span>
                 </div>
                 <button 
-                    onClick={() => setIsOpen(false)}
+                    onClick={onClose}
                     style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '1.2rem' }}
                 >
                     &times;
