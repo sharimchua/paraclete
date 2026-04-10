@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 import json
 import asyncio
 
@@ -82,6 +83,3 @@ INSTRUCTIONS:
             yield f"Error: {str(e)}"
 
     return StreamingResponse(generate_chat(), media_type="text/plain")
-
-# To support the Pydantic model for input validation
-from pydantic import BaseModel
