@@ -219,11 +219,19 @@ class PractiseFrameworkBase(BaseModel):
     is_core: bool = False
 
 class PractiseFrameworkCreate(PractiseFrameworkBase):
-    pass
+    tone_idioms: Optional[str] = None
+    formatting_preferences: Optional[str] = None
+    common_phrasing: Optional[str] = None
+    principles_tenets: Optional[str] = None
 
 class PractiseFramework(PractiseFrameworkBase):
     id: int
     items: List[PractiseFrameworkItem] = []
+    # Legacy Virtual Fields (populated on fetch)
+    tone_idioms: Optional[str] = None
+    formatting_preferences: Optional[str] = None
+    common_phrasing: Optional[str] = None
+    principles_tenets: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class PersonaBase(BaseModel):

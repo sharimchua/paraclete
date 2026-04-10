@@ -69,10 +69,11 @@ async def run_entity_extraction(text: str, context: str = "", grammar: str = Non
 
 async def run_draft_message(context: dict) -> str:
     """Draft a follow-up message based on session summary and history."""
-    prompt = templates.draft_message(
+    prompt = templates.professional_draft(
         person_name=context.get("person_name", "Friend"),
         summary=context.get("summary", ""),
-        history=context.get("history", "No prior history.")
+        history=context.get("history", "No prior history."),
+        framework_context=context.get("framework_context", "")
     )
     
     return await asyncio.to_thread(

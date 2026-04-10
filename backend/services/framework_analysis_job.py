@@ -183,16 +183,30 @@ async def run_item_analysis_task(
         data = json.loads(clean_json)
         if "proposals" in data:
             for p in data["proposals"]:
-                proposal = models.FrameworkProposal(
-                    source_type=item_type.capitalize(),
-                    source_id=item_id,
-                    aspect=p.get("aspect", "Principles"),
-                    action=p.get("action", "Add"),
-                    value=p.get("value", ""),
-                    persona_id=target_persona_id,
-                    is_core=(target_persona_id is None)
-                )
-                db.add(proposal)
+                # Check for existing pending proposal for this persona/aspect/value
+                aspect = p.get("aspect", "Principles")
+                value = p.get("value", "")
+                
+                existing = db.query(models.FrameworkProposal).filter(
+                    models.FrameworkProposal.aspect == aspect,
+                    models.FrameworkProposal.value == value,
+                    models.FrameworkProposal.persona_id == target_persona_id,
+                    models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING
+                ).first()
+
+                if existing:
+                    existing.observation_count += 1
+                else:
+                    proposal = models.FrameworkProposal(
+                        source_type=item_type.capitalize(),
+                        source_id=item_id,
+                        aspect=aspect,
+                        action=p.get("action", "Add"),
+                        value=value,
+                        persona_id=target_persona_id,
+                        is_core=(target_persona_id is None)
+                    )
+                    db.add(proposal)
         
         item.analyzed_for_framework = True
         db.commit()

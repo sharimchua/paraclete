@@ -179,9 +179,9 @@ SESSION NOTE:
 RECOMMENDED TITLE:"""
 
 def analyze_framework(content: str, persona_name: str, context: str = "") -> str:
-    """Analyze content for framework improvements."""
-    return f"""You are an expert at analyzing professional practices and styles.
-Analyze the following content to identify patterns, idioms, preferred tones, and principles that define the practitioner's style for the persona "{persona_name}".
+    """Analyze content for framework improvements with instructional constraints."""
+    return f"""You are an expert at identifying professional practice styles and extracting actionable practice directives.
+Analyze the following content to identify unique patterns, idioms, tones, and principles that define "{persona_name}".
 
 {context}
 
@@ -189,19 +189,21 @@ Analyze the following content to identify patterns, idioms, preferred tones, and
 {content}
 
 ### INSTRUCTIONS:
-Identify specific improvements or adjustments for the Practice Framework.
-Return valid JSON in the format:
+1. IDENTIFY: Look for patterns that are NOT already in the "Current Framework Directives" above.
+2. CATEGORIZE: Use only the following aspects: 'Tone', 'Phrasing', 'Formatting', 'Principles'.
+3. ACTION: 
+   - 'Add': For new unique observations.
+   - 'Update': If an existing directive is refined or contradicted.
+4. VALUE: The value should be a concise, instructional directive (e.g. "Uses 'weaving' metaphors for complex ideas", "Prefers bullet points for next steps").
+5. FORMAT: Return VALID JSON only.
+
+Return JSON format:
 {{
   "proposals": [
     {{
-      "aspect": "Tone & Idioms",
+      "aspect": "Tone",
       "action": "Add",
-      "value": "Uses specific metaphorical language about 'weaving' ideas together."
-    }},
-    {{
-      "aspect": "Formatting Preferences",
-      "action": "Update",
-      "value": "Prefer bullet points for action items."
+      "value": "Consistently uses musical analogies..."
     }}
   ]
 }}
@@ -226,3 +228,34 @@ def synthesize_proposals(proposals_text: str) -> str:
     Output 3-5 unique, high-fidelity items that truly define this practitioner's specific edge.
 
     JSON:"""
+    
+def audit_framework(core_items: str, persona_items: str, person_items: str = "") -> str:
+    return f"""You are a professional practice auditor. Your goal is to identify direct contradictions or redundant overlaps in the practitioner's style framework across different hierarchical levels.
+
+### CORE FRAMEWORK (Primary)
+{core_items}
+
+### PERSONA OVERRIDES
+{persona_items}
+
+### ENTITY-SPECIFIC OVERRIDES
+{person_items}
+
+### INSTRUCTIONS
+1. CONTRADICTIONS: Find directives that directly oppose each other (e.g., Core says "Use formal tone" but Persona says "Use casual tone").
+2. REDUNDANCY: Find identical directives at different levels that should be cleaned up.
+3. OUTPUT: Return a list of identified conflicts in JSON.
+
+Format:
+{{
+  "conflicts": [
+    {{
+      "aspect": "Tone",
+      "severity": "High",
+      "description": "Core mandates formal language while Persona uses slang/casual idioms.",
+      "recommendation": "Decide on a dominant tone for this context."
+    }}
+  ]
+}}
+
+JSON:"""

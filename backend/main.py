@@ -712,10 +712,15 @@ async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
     if prev_notes:
         history_text = "\n".join([f"- {n.date}: {n.title}" for n in prev_notes])
 
+    # Hierarchy-aware Practise Framework
+    from .services.framework_resolver import resolve_framework_items
+    framework_context = resolve_framework_items(db, person_id=db_note.person_id, group_id=db_note.group_id)
+
     context = {
-        "person_name": db_note.person.name,
+        "person_name": db_note.person.name if db_note.person else "Unknown",
         "summary": db_note.cleaned_text or db_note.raw_capture,
-        "history": history_text
+        "history": history_text,
+        "framework_context": framework_context
     }
     
     await manager.broadcast({"event": "llm_start", "data": {"type": "draft_message", "prompt": "Drafting Follow-up"}})

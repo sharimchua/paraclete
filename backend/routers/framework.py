@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+import asyncio
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -28,6 +30,43 @@ async def get_pending_count(
         db, person_id=person_id, group_id=group_id, persona_id=persona_id
     )
     return counts
+
+@router.get("/audit")
+async def get_framework_audit(persona_id: Optional[int] = None, db: Session = Depends(get_db)):
+    # 1. Fetch hierarchy
+    core_fw = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
+    core_text = "\n".join([f"- [{i.aspect}]: {i.value}" for i in core_fw.items]) if core_fw else "None"
+    
+    persona_text = "None"
+    persona_name = "Selected Persona"
+    if persona_id:
+        persona = db.query(models.Persona).filter(models.Persona.id == persona_id).first()
+        if persona:
+            persona_name = persona.name
+            if persona.framework:
+                persona_text = "\n".join([f"- [{i.aspect}]: {i.value}" for i in persona.framework.items])
+
+    # 2. Run LLM Audit
+    from ..llm import templates, llm_manager
+    prompt = templates.audit_framework(core_text, persona_text)
+    
+    try:
+        resp = await asyncio.to_thread(
+            llm_manager.call, 
+            prompt, 
+            system="You are an expert professional practice auditor. Identify contradictions between Core and Persona levels."
+        )
+        
+        # Simple extraction
+        clean_json = resp.strip()
+        if "```json" in clean_json:
+            clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+        elif "```" in clean_json:
+            clean_json = clean_json.split("```")[1].split("```")[0].strip()
+            
+        return json.loads(clean_json)
+    except Exception as e:
+        return {"conflicts": [], "error": str(e)}
 
 @router.post("/analyze")
 async def trigger_framework_analysis(
@@ -104,17 +143,81 @@ async def trigger_framework_analysis(
 
     return {"status": "started", "job_count": len(job_ids), "job_ids": job_ids}
 
+def stitch_framework(db_fw: models.PractiseFramework):
+    """Aggregate discrete items into virtual text fields for the GUI."""
+    if not db_fw: return db_fw
+    
+    by_aspect = {
+        'tone': [],
+        'formatting': [],
+        'phrasing': [],
+        'principles': []
+    }
+    
+    # Map from alternate names or plural to our standard set
+    map = {
+        'tone': 'tone', 'tone & idioms': 'tone', 'idioms': 'tone',
+        'formatting': 'formatting', 'formatting preferences': 'formatting',
+        'phrasing': 'phrasing', 'common phrasing': 'phrasing',
+        'principles': 'principles', 'principles & tenets': 'principles', 'tenets': 'principles'
+    }
+
+    for item in db_fw.items:
+        key = map.get(item.aspect.lower(), 'principles')
+        by_aspect[key].append(item.value)
+
+    db_fw.tone_idioms = "\n".join(by_aspect['tone'])
+    db_fw.formatting_preferences = "\n".join(by_aspect['formatting'])
+    db_fw.common_phrasing = "\n".join(by_aspect['phrasing'])
+    db_fw.principles_tenets = "\n".join(by_aspect['principles'])
+    return db_fw
+
+def parse_and_sync_items(db: Session, db_fw: models.PractiseFramework, framework_data: schemas.PractiseFrameworkCreate):
+    """Parse text blocks into individual items and sync with DB."""
+    aspect_map = {
+        'tone_idioms': 'Tone',
+        'formatting_preferences': 'Formatting',
+        'common_phrasing': 'Phrasing',
+        'principles_tenets': 'Principles'
+    }
+
+    for field, aspect in aspect_map.items():
+        text = getattr(framework_data, field)
+        if text is None: continue
+
+        # 1. Clean and split into individual bullets
+        lines = [line.strip().lstrip('-').strip() for line in text.split('\n') if line.strip()]
+        
+        # 2. Get existing items for this aspect
+        existing_items = {i.value: i for i in db_fw.items if i.aspect == aspect}
+        
+        # 3. Add new ones
+        for val in lines:
+            if val not in existing_items:
+                new_item = models.PractiseFrameworkItem(
+                    framework_id=db_fw.id,
+                    aspect=aspect,
+                    value=val
+                )
+                db.add(new_item)
+            else:
+                # Remove from dict so we know it's still present
+                del existing_items[val]
+        
+        # 4. Remove items that were deleted in the text block
+        for old_item in existing_items.values():
+            db.delete(old_item)
+
 # --- Core Framework ---
 @router.get("/core", response_model=schemas.PractiseFramework)
 def read_core_framework(db: Session = Depends(get_db)):
     core = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
     if not core:
-        # Create default core if not exists
         core = models.PractiseFramework(name="Global Core", is_core=True)
         db.add(core)
         db.commit()
         db.refresh(core)
-    return core
+    return stitch_framework(core)
 
 @router.patch("/core", response_model=schemas.PractiseFramework)
 def update_core_framework(framework: schemas.PractiseFrameworkCreate, db: Session = Depends(get_db)):
@@ -122,14 +225,18 @@ def update_core_framework(framework: schemas.PractiseFrameworkCreate, db: Sessio
     if not core:
         core = models.PractiseFramework(is_core=True)
         db.add(core)
+        db.commit()
+        db.refresh(core)
     
-    for key, value in framework.model_dump().items():
-        if key != "is_core":
-            setattr(core, key, value)
+    # Update base fields
+    if framework.name: core.name = framework.name
+    
+    # Sync items
+    parse_and_sync_items(db, core, framework)
     
     db.commit()
     db.refresh(core)
-    return core
+    return stitch_framework(core)
 
 @router.patch("/frameworks/{framework_id}", response_model=schemas.PractiseFramework)
 def update_framework(framework_id: int, framework: schemas.PractiseFrameworkCreate, db: Session = Depends(get_db)):
@@ -137,13 +244,12 @@ def update_framework(framework_id: int, framework: schemas.PractiseFrameworkCrea
     if not db_framework:
         raise HTTPException(status_code=404, detail="Framework not found")
     
-    for key, value in framework.model_dump().items():
-        if key != "id" and key != "is_core":
-            setattr(db_framework, key, value)
+    if framework.name: db_framework.name = framework.name
+    parse_and_sync_items(db, db_framework, framework)
     
     db.commit()
     db.refresh(db_framework)
-    return db_framework
+    return stitch_framework(db_framework)
 
 # --- Personas ---
 @router.post("/personas", response_model=schemas.Persona)
@@ -164,13 +270,19 @@ def create_persona(persona: schemas.PersonaCreate, db: Session = Depends(get_db)
 
 @router.get("/personas", response_model=List[schemas.Persona])
 def read_personas(db: Session = Depends(get_db)):
-    return db.query(models.Persona).all()
+    personas = db.query(models.Persona).all()
+    for p in personas:
+        if p.framework:
+            stitch_framework(p.framework)
+    return personas
 
 @router.get("/personas/{persona_id}", response_model=schemas.Persona)
 def read_persona(persona_id: int, db: Session = Depends(get_db)):
     persona = db.query(models.Persona).filter(models.Persona.id == persona_id).first()
     if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
+    if persona.framework:
+        stitch_framework(persona.framework)
     return persona
 
 @router.patch("/personas/{persona_id}", response_model=schemas.Persona)
@@ -271,30 +383,24 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
                 target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == persona.framework_id).first()
         
         if target_framework:
-            # Map aspect to model field
-            field_map = {
-                'formatting': 'formatting_preferences',
-                'formatting preferences': 'formatting_preferences',
-                'phrasing': 'common_phrasing',
-                'common phrasing': 'common_phrasing',
-                'tone': 'tone_idioms',
-                'tone & idioms': 'tone_idioms',
-                'principles': 'principles_tenets',
-                'principles & tenets': 'principles_tenets'
-            }
+            # Aspect mapping is now handled by the item model's 'aspect' field directly.
+            # We look for an existing item with the same aspect and value to avoid duplicates,
+            # or we create a new one.
             
-            field_name = field_map.get(proposal.aspect.lower())
-            if field_name:
-                current_val = getattr(target_framework, field_name) or ""
-                if proposal.action == "Add":
-                    # Smart append
-                    if proposal.value not in current_val:
-                        new_val = current_val + ("\n- " if "\n" in current_val or current_val else "- ") + proposal.value
-                        setattr(target_framework, field_name, new_val)
-                elif proposal.action == "Update":
-                    # For now, append as update. In the future maybe regex replace.
-                    new_val = current_val + "\n[Update] " + proposal.value
-                    setattr(target_framework, field_name, new_val)
+            existing_item = db.query(models.PractiseFrameworkItem).filter(
+                models.PractiseFrameworkItem.framework_id == target_framework.id,
+                models.PractiseFrameworkItem.aspect == proposal.aspect,
+                models.PractiseFrameworkItem.value == proposal.value
+            ).first()
+
+            if not existing_item:
+                new_item = models.PractiseFrameworkItem(
+                    framework_id=target_framework.id,
+                    aspect=proposal.aspect,
+                    value=proposal.value
+                )
+                db.add(new_item)
+            # If it exists, we just confirm the resolution of the proposal.
         
     else:
         proposal.status = models.FrameworkProposalStatus.REJECTED
@@ -474,14 +580,10 @@ async def draft_persona_message(
         raise HTTPException(status_code=404, detail="Persona not found")
         
     # Assemble augmented bio with Framework Tokens
-    augmented_bio = persona.description or ""
-    if persona.framework:
-        fw = persona.framework
-        augmented_bio += "\n\n### PRACTISE FRAMEWORK CONSTRAINTS:\n"
-        if fw.formatting_preferences: augmented_bio += f"- Formatting: {fw.formatting_preferences}\n"
-        if fw.tone_idioms: augmented_bio += f"- Tone & Idioms: {fw.tone_idioms}\n"
-        if fw.principles_tenets: augmented_bio += f"- Core Principles: {fw.principles_tenets}\n"
-        if fw.common_phrasing: augmented_bio += f"- Common Phrasing: {fw.common_phrasing}\n"
+    from ..services.framework_resolver import resolve_framework_items
+    framework_context = resolve_framework_items(db, persona_id=effective_persona_id, person_id=note.person_id, group_id=note.group_id)
+    
+    augmented_bio = (persona.description or "") + "\n\n### PRACTISE FRAMEWORK CONSTRAINTS:\n" + framework_context
 
     if overrides:
         augmented_bio += "\n\n### ENTITY-SPECIFIC OVERRIDES:\n" + "\n".join(overrides)
