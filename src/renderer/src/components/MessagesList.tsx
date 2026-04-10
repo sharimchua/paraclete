@@ -93,8 +93,8 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
                             onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e293b'}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                                    {msg.person?.name || msg.group?.name || 'Unknown Contact'}
+                                <div style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 600 }}>
+                                    {msg.person?.name ? `👤 ${msg.person.name}` : (msg.group?.name ? `👥 ${msg.group.name}` : 'No Contact Assigned')}
                                 </div>
                                 <div style={{ 
                                     fontSize: '0.75rem', 
@@ -126,9 +126,9 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '0.8rem', opacity: 0.5 }}>
-                                <span>{msg.date || msg.created_at.split('T')[0]}</span>
+                                <span>📅 {msg.date || msg.created_at.split('T')[0]}</span>
                                 {msg.note && (
-                                    <span>Linked: {msg.note.title.substring(0, 20)}...</span>
+                                    <span style={{ color: 'var(--primary)', opacity: 0.8 }}>🔗 {msg.note.title.substring(0, 24)}...</span>
                                 )}
                             </div>
                         </div>

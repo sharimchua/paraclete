@@ -79,6 +79,21 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         loadContexts();
     }, [messageId, noteId, personId, groupId]);
 
+    const handleDelete = async () => {
+        if (!message.id) return;
+        
+        const confirmed = window.confirm("Are you sure you want to delete this message? This action cannot be undone.");
+        if (!confirmed) return;
+        
+        try {
+            await api.delete(`/api/messages/${message.id}`);
+            onComplete();
+        } catch (err) {
+            console.error('Failed to delete message:', err);
+            alert('Failed to delete message.');
+        }
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -236,6 +251,22 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                     >
                         {isSaving ? 'Saving...' : (message.id ? 'Update' : 'Save')}
                     </button>
+                    {message.id && (
+                        <button 
+                            className="btn-secondary" 
+                            onClick={handleDelete}
+                            style={{ 
+                                padding: '6px 16px', 
+                                borderRadius: '8px', 
+                                fontSize: '0.8rem',
+                                color: 'var(--error, #f43f5e)',
+                                borderColor: 'var(--error, #f43f5e)',
+                                opacity: 0.8
+                            }}
+                        >
+                            Delete
+                        </button>
+                    )}
                 </div>
             </div>
 

@@ -127,11 +127,20 @@ class MessageUpdate(BaseModel):
     group_id: Optional[int] = None
     sent_at: Optional[datetime] = None
 
+class NoteBadge(BaseModel):
+    id: int
+    title: str
+    date: dt_date
+    model_config = ConfigDict(from_attributes=True)
+
 class Message(MessageBase):
     id: int
     sent_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    person: Optional["Person"] = None
+    group: Optional["Group"] = None
+    note: Optional[NoteBadge] = None
     model_config = ConfigDict(from_attributes=True)
 
 class NoteBase(BaseModel):
@@ -267,6 +276,7 @@ class DashboardStats(BaseModel):
 class CalendarDay(BaseModel):
     date: dt_date
     count: int
+    message_count: int = 0
 
 class TrendStack(BaseModel):
     name: str
@@ -286,3 +296,10 @@ class LeaderboardEntry(BaseModel):
     id: int
     name: str
     note_count: int
+
+# Rebuild models for circular references
+Person.model_rebuild()
+Group.model_rebuild()
+Message.model_rebuild()
+Note.model_rebuild()
+Persona.model_rebuild()

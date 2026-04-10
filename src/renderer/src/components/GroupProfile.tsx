@@ -340,7 +340,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                         cursor: 'pointer', 
                                         borderLeft: msg.status === 'draft' ? '4px solid #fbbf24' : '4px solid #4ade80'
                                     }}
-                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', noteId: msg.id } }))}
+                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', messageId: msg.id } }))}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{msg.date || msg.created_at.split('T')[0]}</span>

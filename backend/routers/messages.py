@@ -178,3 +178,13 @@ async def iterate_message(
     except Exception as e:
         print(f"DEBUG: Message iteration failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{message_id}")
+def delete_message(message_id: int, db: Session = Depends(get_db)):
+    db_msg = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not db_msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    db.delete(db_msg)
+    db.commit()
+    return {"status": "success"}

@@ -1015,12 +1015,37 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
 @app.get("/dashboard/calendar", response_model=List[schemas.CalendarDay])
 def get_calendar_data(db: Session = Depends(get_db)):
-    results = db.query(
+    note_results = db.query(
         models.Note.date, 
         func.count(models.Note.id).label('count')
     ).group_by(models.Note.date).all()
     
-    return [{"date": r.date, "count": r.count} for r in results]
+    msg_results = db.query(
+        models.Message.date,
+        func.count(models.Message.id).label('m_count')
+    ).group_by(models.Message.date).all()
+    
+    # Merge results into a map
+    data_map = {}
+    
+    for r in note_results:
+        d_str = r.date.isoformat()
+        data_map[d_str] = {"date": r.date, "count": r.count, "message_count": 0}
+        
+    for r in msg_results:
+        if not r.date: continue
+        d_str = r.date
+        if d_str in data_map:
+            data_map[d_str]["message_count"] = r.m_count
+        else:
+            try:
+                # Convert string YYYY-MM-DD back to date object for schema validation
+                d_obj = datetime.strptime(d_str, "%Y-%m-%d").date()
+                data_map[d_str] = {"date": d_obj, "count": 0, "message_count": r.m_count}
+            except:
+                continue
+                
+    return list(data_map.values())
 
 @app.get("/dashboard/recent-notes", response_model=List[schemas.Note])
 def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
