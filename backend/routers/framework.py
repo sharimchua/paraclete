@@ -272,7 +272,10 @@ class PersonaLink(BaseModel):
 @router.post("/proposals/synthesize")
 async def synthesize_all_proposals(db: Session = Depends(get_db)):
     """Merges and de-duplicates all pending proposals using the LLM."""
-    proposals = db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING).all()
+    proposals = db.query(models.FrameworkProposal)\
+        .filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING)\
+        .order_by(models.FrameworkProposal.created_at.desc())\
+        .limit(50).all()
     if not proposals:
         return {"status": "success", "count": 0}
 
@@ -283,25 +286,41 @@ async def synthesize_all_proposals(db: Session = Depends(get_db)):
     
     proposals_text = "\n".join(prop_list)
 
-    from backend import llm
+    try:
+        from .. import llm
+    except ImportError:
+        import llm
     import json
     import asyncio
+    import traceback
 
     try:
+        print(f"DEBUG: Starting synthesis of {len(proposals)} proposals...")
+        
         # Offload to thread for safety
         result_text = await asyncio.to_thread(
-            llm.core.llm_manager.call,
-            llm.templates.synthesize_proposals(proposals_text)
+            llm.llm_manager.call,
+            prompt=llm.templates.synthesize_proposals(proposals_text)
         )
+        
+        print(f"DEBUG: LLM synthesis response received. Length: {len(result_text)}")
         
         # Parse JSON
         start_idx = result_text.find('{')
         end_idx = result_text.rfind('}') + 1
         if start_idx == -1 or end_idx == 0:
-            raise Exception("Invalid LLM response format")
+            print(f"DEBUG: LLM response did not contain JSON. Content: {result_text[:500]}...")
+            raise HTTPException(status_code=500, detail="LLM response did not contain a valid JSON object.")
         
-        data = json.loads(result_text[start_idx:end_idx])
+        json_str = result_text[start_idx:end_idx]
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as je:
+            print(f"DEBUG: JSON decode error: {je}. Fragment: {json_str[:200]}")
+            raise HTTPException(status_code=500, detail=f"Failed to parse LLM synthesis JSON: {je}")
+
         new_proposals = data.get("proposals", [])
+        print(f"DEBUG: Synthesis complete. Generated {len(new_proposals)} merged proposals.")
 
         # Mark old as superseded
         for p in proposals:
@@ -322,8 +341,12 @@ async def synthesize_all_proposals(db: Session = Depends(get_db)):
         
         db.commit()
         return {"status": "success", "count": len(new_proposals)}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        db.rollback()
+        print(f"ERROR in synthesis: {e}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/link")
