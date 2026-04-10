@@ -10,7 +10,7 @@ import os
 import json
 
 from . import models, schemas, database, llm
-from .routers import references, framework
+from .routers import references, framework, messages
 from datetime import datetime, timedelta
 import asyncio
 import numpy as np
@@ -37,10 +37,12 @@ manager = None
 # Include Routers with /api prefix
 app.include_router(references.router, prefix="/api")
 app.include_router(framework.router, prefix="/api")
+app.include_router(messages.router, prefix="/api")
 # Also include without prefix for legacy compatibility if needed, 
 # but the plan specifies /api for new features.
 app.include_router(references.router)
 app.include_router(framework.router)
+app.include_router(messages.router)
 
 class ConnectionManager:
     def __init__(self):
@@ -1007,7 +1009,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "person_count": db.query(models.Person).count(),
         "note_count": db.query(models.Note).count(),
         "group_count": db.query(models.Group).count(),
-        "reference_count": db.query(models.Reference).count()
+        "reference_count": db.query(models.Reference).count(),
+        "message_count": db.query(models.Message).count()
     }
 
 @app.get("/dashboard/calendar", response_model=List[schemas.CalendarDay])

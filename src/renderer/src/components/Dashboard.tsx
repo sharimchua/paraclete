@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, DashboardStats, CalendarDay, TrendPoint, LeaderboardEntry, Note, Person, Group } from '../services/api';
+import { api, DashboardStats, CalendarDay, TrendPoint, LeaderboardEntry, Note, Person, Group, Message } from '../services/api';
 import PracticeCalendar from './PracticeCalendar';
 
 interface Props {
@@ -13,6 +13,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     const [trends, setTrends] = useState<TrendPoint[]>([]);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [dateNotes, setDateNotes] = useState<Note[]>([]);
+    const [dateMessages, setDateMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<string>(() => {
         const d = new Date();
@@ -50,16 +51,20 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     }, []);
 
     useEffect(() => {
-        const fetchNotesByDate = async () => {
+        const fetchDayActivity = async () => {
             try {
-                const notes = await api.get<Note[]>(`/notes/by-date/${selectedDate}`);
+                const [notes, messages] = await Promise.all([
+                    api.get<Note[]>(`/notes/by-date/${selectedDate}`),
+                    api.get<Message[]>(`/api/messages/by-date/${selectedDate}`)
+                ]);
                 setDateNotes(notes);
+                setDateMessages(messages);
             } catch (err) {
-                console.error('Failed to fetch notes for date', err);
+                console.error('Failed to fetch activity for date', err);
             }
         };
 
-        fetchNotesByDate();
+        fetchDayActivity();
     }, [selectedDate]);
 
     const handleOpenModal = async () => {
@@ -179,22 +184,26 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div className="card">
                     <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px' }}>Practice Overview</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
                         <div style={{ padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)' }}>{stats?.person_count || 0}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>People</div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>{stats?.person_count || 0}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>People</div>
                         </div>
                         <div style={{ padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)' }}>{stats?.note_count || 0}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Notes</div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>{stats?.note_count || 0}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Notes</div>
                         </div>
                         <div style={{ padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--secondary)' }}>{stats?.group_count || 0}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Groups</div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--secondary)' }}>{stats?.group_count || 0}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Groups</div>
                         </div>
                         <div style={{ padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--secondary)' }}>{stats?.reference_count || 0}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>References</div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--secondary)' }}>{stats?.reference_count || 0}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Refs</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--bg-surface)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fbbf24' }}>{stats?.message_count || 0}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Outreach</div>
                         </div>
                     </div>
                 </div>
@@ -352,7 +361,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
             <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h4 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                        Notes for {new Date(selectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        Activity for {new Date(selectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                     </h4>
                     <button 
                         className="btn-primary" 
@@ -373,53 +382,87 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                         +
                     </button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto', maxHeight: '500px' }}>
-                    {dateNotes.length === 0 ? (
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '24px' }}>No sessions on this day.</div>
-                    ) : (
-                        dateNotes.map(note => (
-                            <div 
-                                key={note.id} 
-                                onClick={() => onSelectNote(note.id)}
-                                style={{ 
-                                    padding: '12px', 
-                                    background: 'var(--bg-surface)', 
-                                    borderRadius: '8px',
-                                    borderLeft: '3px solid var(--primary)',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    cursor: 'pointer'
-                                }}
-                                className="clickable-card"
-                            >
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '2px' }}>{note.title}</div>
-                                
-                                <div style={{ marginBottom: '8px' }}>
-                                    {note.person && (
-                                        <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            👤 {note.person.name}
-                                        </span>
-                                    )}
-                                    {note.group && (
-                                        <span style={{ fontSize: '0.7rem', color: 'var(--secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            👥 {note.group.name}
-                                        </span>
-                                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto', maxHeight: '700px' }}>
+                    {/* Notes Section */}
+                    {dateNotes.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes ({dateNotes.length})</div>
+                            {dateNotes.map(note => (
+                                <div 
+                                    key={note.id} 
+                                    onClick={() => onSelectNote(note.id)}
+                                    style={{ 
+                                        padding: '12px', 
+                                        background: 'var(--bg-surface)', 
+                                        borderRadius: '8px',
+                                        borderLeft: '3px solid var(--primary)',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                        cursor: 'pointer'
+                                    }}
+                                    className="clickable-card"
+                                >
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '2px' }}>{note.title}</div>
+                                    <div style={{ marginBottom: '8px' }}>
+                                        {note.person && (
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                👤 {note.person.name}
+                                            </span>
+                                        )}
+                                        {note.group && (
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                👥 {note.group.name}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{note.stage}</div>
                                 </div>
+                            ))}
+                        </div>
+                    )}
 
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span>{new Date(note.date + 'T00:00:00').toLocaleDateString()}</span>
-                                    <span style={{ 
-                                        color: 'var(--primary)', 
-                                        fontWeight: 800, 
-                                        fontSize: '0.6rem',
-                                        textTransform: 'uppercase',
-                                        background: 'var(--primary-faded)',
-                                        padding: '2px 6px',
-                                        borderRadius: '4px'
-                                    }}>{note.stage}</span>
+                    {/* Messages Section */}
+                    {dateMessages.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Outreach ({dateMessages.length})</div>
+                            {dateMessages.map(msg => (
+                                <div 
+                                    key={msg.id} 
+                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', noteId: msg.id } }))}
+                                    style={{ 
+                                        padding: '12px', 
+                                        background: 'var(--bg-surface)', 
+                                        borderRadius: '8px',
+                                        borderLeft: '3px solid #fbbf24',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                        cursor: 'pointer'
+                                    }}
+                                    className="clickable-card"
+                                >
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px', opacity: 0.9 }}>
+                                        {msg.draft_text ? msg.draft_text.substring(0, 60) + '...' : 'Untitled Message'}
+                                    </div>
+                                    <div style={{ marginBottom: '8px' }}>
+                                        {msg.person && (
+                                            <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                👤 {msg.person.name}
+                                            </span>
+                                        )}
+                                        {msg.group && (
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                👥 {msg.group.name}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{msg.status}</div>
                                 </div>
-                            </div>
-                        ))
+                            ))}
+                        </div>
+                    )}
+
+                    {dateNotes.length === 0 && dateMessages.length === 0 && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '40px' }}>
+                            No activity recorded for this day.
+                        </div>
                     )}
                 </div>
             </div>

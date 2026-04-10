@@ -19,10 +19,9 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
-    const getDayCount = (day: number) => {
+    const getDayData = (day: number) => {
         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayData = data.find(d => d.date === dateStr);
-        return dayData ? dayData.count : 0;
+        return data.find(d => d.date === dateStr);
     };
 
     const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(viewDate);
@@ -72,7 +71,10 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
                 
                 {days.map(day => {
                     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const count = getDayCount(day);
+                    const dayData = getDayData(day);
+                    const noteCount = dayData?.count || 0;
+                    const msgCount = dayData?.message_count || 0;
+                    const hasActivity = noteCount > 0 || msgCount > 0;
                     const isToday = dateStr === todayStr;
                     const isSelected = selectedDate === dateStr;
                     
@@ -84,10 +86,10 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
                                 padding: '8px 0',
                                 borderRadius: '8px',
                                 fontSize: '0.8rem',
-                                background: isSelected ? 'var(--primary)' : (count > 0 ? 'var(--primary-faded)' : (isToday ? 'var(--bg-surface)' : 'transparent')),
+                                background: isSelected ? 'var(--primary)' : (hasActivity ? 'rgba(255, 255, 255, 0.03)' : (isToday ? 'var(--bg-surface)' : 'transparent')),
                                 border: isToday && !isSelected ? '1px solid var(--primary)' : '1px solid transparent',
-                                color: isSelected ? 'white' : (count > 0 ? 'var(--primary)' : 'var(--text-secondary)'),
-                                fontWeight: count > 0 || isToday || isSelected ? 700 : 400,
+                                color: isSelected ? 'white' : (hasActivity ? 'white' : 'var(--text-secondary)'),
+                                fontWeight: hasActivity || isToday || isSelected ? 700 : 400,
                                 position: 'relative',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease'
@@ -95,17 +97,14 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
                             className="calendar-day"
                         >
                             {day}
-                            {count > 0 && !isSelected && (
-                                <div style={{ 
-                                    position: 'absolute', 
-                                    top: '2px', 
-                                    right: '2px', 
-                                    width: '6px', 
-                                    height: '6px', 
-                                    borderRadius: '50%', 
-                                    background: 'var(--primary)' 
-                                }} />
-                            )}
+                            <div style={{ position: 'absolute', bottom: '2px', left: '0', right: '0', display: 'flex', justifyContent: 'center', gap: '2px' }}>
+                                {noteCount > 0 && (
+                                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? 'white' : 'var(--primary)' }} />
+                                )}
+                                {msgCount > 0 && (
+                                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? 'white' : '#fbbf24' }} />
+                                )}
+                            </div>
                         </div>
                     );
                 })}

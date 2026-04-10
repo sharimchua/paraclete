@@ -15,6 +15,8 @@ import PracticeFramework from './components/PracticeFramework';
 import Logo from './components/Logo';
 import DeveloperPanel from './components/DeveloperPanel';
 import StandardNavbar from './components/StandardNavbar';
+import MessagesList from './components/MessagesList';
+import MessageAuthoring from './components/MessageAuthoring';
 import PersonaSelectionModal from './components/PersonaSelectionModal';
 import { api } from './services/api';
 
@@ -206,6 +208,22 @@ const App: React.FC = () => {
             return <PracticeFramework />;
         }
 
+        if (currentView === 'messages') {
+            return <MessagesList onSelectMessage={(id) => navigateTo('message-authoring', null, null, id)} />;
+        }
+
+        if (currentView === 'message-authoring') {
+            return (
+                <MessageAuthoring 
+                    messageId={selectedNoteId || undefined} 
+                    personId={selectedPersonId || undefined}
+                    groupId={selectedGroupId || undefined}
+                    initialDate={initialNoteDate || undefined}
+                    onComplete={() => goBack()}
+                />
+            );
+        }
+
         return <div>View {currentView} coming soon.</div>;
     };
 
@@ -214,12 +232,19 @@ const App: React.FC = () => {
         let title = currentView.toUpperCase();
         let actions: any[] = [];
 
-        if (currentView === 'new-note') title = 'SESSION WORKFLOW';
+        if (currentView === 'message-authoring') title = 'MESSAGE COMPOSER';
+        else if (currentView === 'messages') title = 'MESSAGE HISTORY';
+        else if (currentView === 'new-note') title = 'SESSION WORKFLOW';
         else if (currentView === 'note-detail') title = 'NOTE DETAIL';
         else if (selectedPersonId) title = 'PERSON PROFILE';
         else if (selectedGroupId) title = 'GROUP PROFILE';
 
-        if (currentView === 'persons' && !selectedPersonId) {
+        if (currentView === 'messages') {
+            actions.push({
+                label: '+ Create Message',
+                onClick: () => navigateTo('message-authoring')
+            });
+        } else if (currentView === 'persons' && !selectedPersonId) {
             actions.push({
                 label: '+ Add Person',
                 onClick: () => window.dispatchEvent(new CustomEvent('trigger-create-person'))
@@ -278,6 +303,12 @@ const App: React.FC = () => {
                         onClick={() => { navigateTo('notes', null, null, null, null, true); }}
                     >
                         Notes
+                    </div>
+                    <div 
+                        className={`nav-item ${currentView === 'messages' || currentView === 'message-authoring' ? 'active' : ''}`}
+                        onClick={() => { navigateTo('messages', null, null, null, null, true); }}
+                    >
+                        Messages
                     </div>
                     <div 
                         className={`nav-item ${currentView === 'references' ? 'active' : ''}`}

@@ -95,11 +95,13 @@ export interface DashboardStats {
     note_count: number;
     group_count: number;
     reference_count: number;
+    message_count: number;
 }
 
 export interface CalendarDay {
     date: string;
-    count: number;
+    count: number; // notes count
+    message_count: number;
 }
 
 export interface TrendStack {
@@ -119,7 +121,28 @@ export interface LeaderboardEntry {
     note_count: number;
 }
 
+export interface Message {
+    id: number;
+    draft_text?: string;
+    sent_text?: string;
+    status: 'draft' | 'sent' | 'archived';
+    source: 'native' | 'imported';
+    is_inbound: boolean;
+    date?: string;
+    note_id?: number;
+    person_id?: number;
+    group_id?: number;
+    persona_id?: number;
+    sent_at?: string;
+    created_at: string;
+    updated_at: string;
+    note?: Note;
+    person?: Person;
+    group?: Group;
+}
+
 export const api = {
+    // ... existing ...
     async get<T>(path: string): Promise<T> {
         const res = await fetch(`${API_BASE}${path}`);
         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
@@ -161,5 +184,24 @@ export const api = {
         });
         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
         return res.json();
-    }
+    },
+
+    // Specific Domain Methods
+    getMessages: (params?: any) => {
+        let qs = '';
+        if (params) {
+            qs = '?' + new URLSearchParams(params).toString();
+        }
+        return api.get<Message[]>(`/api/messages/${qs}`);
+    },
+    getMessage: (id: number) => api.get<Message>(`/api/messages/${id}`),
+    createMessage: (data: Partial<Message>) => api.post<Message>('/api/messages/', data),
+    updateMessage: (id: number, data: Partial<Message>) => api.patch<Message>(`/api/messages/${id}`, data),
+    iterateMessage: (id: number, feedback: string, highlight?: string) => 
+        api.post<{draft_text: string}>(`/api/messages/${id}/iterate`, { feedback, highlight_text: highlight }),
+    getMessagesByDate: (date: string) => api.get<Message[]>(`/api/messages/by-date/${date}`),
+    
+    // Legacy mapping (to be moved/updated)
+    getNotesByDate: (date: string) => api.get<Note[]>(`/api/notes/by-date/${date}`),
+    draftNoteMessage: (noteId: number) => api.post<Message>(`/api/notes/${noteId}/draft-message`, {})
 };

@@ -157,17 +157,40 @@ class Action(Base):
     # Relationships
     note = relationship("Note", back_populates="actions")
 
+class MessageStatus(str, enum.Enum):
+    DRAFT = "draft"
+    SENT = "sent"
+    ARCHIVED = "archived"
+
+class MessageSource(str, enum.Enum):
+    NATIVE = "native"
+    IMPORTED = "imported"
+
 class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True)
-    draft_text = Column(Text)
+    draft_text = Column(Text, nullable=True)
+    sent_text = Column(Text, nullable=True)
+    status = Column(Enum(MessageStatus), default=MessageStatus.DRAFT)
+    source = Column(Enum(MessageSource), default=MessageSource.NATIVE)
+    is_inbound = Column(Boolean, default=False)
+    
+    date = Column(String, index=True) # YYYY-MM-DD
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=True)
+    person_id = Column(Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=True)
+    persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
+    
     sent_at = Column(DateTime, nullable=True)
-    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"))
-    source = Column(String, nullable=True) # 'native', 'imported'
     analyzed_for_framework = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     note = relationship("Note", back_populates="messages")
+    person = relationship("Person", backref="messages")
+    group = relationship("Group", backref="messages")
+    persona = relationship("Persona")
 
 class NoteEmbedding(Base):
     __tablename__ = "note_embeddings"

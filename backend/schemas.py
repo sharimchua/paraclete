@@ -93,18 +93,45 @@ class Action(ActionBase):
     note_id: int
     model_config = ConfigDict(from_attributes=True)
 
+class MessageStatus(str, Enum):
+    DRAFT = "draft"
+    SENT = "sent"
+    ARCHIVED = "archived"
+
+class MessageSource(str, Enum):
+    NATIVE = "native"
+    IMPORTED = "imported"
+
 class MessageBase(BaseModel):
-    draft_text: str
-    sent_at: Optional[datetime] = None
+    draft_text: Optional[str] = None
+    sent_text: Optional[str] = None
+    status: MessageStatus = MessageStatus.DRAFT
+    source: MessageSource = MessageSource.NATIVE
+    date: Optional[str] = None # YYYY-MM-DD
+    note_id: Optional[int] = None
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    persona_id: Optional[int] = None
+    is_inbound: bool = False
 
 class MessageCreate(MessageBase):
-    note_id: int
+    pass
+
+class MessageUpdate(BaseModel):
+    draft_text: Optional[str] = None
+    sent_text: Optional[str] = None
+    status: Optional[MessageStatus] = None
+    is_inbound: Optional[bool] = None
+    date: Optional[str] = None
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    sent_at: Optional[datetime] = None
 
 class Message(MessageBase):
     id: int
-    note_id: int
-    source: Optional[str] = None
-    analyzed_for_framework: Optional[bool] = False
+    sent_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
 class NoteBase(BaseModel):
@@ -235,6 +262,7 @@ class DashboardStats(BaseModel):
     note_count: int
     group_count: int
     reference_count: int
+    message_count: int
 
 class CalendarDay(BaseModel):
     date: dt_date

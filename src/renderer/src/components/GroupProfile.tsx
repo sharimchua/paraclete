@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, Group, Person, Note } from '../services/api';
+import { api, Group, Person, Note, Message } from '../services/api';
 import TagSelectionModal from './TagSelectionModal';
 import ReactMarkdown from 'react-markdown';
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
@@ -15,6 +15,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     const [group, setGroup] = useState<Group | null>(null);
     const [allPersons, setAllPersons] = useState<Person[]>([]);
     const [groupNotes, setGroupNotes] = useState<Note[]>([]);
+    const [groupMessages, setGroupMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
@@ -27,13 +28,15 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         Promise.all([
             api.get<Group>(`/groups/${groupId}`),
             api.get<Person[]>('/persons/'),
-            api.get<Note[]>(`/notes/?group_id=${groupId}`)
-        ]).then(([groupData, personsData, notesData]) => {
+            api.get<Note[]>(`/notes/?group_id=${groupId}`),
+            api.get<Message[]>(`/api/messages/?group_id=${groupId}`)
+        ]).then(([groupData, personsData, notesData, messagesData]) => {
             setGroup(groupData);
             setEditName(groupData.name);
             setEditDesc(groupData.description || '');
             setAllPersons(personsData);
             setGroupNotes(notesData);
+            setGroupMessages(messagesData);
             setLoading(false);
         }).catch(err => {
             console.error(err);
@@ -184,6 +187,10 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                     <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{calculateTenure()}</div>
                                 </div>
                                 <div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Outreach</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fbbf24' }}>{groupMessages.length}</div>
+                                </div>
+                                <div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Notes</div>
                                     <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{noteStats.total}</div>
                                 </div>
@@ -308,6 +315,55 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                                 {note.cleaned_text || note.raw_capture || (note.session_brief ? `**Briefing:** ${note.session_brief}` : 'No content yet.')}
                                             </ReactMarkdown>
                                         </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Group Communication</h3>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Outreach & Follow-ups</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {groupMessages.length === 0 ? (
+                            <div className="card" style={{ textAlign: 'center', padding: '40px', opacity: 0.6 }}>
+                                <p>No messages recorded for this group.</p>
+                            </div>
+                        ) : (
+                            groupMessages.slice(0, 10).map(msg => (
+                                <div 
+                                    key={msg.id} 
+                                    className="card" 
+                                    style={{ 
+                                        cursor: 'pointer', 
+                                        borderLeft: msg.status === 'draft' ? '4px solid #fbbf24' : '4px solid #4ade80'
+                                    }}
+                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', noteId: msg.id } }))}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{msg.date || msg.created_at.split('T')[0]}</span>
+                                        <span style={{ 
+                                            fontSize: '0.6rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '4px', 
+                                            background: msg.status === 'draft' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(74, 222, 128, 0.1)',
+                                            color: msg.status === 'draft' ? '#fbbf24' : '#4ade80',
+                                            fontWeight: 800
+                                        }}>
+                                            {msg.status.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div style={{ 
+                                        fontSize: '0.9rem', 
+                                        opacity: 0.8, 
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 3,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {msg.draft_text || msg.sent_text || 'No content drafted...'}
                                     </div>
                                 </div>
                             ))
