@@ -82,6 +82,23 @@ async def run_draft_message(context: dict) -> str:
     )
 
 
+async def run_persona_draft(note_content: str, persona_name: str, persona_bio: str, references: str) -> str:
+    """Draft a follow-up message using a specific professional persona."""
+    prompt = templates.persona_draft(
+        note_content=note_content,
+        persona_name=persona_name,
+        persona_bio=persona_bio,
+        references=references
+    )
+    
+    return await asyncio.to_thread(
+        llm_manager.call,
+        prompt=prompt,
+        system=f"You are writing a follow-up message as {persona_name}. Style: {persona_bio[:200]}...",
+        max_tokens=1500
+    )
+
+
 async def run_dictation(audio_filename: str) -> str:
     """Clean up dictation text."""
     prompt = templates.dictation_capture(filename=audio_filename)

@@ -77,9 +77,17 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     }
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px', alignItems: 'flex-start' }}>
-            <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'minmax(0, 1fr) 380px', 
+            gap: '32px', 
+            alignItems: 'flex-start',
+            maxWidth: '1280px',
+            margin: '0 auto',
+            width: '100%'
+        }}>
+            <div className="card" style={{ padding: '40px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button className="btn-secondary" onClick={() => setIsEditing(true)}>
                             Edit Note
@@ -89,40 +97,51 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                 </div>
 
                 <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
-                        <div>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+                        <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                                 {note.stage}
                             </span>
-                            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginTop: '4px' }}>{note.title}</h1>
+                            <h1 style={{ fontSize: '2.8rem', fontWeight: 800, marginTop: '8px', lineHeight: '1.2' }}>{note.title}</h1>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{note.date}</div>
-                            {person && <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--primary)' }}>Person: {person.name}</div>}
-                            {group && <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--secondary)' }}>Group: {group.name}</div>}
+                        <div style={{ textAlign: 'right', minWidth: '200px' }}>
+                            <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '8px' }}>{note.date}</div>
+                            {person && (
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>With</span>
+                                    <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{person.name}</span>
+                                </div>
+                            )}
+                            {group && (
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>Group</span>
+                                    <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>{group.name}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {note.session_brief && (
                         <div style={{ 
-                            background: 'rgba(56, 189, 248, 0.03)', 
+                            background: 'var(--bg-deep)', 
+                            border: '1px solid var(--border)',
                             borderLeft: '4px solid var(--primary)', 
                             padding: '24px 32px', 
-                            marginTop: '24px', 
-                            borderRadius: '0 12px 12px 0' 
+                            marginTop: '32px', 
+                            borderRadius: '12px' 
                         }}>
                             <h3 style={{ 
-                                fontSize: '0.8rem', 
+                                fontSize: '0.75rem', 
                                 color: 'var(--primary)', 
-                                fontWeight: 700, 
+                                fontWeight: 800, 
                                 textTransform: 'uppercase', 
-                                letterSpacing: '0.1em',
-                                marginBottom: '16px'
+                                letterSpacing: '0.15em',
+                                marginBottom: '12px'
                             }}>
-                                PRE-SESSION BRIEFING
+                                Pre-Session Briefing
                             </h3>
                             <div className="markdown-brief" style={{ 
-                                fontSize: '1rem', 
+                                fontSize: '0.95rem', 
                                 color: 'var(--text-secondary)',
                                 lineHeight: '1.6'
                             }}>
@@ -131,28 +150,32 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                         </div>
                     )}
 
-                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '32px', marginTop: '32px' }}>
-                            <div className="markdown-content" style={{ 
-                            fontSize: '1.1rem', 
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '40px', marginTop: '40px' }}>
+                        <div className="markdown-content" style={{ 
+                            fontSize: '1.15rem', 
                             lineHeight: '1.8', 
                             color: 'var(--text-main)',
-                            maxWidth: '800px'
+                            maxWidth: '900px'
                         }}>
                             <ReactMarkdown>{note.cleaned_text || note.raw_capture || 'No content.'}</ReactMarkdown>
                         </div>
                     </div>
 
                     {note.raw_capture && note.cleaned_text && (
-                        <details style={{ marginTop: '48px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
-                            <summary style={{ cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.9rem' }}>View Raw Capture</summary>
+                        <details style={{ marginTop: '64px', borderTop: '1px solid var(--border)', paddingTop: '32px' }}>
+                            <summary style={{ cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
+                                View Raw Internal Capture
+                            </summary>
                             <div style={{ 
-                                marginTop: '16px', 
-                                padding: '20px', 
+                                marginTop: '20px', 
+                                padding: '24px', 
                                 background: 'var(--bg-deep)', 
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
+                                borderRadius: '12px',
+                                fontSize: '0.95rem',
                                 color: 'var(--text-secondary)',
-                                fontFamily: 'monospace'
+                                fontFamily: 'var(--font-mono, monospace)',
+                                border: '1px solid var(--border)',
+                                whiteSpace: 'pre-wrap'
                             }}>
                                 {note.raw_capture}
                             </div>
@@ -161,9 +184,20 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                 </div>
             </div>
 
-            <div style={{ position: 'sticky', top: '24px' }}>
-                <NoteUtilities note={note} />
-            </div>
+            <aside style={{ position: 'sticky', top: '24px', height: 'fit-content' }}>
+                <div style={{ 
+                    padding: '24px', 
+                    background: 'var(--bg-deep)', 
+                    borderRadius: '16px', 
+                    border: '1px solid var(--border)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                }}>
+                    <h2 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text-main)', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+                        AI ASSISTANT
+                    </h2>
+                    <NoteUtilities note={note} />
+                </div>
+            </aside>
         </div>
     );
 };

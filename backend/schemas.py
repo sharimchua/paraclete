@@ -134,8 +134,8 @@ class Note(NoteBase):
     tags: List[Tag] = []
     actions: List[Action] = []
     messages: List[Message] = []
-    person: Optional[PersonBadge] = None
-    group: Optional[GroupBadge] = None
+    person: Optional["Person"] = None
+    group: Optional["Group"] = None
     analyzed_for_framework: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 

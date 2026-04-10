@@ -164,3 +164,26 @@ Return valid JSON in the format:
 }}
 
 JSON:"""
+
+def persona_draft(note_content: str, persona_name: str, persona_bio: str, references: str) -> str:
+    """Draft a message using a specific persona and references."""
+    return f"""You are drafting a professional follow-up message as the persona: "{persona_name}".
+
+### Persona Description & Style:
+{persona_bio}
+
+### Relevant Professional Knowledge & References:
+{references}
+
+### Session Context:
+{note_content}
+
+### Instructions:
+1. Write a warm, professional, and ACTIONABLE follow-up message based on the session context.
+2. Adopt the specific style and tone described in the Persona bio.
+3. Incorporate relevant details from the Professional Knowledge/References if helpful for the recipient.
+4. Keep the message concise (2-3 paragraphs max).
+5. DO NOT include placeholders like [Name]. If the recipient is unclear, use a neutral greeting.
+
+### DRAFT MESSAGE:
+"""

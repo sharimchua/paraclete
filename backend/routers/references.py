@@ -70,22 +70,60 @@ def delete_reference(reference_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success"}
 
-@router.get("/suggest/", response_model=List[schemas.Reference])
+@router.get("/suggest", response_model=List[schemas.Reference])
+async def suggest_references_endpoint(
+    query: Optional[str] = Query(None), 
+    note_id: Optional[int] = Query(None), 
+    person_id: Optional[int] = Query(None), 
+    group_id: Optional[int] = Query(None),
+    limit: int = 5,
+    db: Session = Depends(get_db)
+):
+    return await suggest_references(
+        db=db,
+        query=query,
+        note_id=note_id,
+        person_id=person_id,
+        group_id=group_id,
+        limit=limit
+    )
+
 async def suggest_references(
-    query: str, 
+    db: Session,
+    query: Optional[str] = None, 
     note_id: Optional[int] = None, 
     person_id: Optional[int] = None, 
     group_id: Optional[int] = None,
-    limit: int = 5,
-    db: Session = Depends(get_db)
+    limit: int = 5
 ):
     """
     Hybrid Suggestion Logic:
     Semantic vector search hybridized with an explicit multiplier boost for occurrences 
     of shared Tags between the retrieved Reference and the current context.
     """
+    context_tag_ids = set()
+    effective_query = query
+
+    if note_id:
+        note = db.query(models.Note).filter(models.Note.id == note_id).first()
+        if note:
+            context_tag_ids.update([t.id for t in note.tags])
+            if not effective_query:
+                effective_query = f"{note.title} {note.cleaned_text or note.raw_capture or ''}"
+    if person_id:
+        person = db.query(models.Person).filter(models.Person.id == person_id).first()
+        if person:
+            context_tag_ids.update([t.id for t in person.tags])
+    if group_id:
+        group = db.query(models.Group).filter(models.Group.id == group_id).first()
+        if group:
+            context_tag_ids.update([t.id for t in group.tags])
+
+    if not effective_query:
+        return []
+
     loop = asyncio.get_event_loop()
-    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(effective_query))
     
     if not query_embedding_resp:
         return []
@@ -95,21 +133,6 @@ async def suggest_references(
     
     if norm_q == 0:
         return []
-
-    # Get context tags for boosting
-    context_tag_ids = set()
-    if note_id:
-        note = db.query(models.Note).filter(models.Note.id == note_id).first()
-        if note:
-            context_tag_ids.update([t.id for t in note.tags])
-    if person_id:
-        person = db.query(models.Person).filter(models.Person.id == person_id).first()
-        if person:
-            context_tag_ids.update([t.id for t in person.tags])
-    if group_id:
-        group = db.query(models.Group).filter(models.Group.id == group_id).first()
-        if group:
-            context_tag_ids.update([t.id for t in group.tags])
 
     all_refs = db.query(models.Reference).all()
     scored_refs = []

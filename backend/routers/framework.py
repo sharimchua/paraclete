@@ -236,3 +236,81 @@ def link_persona_to_group(group_id: int, persona_id: int, db: Session = Depends(
         group.personas.append(persona)
         db.commit()
     return {"status": "success"}
+
+@router.post("/draft-message")
+async def draft_persona_message(
+    note_id: int, 
+    persona_id: Optional[int] = None, 
+    db: Session = Depends(get_db)
+):
+    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    # Hierarchical Persona Resolution & Context Augmentation
+    effective_persona_id = persona_id
+    overrides = []
+    entity_name = "the recipient"
+
+    if not effective_persona_id:
+        if note.person:
+            entity_name = note.person.name
+            effective_persona_id = note.person.persona_id
+            if note.person.tags:
+                overrides.append(f"Individual Overrides ({note.person.name}): " + ", ".join([f"{t.key}: {t.value}" for t in note.person.tags]))
+            
+            # Inheritance if no direct persona
+            if not effective_persona_id and note.person.groups:
+                for g in note.person.groups:
+                    if g.persona_id:
+                        effective_persona_id = g.persona_id
+                        overrides.append(f"Inherited Group Context ({g.name}): {g.description or ''}")
+                        break
+        elif note.group:
+            entity_name = note.group.name
+            effective_persona_id = note.group.persona_id
+            if note.group.description:
+                overrides.append(f"Group Context ({note.group.name}): {note.group.description}")
+
+    if not effective_persona_id:
+        raise HTTPException(status_code=400, detail="No professional persona linked or inherited for this session.")
+
+    persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
+    if not persona:
+        raise HTTPException(status_code=404, detail="Persona not found")
+        
+    # Assemble augmented bio with Framework Tokens
+    augmented_bio = persona.description or ""
+    if persona.framework:
+        fw = persona.framework
+        augmented_bio += "\n\n### PRACTISE FRAMEWORK CONSTRAINTS:\n"
+        if fw.formatting_preferences: augmented_bio += f"- Formatting: {fw.formatting_preferences}\n"
+        if fw.tone_idioms: augmented_bio += f"- Tone & Idioms: {fw.tone_idioms}\n"
+        if fw.principles_tenets: augmented_bio += f"- Core Principles: {fw.principles_tenets}\n"
+        if fw.common_phrasing: augmented_bio += f"- Common Phrasing: {fw.common_phrasing}\n"
+
+    if overrides:
+        augmented_bio += "\n\n### ENTITY-SPECIFIC OVERRIDES:\n" + "\n".join(overrides)
+        
+    # Get relevant refs for context
+    from backend.routers.references import suggest_references
+    refs = await suggest_references(note_id=note_id, db=db, limit=3)
+    refs_text = "\n".join([f"- {r.title}: {r.body[:500]}" for r in refs])
+    
+    # Run LLM
+    from backend import llm
+    try:
+        draft = await llm.workflows.run_persona_draft(
+            note_content=note.cleaned_text or note.raw_capture or "",
+            persona_name=persona.name,
+            persona_bio=augmented_bio,
+            references=refs_text
+        )
+        return {
+            "draft": draft,
+            "persona_id": persona.id,
+            "persona_name": persona.name,
+            "is_inherited": (persona_id is None and effective_persona_id != (note.person.persona_id if note.person else None))
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

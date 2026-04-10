@@ -492,7 +492,14 @@ def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
 
 @app.get("/notes/", response_model=List[schemas.Note])
 def read_notes(person_id: int = None, group_id: int = None, search: str = None, skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)):
-    query = db.query(models.Note)
+    query = db.query(models.Note).options(
+        joinedload(models.Note.person).joinedload(models.Person.persona),
+        joinedload(models.Note.person).joinedload(models.Person.groups).joinedload(models.Group.persona),
+        joinedload(models.Note.group).joinedload(models.Group.persona),
+        joinedload(models.Note.tags),
+        joinedload(models.Note.actions),
+        joinedload(models.Note.messages)
+    )
     if person_id:
         query = query.filter(models.Note.person_id == person_id)
     if group_id:
@@ -503,7 +510,16 @@ def read_notes(person_id: int = None, group_id: int = None, search: str = None, 
             (models.Note.raw_capture.ilike(f"%{search}%")) | 
             (models.Note.cleaned_text.ilike(f"%{search}%"))
         )
-    return query.order_by(models.Note.date.desc(), models.Note.created_at.desc()).offset(skip).limit(limit).all()
+    notes = query.order_by(models.Note.date.desc(), models.Note.created_at.desc()).offset(skip).limit(limit).all()
+    
+    # Calculate inherited personas for notes
+    for n in notes:
+        if n.person and not n.person.persona:
+            for group in n.person.groups:
+                if group.persona:
+                    n.person.inherited_persona = group.persona
+                    break
+    return notes
 
 @app.get("/notes/by-date/{date_str}", response_model=List[schemas.Note])
 def read_notes_by_date(date_str: str, db: Session = Depends(get_db)):
@@ -511,9 +527,25 @@ def read_notes_by_date(date_str: str, db: Session = Depends(get_db)):
 
 @app.get("/notes/{note_id}", response_model=schemas.Note)
 def read_note(note_id: int, db: Session = Depends(get_db)):
-    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    db_note = db.query(models.Note).options(
+        joinedload(models.Note.person).joinedload(models.Person.persona),
+        joinedload(models.Note.person).joinedload(models.Person.groups).joinedload(models.Group.persona),
+        joinedload(models.Note.group).joinedload(models.Group.persona),
+        joinedload(models.Note.tags),
+        joinedload(models.Note.actions),
+        joinedload(models.Note.messages)
+    ).filter(models.Note.id == note_id).first()
+    
     if db_note is None:
         raise HTTPException(status_code=404, detail="Note not found")
+        
+    # Calculate inherited persona
+    if db_note.person and not db_note.person.persona:
+        for group in db_note.person.groups:
+            if group.persona:
+                db_note.person.inherited_persona = group.persona
+                break
+
     return db_note
 
 @app.post("/notes/{note_id}/references/{reference_id}")
