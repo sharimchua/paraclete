@@ -212,11 +212,19 @@ class PractiseFramework(Base):
     __tablename__ = "practise_frameworks"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=True)
-    formatting_preferences = Column(Text, nullable=True) # JSON
-    common_phrasing = Column(Text, nullable=True) # JSON
-    tone_idioms = Column(Text, nullable=True) # JSON
-    principles_tenets = Column(Text, nullable=True) # JSON
     is_core = Column(Boolean, default=False)
+
+    items = relationship("PractiseFrameworkItem", back_populates="framework", cascade="all, delete-orphan")
+
+class PractiseFrameworkItem(Base):
+    __tablename__ = "practise_framework_items"
+    id = Column(Integer, primary_key=True, index=True)
+    framework_id = Column(Integer, ForeignKey("practise_frameworks.id", ondelete="CASCADE"))
+    aspect = Column(String) # 'Tone', 'Phrasing', 'Formatting', 'Principles'
+    value = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    framework = relationship("PractiseFramework", back_populates="items")
 
 class Persona(Base):
     __tablename__ = "personas"
@@ -242,6 +250,7 @@ class FrameworkProposal(Base):
     aspect = Column(String) # 'formatting', 'phrasing', 'tone', 'principles'
     action = Column(String) # 'Add', 'Update', 'Remove'
     value = Column(Text) # The proposed text or JSON
+    observation_count = Column(Integer, default=1)
     persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
     is_core = Column(Boolean, default=False)
     status = Column(Enum(FrameworkProposalStatus), default=FrameworkProposalStatus.PENDING)

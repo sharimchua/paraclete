@@ -202,12 +202,20 @@ class Reference(ReferenceBase):
 
 # Phase 6 Schemas
 
+class PractiseFrameworkItemBase(BaseModel):
+    aspect: str
+    value: str
+
+class PractiseFrameworkItemCreate(PractiseFrameworkItemBase):
+    pass
+
+class PractiseFrameworkItem(PractiseFrameworkItemBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 class PractiseFrameworkBase(BaseModel):
     name: Optional[str] = None
-    formatting_preferences: Optional[str] = None # JSON string
-    common_phrasing: Optional[str] = None # JSON string
-    tone_idioms: Optional[str] = None # JSON string
-    principles_tenets: Optional[str] = None # JSON string
     is_core: bool = False
 
 class PractiseFrameworkCreate(PractiseFrameworkBase):
@@ -215,6 +223,7 @@ class PractiseFrameworkCreate(PractiseFrameworkBase):
 
 class PractiseFramework(PractiseFrameworkBase):
     id: int
+    items: List[PractiseFrameworkItem] = []
     model_config = ConfigDict(from_attributes=True)
 
 class PersonaBase(BaseModel):
@@ -243,6 +252,7 @@ class FrameworkProposalBase(BaseModel):
     aspect: str
     action: str
     value: str
+    observation_count: int = 1
     source_context: Optional[str] = None # Hydrated dynamically
     source_owner: Optional[str] = None # Hydrated dynamically
     source_date: Optional[str] = None # Hydrated dynamically
