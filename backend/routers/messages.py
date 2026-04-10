@@ -7,6 +7,7 @@ import json
 
 from .. import models, schemas, database, llm
 from ..database import get_db
+from ..services.framework_resolver import resolve_framework_items
 
 router = APIRouter(
     prefix="/messages",
@@ -132,27 +133,22 @@ async def iterate_message(
 
     current_draft = db_msg.draft_text or ""
     
+    # Gather Framework Context
+    framework_context = resolve_framework_items(
+        db, 
+        persona_id=db_msg.persona_id, 
+        person_id=db_msg.person_id, 
+        group_id=db_msg.group_id,
+        aspects=["Tone", "Phrasing", "Formatting", "Principles", "Communication"]
+    )
+
     # Use workflow-like templating if starting fresh, otherwise raw iterate
     if feedback == "Draft a professional follow-up based on the available context." and not current_draft:
-        # Fetch persona if available
-        persona_name = ""
-        persona_bio = ""
-        if db_msg.persona:
-            persona_name = db_msg.persona.name
-            persona_bio = db_msg.persona.description or ""
-        elif db_msg.person and db_msg.person.persona:
-            persona_name = db_msg.person.persona.name
-            persona_bio = db_msg.person.persona.description or ""
-        elif db_msg.group and db_msg.group.persona:
-            persona_name = db_msg.group.persona.name
-            persona_bio = db_msg.group.persona.description or ""
-
         prompt = llm.templates.professional_draft(
             person_name=person_name,
             summary=db_msg.note.cleaned_text if db_msg.note else "Professional outreach",
             history=history_text,
-            persona_name=persona_name,
-            persona_bio=persona_bio
+            framework_context=framework_context
         )
     else:
         # Surgical refinement
@@ -162,7 +158,8 @@ async def iterate_message(
             person_name=person_name,
             note_context=note_context,
             history=history_text,
-            highlight_text=highlight_text
+            highlight_text=highlight_text,
+            framework_context=framework_context
         )
     
     try:

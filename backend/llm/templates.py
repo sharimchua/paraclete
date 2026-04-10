@@ -69,13 +69,13 @@ SESSION CONTENT:
 
 JSON:"""
 
-def professional_draft(person_name: str, summary: str, history: str, persona_name: str = "", persona_bio: str = "") -> str:
-    """Consolidated professional message drafting template."""
-    persona_context = ""
-    if persona_name:
-        persona_context = f"### Writing as Persona: {persona_name}\n{persona_bio}\n\n"
+def professional_draft(person_name: str, summary: str, history: str, framework_context: str = "") -> str:
+    """Consolidated professional message drafting template with granular framework adherence."""
+    framework_section = ""
+    if framework_context:
+        framework_section = f"### Practice Framework Constraints (STRICT ADHERENCE)\n{framework_context}\n\n"
         
-    return f"""{persona_context}### Professional Context
+    return f"""{framework_section}### Professional Context
 Person: {person_name}
 Summary of Today's Session:
 {summary}
@@ -83,19 +83,25 @@ Summary of Today's Session:
 ### Historical Context (Past Sessions)
 {history}
 
-### Goal
-Draft a warm, professional follow-up message to the person. Refer to specific insights or actions discussed today and maintain continuity with their historical progress. Encourage them and confirm the next steps.
-Adhere to the persona style if provided above.
+### Mission
+Draft a warm, professional follow-up message to the person.
+1. Refer to specific insights or actions discussed today.
+2. Maintain continuity with their historical progress.
+3. STRICTLY follow the style, tone, and formatting constraints provided in the Practice Framework section.
 
-### Draft Message:"""
+### Draft Message (Output ONLY the message):"""
 
-def iterate_professional_draft(current_draft: str, feedback: str, person_name: str, note_context: str = "", history: str = "", highlight_text: str = "") -> str:
-    """Surgical refinement of an existing draft."""
+def iterate_professional_draft(current_draft: str, feedback: str, person_name: str, note_context: str = "", history: str = "", highlight_text: str = "", framework_context: str = "") -> str:
+    """Surgical refinement of an existing draft with framework persistence."""
     focus_context = ""
     if highlight_text:
         focus_context = f"\n### SPECIFIC FOCUS ON THIS SECTION:\n{highlight_text}\n"
         
-    return f"""You are an expert professional assistant refining a message to {person_name}.
+    framework_section = ""
+    if framework_context:
+        framework_section = f"### Practice Framework Style Constraints (STRICT ADHERENCE)\n{framework_context}\n\n"
+        
+    return f"""{framework_section}You are an expert professional assistant refining a message to {person_name}.
 
 ### CONTEXT
 {note_context}
@@ -111,7 +117,7 @@ def iterate_professional_draft(current_draft: str, feedback: str, person_name: s
 {focus_context}
 
 ### INSTRUCTIONS
-Please provide an updated version of the message that addresses the feedback while maintaining the existing professional tone and context.
+Please provide an updated version of the message that addresses the feedback while maintaining the existing professional tone, context, and framework style.
 Provide ONLY the updated message text.
 
 ### NEW DRAFT:"""
