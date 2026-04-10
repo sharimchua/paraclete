@@ -8,12 +8,10 @@ try:
     from .. import models, schemas
     from ..database import get_db, SessionLocal
     from ..services.background_task_manager import background_manager
-    from ..services.framework_analysis_job import run_framework_analysis
 except ImportError:
     import models, schemas
     from database import get_db, SessionLocal
     from services.background_task_manager import background_manager
-    from services.framework_analysis_job import run_framework_analysis
 
 router = APIRouter(prefix="/framework", tags=["framework"])
 
