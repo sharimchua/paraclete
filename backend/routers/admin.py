@@ -60,8 +60,34 @@ async def reset_framework_analysis(
         count += msg_query.update({models.Message.analyzed_for_framework: False}, synchronize_session=False)
         count += ref_query.update({models.Reference.analyzed_for_framework: False}, synchronize_session=False)
         
+        # Clear proposals as requested
+        # For now, we clear ALL pending proposals during this reset
+        db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING).delete(synchronize_session=False)
+        
         db.commit()
         return {"status": "success", "reset_count": count}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/wipe-framework")
+async def wipe_framework_data(db: Session = Depends(get_db)):
+    """
+    DANGEROUS: Deletes ALL PractiseFrameworkItem rows and ALL FrameworkProposal rows.
+    Essentially resets the practice intelligence to zero.
+    """
+    try:
+        # 1. Delete all items
+        item_count = db.query(models.PractiseFrameworkItem).delete(synchronize_session=False)
+        # 2. Delete all proposals
+        prop_count = db.query(models.FrameworkProposal).delete(synchronize_session=False)
+        
+        db.commit()
+        return {
+            "status": "success", 
+            "deleted_items": item_count, 
+            "deleted_proposals": prop_count
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

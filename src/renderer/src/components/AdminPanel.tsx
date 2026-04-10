@@ -152,29 +152,56 @@ const AdminPanel: React.FC = () => {
                     <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ opacity: 0.7 }}>🛠️</span> Maintenance
                     </h4>
-                    <div className="admin-card" style={{ padding: '16px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                        <h5 style={{ fontWeight: 600, marginBottom: '8px', color: '#fca5a5' }}>Reset Framework Analysis</h5>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                            Clears the "analyzed" flag for all notes, messages, and references. 
-                            This allows you to re-run the framework extraction process on all existing data.
-                        </p>
-                        <button 
-                            className="btn-secondary" 
-                            style={{ borderColor: '#ef4444', color: '#ef4444' }}
-                            onClick={async () => {
-                                if (confirm('Are you sure you want to reset all framework analysis flags? This will not delete your framework, but will allow you to re-analyze all items.')) {
-                                    try {
-                                        const res = await fetch('http://127.0.0.1:8000/api/admin/reset-framework-analysis', { method: 'POST' });
-                                        const data = await res.json();
-                                        alert(`Success: Reset flags for ${data.reset_count} items.`);
-                                    } catch (err) {
-                                        alert('Failed to reset analysis flags.');
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div className="admin-card" style={{ padding: '16px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                            <h5 style={{ fontWeight: 600, marginBottom: '8px', color: '#fca5a5' }}>Reset Analytics Context</h5>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                Clears the "analyzed" flag for all content AND deletes all pending AI proposals. 
+                                Forces a complete re-analysis of your content.
+                            </p>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ borderColor: '#ef4444', color: '#ef4444', width: '100%' }}
+                                onClick={async () => {
+                                    if (confirm('Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.')) {
+                                        try {
+                                            const res = await fetch('http://127.0.0.1:8000/api/admin/reset-framework-analysis', { method: 'POST' });
+                                            const data = await res.json();
+                                            alert(`Success: Reset flags for ${data.reset_count} items and cleared pending queue.`);
+                                        } catch (err) {
+                                            alert('Failed to reset analysis flags.');
+                                        }
                                     }
-                                }
-                            }}
-                        >
-                            Reset Global Analysis Flags
-                        </button>
+                                }}
+                            >
+                                Reset Analysis Flags
+                            </button>
+                        </div>
+
+                        <div className="admin-card" style={{ padding: '16px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                            <h5 style={{ fontWeight: 600, marginBottom: '8px', color: '#fca5a5' }}>Wipe Framework Rules</h5>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                DANGEROUS: Deletes all Global Core rules, all Persona rules, and all proposals. 
+                                Resets your practice intelligence to zero.
+                            </p>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ borderColor: '#ef4444', color: '#ef4444', width: '100%' }}
+                                onClick={async () => {
+                                    if (confirm('CRITICAL: This will PERMANENTLY DELETE all your framework rules and proposals. This cannot be undone. Are you absolutely sure?')) {
+                                        try {
+                                            const res = await fetch('http://127.0.0.1:8000/api/admin/wipe-framework', { method: 'POST' });
+                                            const data = await res.json();
+                                            alert(`Success: Wiped ${data.deleted_items} rules and ${data.deleted_proposals} proposals.`);
+                                        } catch (err) {
+                                            alert('Failed to wipe framework.');
+                                        }
+                                    }
+                                }}
+                            >
+                                Wipe All Rules & Proposals
+                            </button>
+                        </div>
                     </div>
                 </div>
 
