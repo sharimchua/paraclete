@@ -55,12 +55,10 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
 
             const resp = await api.post<any>(url, {});
             if (onStarted) onStarted(resp.job_id);
-            alert(`Framework analysis started in background. Job ID: ${resp.job_id}`);
-            // Reset counts for now
+            // Non-intrusive: reset count and let background worker handle it
             setCounts({ notes: 0, messages: 0, references: 0, total: 0 });
         } catch (err) {
             console.error('Failed to trigger analysis:', err);
-            alert('Failed to trigger analysis. See console for details.');
         } finally {
             setBusy(false);
         }

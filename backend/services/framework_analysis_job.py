@@ -222,7 +222,9 @@ async def run_framework_analysis(
         prompt = llm.templates.analyze_framework(content, target_persona_name, context=current_framework_text)
         
         try:
-            resp_text = await llm.llm_manager.call(
+            # llm_manager.call is synchronous (using threading.Lock), so we must offload to a thread
+            resp_text = await asyncio.to_thread(
+                llm.llm_manager.call,
                 prompt, 
                 system="You are an expert at identifying professional practice styles. Extract patterns into JSON proposals."
             )
@@ -250,8 +252,14 @@ async def run_framework_analysis(
                 item.analyzed_for_framework = True
                 db.commit()
                 print(f"DEBUG: Successfully generated {len(data['proposals'])} proposals for {dtype} {item.id}")
+            else:
+                # Still mark as analyzed even if no proposals found to clear the backlog
+                item.analyzed_for_framework = True
+                db.commit()
         except Exception as e:
             print(f"DEBUG: Failed to analyze {dtype} {item.id}: {e}")
+            import traceback
+            traceback.print_exc()
             db.rollback()
             
     print("DEBUG: Framework analysis job finished.")
