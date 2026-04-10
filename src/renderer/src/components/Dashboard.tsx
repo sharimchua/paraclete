@@ -33,13 +33,13 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                     api.get<CalendarDay[]>('/dashboard/calendar'),
                     api.get<TrendPoint[]>('/dashboard/trends'),
                     api.get<LeaderboardEntry[]>('/dashboard/person-leaderboard'),
-                    api.get<{ count: number }>('/api/framework/pending-count')
+                    api.get<{ total: number }>('/api/framework/pending-count')
                 ]);
                 setStats(s);
                 setCalendarData(c);
                 setTrends(t);
                 setLeaderboard(l);
-                setPendingCount(p.count);
+                setPendingCount(p.total);
                 setLoading(false);
             } catch (err) {
                 console.error('Failed to fetch dashboard data', err);
@@ -123,7 +123,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                             cursor: 'pointer'
                         }} onClick={() => window.dispatchEvent(new CustomEvent('open-paraclete'))}>
                             <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>{pendingCount}</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Pending IQ</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Analysis Queue</div>
                         </div>
                     </div>
                 </div>

@@ -199,7 +199,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                 </div>
                                 {pendingCount > 0 && (
                                     <div style={{ cursor: 'pointer' }} onClick={() => window.dispatchEvent(new CustomEvent('open-paraclete'))}>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700 }}>Pending IQ</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700 }}>Analysis Queue</div>
                                         <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{pendingCount}</div>
                                     </div>
                                 )}
