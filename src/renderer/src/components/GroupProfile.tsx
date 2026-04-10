@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, Group, Person, Note } from '../services/api';
 import TagSelectionModal from './TagSelectionModal';
 import ReactMarkdown from 'react-markdown';
+import FrameworkAnalysisControls from './FrameworkAnalysisControls';
 
 interface Props {
     groupId: number;
@@ -262,6 +263,15 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                 </div>
                             ))
                         )}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Practise Insights</h3>
+                        </div>
+                        <div style={{ maxWidth: '400px' }}>
+                            <FrameworkAnalysisControls groupId={groupId} title="Targeted Framework Analysis" />
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>

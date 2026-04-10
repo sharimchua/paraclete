@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, PractiseFramework, Persona, FrameworkProposal } from '../services/api';
+import FrameworkAnalysisControls from './FrameworkAnalysisControls';
 
 const FrameworkSection: React.FC<{
     title: string;
@@ -59,7 +60,6 @@ const PracticeFramework: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'core' | 'personas' | 'proposals'>('core');
     const [selectedPersonaId, setSelectedPersonaId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [showCreatePersona, setShowCreatePersona] = useState(false);
     
     // New Persona State
@@ -88,18 +88,6 @@ const PracticeFramework: React.FC = () => {
         fetchData();
     }, []);
 
-    const triggerAnalysis = async () => {
-        setIsAnalyzing(true);
-        try {
-            await api.post('/api/framework/analyze', {});
-            alert('Analysis job started in background.');
-        } catch (err) {
-            console.error('Failed to start analysis:', err);
-            alert('Failed to start analysis');
-        } finally {
-            setIsAnalyzing(false);
-        }
-    };
 
     const resolveProposal = async (id: number, approved: boolean) => {
         try {
@@ -168,21 +156,16 @@ const PracticeFramework: React.FC = () => {
 
     return (
         <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+                <div style={{ flex: 1 }}>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Practise Framework</h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
                         Manage your professional professional style and AI-driven growth.
                     </p>
                 </div>
-                <button 
-                    className="btn-primary" 
-                    onClick={triggerAnalysis} 
-                    disabled={isAnalyzing}
-                    style={{ background: isAnalyzing ? 'var(--text-muted)' : 'var(--primary)' }}
-                >
-                    {isAnalyzing ? 'Analyzing...' : '🪄 Analyze Content for Improvements'}
-                </button>
+                <div style={{ width: '400px' }}>
+                    <FrameworkAnalysisControls title="Full Practice Analysis" />
+                </div>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '0' }}>
@@ -320,6 +303,13 @@ const PracticeFramework: React.FC = () => {
                                     value={selectedPersona.framework.principles_tenets || ''} 
                                     onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'principles_tenets', val)}
                                 />
+
+                                <div style={{ marginTop: '24px' }}>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px' }}>Targeted Evolution</h3>
+                                    <div style={{ maxWidth: '400px' }}>
+                                        <FrameworkAnalysisControls personaId={selectedPersona.id} title={`Refine ${selectedPersona.name}`} />
+                                    </div>
+                                </div>
                             </>
                         ) : (
                             <div className="card" style={{ textAlign: 'center', padding: '32px' }}>

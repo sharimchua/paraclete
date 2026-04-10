@@ -1,87 +1,209 @@
 import json
 import asyncio
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 import threading
+from typing import Optional, List, Dict, Any
 
 try:
     from .. import models, schemas, llm
 except ImportError:
     import models, schemas, llm
 
-async def run_framework_analysis(db: Session, interrupt_event: threading.Event = None):
+async def get_pending_analysis_count(
+    db: Session,
+    person_id: Optional[int] = None,
+    group_id: Optional[int] = None,
+    persona_id: Optional[int] = None
+) -> Dict[str, int]:
+    """Returns counts of un-analyzed items within the given scope."""
+    
+    note_query = db.query(models.Note).filter(
+        or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None)
+    )
+    msg_query = db.query(models.Message).filter(
+        or_(models.Message.analyzed_for_framework == False, models.Message.analyzed_for_framework == None)
+    )
+    ref_query = db.query(models.Reference).filter(
+        or_(models.Reference.analyzed_for_framework == False, models.Reference.analyzed_for_framework == None)
+    )
+
+    if person_id:
+        note_query = note_query.filter(models.Note.person_id == person_id)
+        msg_query = msg_query.join(models.Note).filter(models.Note.person_id == person_id)
+        ref_query = ref_query.filter(models.Reference.persons.any(models.Person.id == person_id))
+    elif group_id:
+        # Notes for group directly OR for persons in that group
+        group_filter = or_(
+            models.Note.group_id == group_id,
+            models.Note.person.has(models.Person.groups.any(models.Group.id == group_id))
+        )
+        note_query = note_query.filter(group_filter)
+        msg_query = msg_query.join(models.Note).filter(group_filter)
+        
+        # References associated with those notes OR directly with those persons
+        ref_query = ref_query.filter(
+            or_(
+                models.Reference.linked_notes.any(group_filter),
+                models.Reference.persons.any(models.Person.groups.any(models.Group.id == group_id))
+            )
+        )
+    elif persona_id:
+        # Notes for people or groups linked to this persona
+        note_query = note_query.filter(
+            or_(
+                models.Note.person.has(models.Person.persona_id == persona_id),
+                models.Note.group.has(models.Group.persona_id == persona_id)
+            )
+        )
+        msg_query = msg_query.join(models.Note).filter(
+            or_(
+                models.Note.person.has(models.Person.persona_id == persona_id),
+                models.Note.group.has(models.Group.persona_id == persona_id)
+            )
+        )
+        # References associated with those notes
+        ref_query = ref_query.filter(
+            models.Reference.linked_notes.any(
+                or_(
+                    models.Note.person.has(models.Person.persona_id == persona_id),
+                    models.Note.group.has(models.Group.persona_id == persona_id)
+                )
+            )
+        )
+
+    return {
+        "notes": note_query.count(),
+        "messages": msg_query.count(),
+        "references": ref_query.count(),
+        "total": note_query.count() + msg_query.count() + ref_query.count()
+    }
+
+async def run_framework_analysis(
+    db: Session, 
+    interrupt_event: threading.Event = None,
+    person_id: Optional[int] = None,
+    group_id: Optional[int] = None,
+    persona_id: Optional[int] = None
+):
     """
     Analyzes un-processed (analyzed_for_framework=False) Message, Note, and Reference records.
-    Generates FrameworkProposals based on stylings, tones, and principles found.
+    Supports scoping by Person, Group, or Persona.
     """
-    print("DEBUG: Starting framework analysis job...")
+    print(f"DEBUG: Starting framework analysis job (Scope: P={person_id}, G={group_id}, PR={persona_id})...")
     
     # 1. Fetch un-analyzed entries
-    un_analyzed_notes = db.query(models.Note).filter(
+    note_query = db.query(models.Note).options(
+        joinedload(models.Note.person).joinedload(models.Person.persona),
+        joinedload(models.Note.group).joinedload(models.Group.persona)
+    ).filter(
         or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None)
-    ).all()
-    un_analyzed_refs = db.query(models.Reference).filter(
-        or_(models.Reference.analyzed_for_framework == False, models.Reference.analyzed_for_framework == None)
-    ).all()
-    un_analyzed_msgs = db.query(models.Message).filter(
-        or_(models.Message.analyzed_for_framework == False, models.Message.analyzed_for_framework == None)
-    ).all()
+    )
     
+    msg_query = db.query(models.Message).options(
+        joinedload(models.Message.note).joinedload(models.Note.person).joinedload(models.Person.persona)
+    ).filter(
+        or_(models.Message.analyzed_for_framework == False, models.Message.analyzed_for_framework == None)
+    )
+    
+    ref_query = db.query(models.Reference).filter(
+        or_(models.Reference.analyzed_for_framework == False, models.Reference.analyzed_for_framework == None)
+    )
+
+    if person_id:
+        note_query = note_query.filter(models.Note.person_id == person_id)
+        msg_query = msg_query.join(models.Note).filter(models.Note.person_id == person_id)
+        ref_query = ref_query.filter(models.Reference.persons.any(models.Person.id == person_id))
+    elif group_id:
+        # Broadband group filtering: Group notes + all notes of members
+        group_filter = or_(
+            models.Note.group_id == group_id,
+            models.Note.person.has(models.Person.groups.any(models.Group.id == group_id))
+        )
+        note_query = note_query.filter(group_filter)
+        msg_query = msg_query.join(models.Note).filter(group_filter)
+        ref_query = ref_query.filter(
+            or_(
+                models.Reference.linked_notes.any(group_filter),
+                models.Reference.persons.any(models.Person.groups.any(models.Group.id == group_id))
+            )
+        )
+    elif persona_id:
+        note_query = note_query.filter(
+            or_(
+                models.Note.person.has(models.Person.persona_id == persona_id),
+                models.Note.group.has(models.Group.persona_id == persona_id)
+            )
+        )
+        msg_query = msg_query.join(models.Note).filter(
+            or_(
+                models.Note.person.has(models.Person.persona_id == persona_id),
+                models.Note.group.has(models.Group.persona_id == persona_id)
+            )
+        )
+        ref_query = ref_query.filter(
+            models.Reference.linked_notes.any(
+                or_(
+                    models.Note.person.has(models.Person.persona_id == persona_id),
+                    models.Note.group.has(models.Group.persona_id == persona_id)
+                )
+            )
+        )
+
     all_items = []
-    for n in un_analyzed_notes: all_items.append(("note", n))
-    for r in un_analyzed_refs: all_items.append(("reference", r))
-    for m in un_analyzed_msgs: all_items.append(("message", m))
+    for n in note_query.all(): all_items.append(("note", n))
+    for r in ref_query.all(): all_items.append(("reference", r))
+    for m in msg_query.all(): all_items.append(("message", m))
     
     if not all_items:
-        print("DEBUG: No items require framework analysis.")
+        print("DEBUG: No items require framework analysis for this scope.")
         return
 
-    # Count for progress tracking if we had it
-    total = len(all_items)
-    
     for idx, (dtype, item) in enumerate(all_items):
-        # Immediate yield check
         if interrupt_event and interrupt_event.is_set():
             print("DEBUG: Framework analysis job received interrupt signal. Yielding...")
             break
             
         content = ""
-        persona_name = "Core"
-        persona_id = None
+        target_persona_name = "Core"
+        target_persona_id = None
         
         # Extract content and contextual persona
         if dtype == "note":
             content = f"Title: {item.title}\n{item.cleaned_text or item.raw_capture}"
             # Find associated persona
-            if item.person and item.person.personas:
-                persona_name = item.person.personas[0].name
-                persona_id = item.person.personas[0].id
-            elif item.group and item.group.personas:
-                persona_name = item.group.personas[0].name
-                persona_id = item.group.personas[0].id
+            if item.person and item.person.persona:
+                target_persona_name = item.person.persona.name
+                target_persona_id = item.person.persona.id
+            elif item.group and item.group.persona:
+                target_persona_name = item.group.persona.name
+                target_persona_id = item.group.persona.id
         elif dtype == "reference":
             content = f"Title: {item.title}\n{item.body}"
+            if item.source_note and item.source_note.person and item.source_note.person.persona:
+                target_persona_id = item.source_note.person.persona.id
+                target_persona_name = item.source_note.person.persona.name
         elif dtype == "message":
             content = item.draft_text
-            if item.note and item.note.person and item.note.person.personas:
-                persona_name = item.note.person.personas[0].name
-                persona_id = item.note.person.personas[0].id
+            if item.note and item.note.person and item.note.person.persona:
+                target_persona_name = item.note.person.persona.name
+                target_persona_id = item.note.person.persona.id
 
         if not content.strip():
             item.analyzed_for_framework = True
-            db.commit()
+            if idx % 10 == 0: db.commit() # Periodic commit
             continue
 
-        print(f"DEBUG: Analyzing {dtype} {item.id} for persona: {persona_name}")
+        print(f"DEBUG: Analyzing {dtype} {item.id} for persona: {target_persona_name}")
 
-        # Fetch current framework for context to enable incremental updates
+        # Fetch current framework for context
         current_framework_text = "None"
-        if persona_id:
-            persona = db.query(models.Persona).filter(models.Persona.id == persona_id).first()
+        if target_persona_id:
+            persona = db.query(models.Persona).filter(models.Persona.id == target_persona_id).first()
             if persona and persona.framework:
                 fw = persona.framework
                 current_framework_text = (
-                    f"### Current Persona Framework ({persona_name}):\n"
+                    f"### Current Persona Framework ({target_persona_name}):\n"
                     f"- Tone/Idioms: {fw.tone_idioms or 'Not set'}\n"
                     f"- Formatting: {fw.formatting_preferences or 'Not set'}\n"
                     f"- Principles: {fw.principles_tenets or 'Not set'}"
@@ -97,17 +219,14 @@ async def run_framework_analysis(db: Session, interrupt_event: threading.Event =
                 )
 
         # Analysis prompt
-        prompt = llm.templates.analyze_framework(content, persona_name, context=current_framework_text)
+        prompt = llm.templates.analyze_framework(content, target_persona_name, context=current_framework_text)
         
         try:
-            # We use the LLM to extract potential stylistic improvements
-            # The LLM manager handles its own lock internally
             resp_text = await llm.llm_manager.call(
                 prompt, 
                 system="You are an expert at identifying professional practice styles. Extract patterns into JSON proposals."
             )
             
-            # Extract JSON from response (handling potential markdown fences)
             clean_json = resp_text.strip()
             if "```json" in clean_json:
                 clean_json = clean_json.split("```json")[1].split("```")[0].strip()
@@ -118,13 +237,13 @@ async def run_framework_analysis(db: Session, interrupt_event: threading.Event =
             if "proposals" in data:
                 for p in data["proposals"]:
                     proposal = models.FrameworkProposal(
-                        source_type=dtype,
+                        source_type=dtype.capitalize(),
                         source_id=item.id,
                         aspect=p.get("aspect", "Principles"),
                         action=p.get("action", "Add"),
                         value=p.get("value", ""),
-                        persona_id=persona_id,
-                        is_core=(persona_id is None)
+                        persona_id=target_persona_id,
+                        is_core=(target_persona_id is None)
                     )
                     db.add(proposal)
                 
@@ -134,6 +253,5 @@ async def run_framework_analysis(db: Session, interrupt_event: threading.Event =
         except Exception as e:
             print(f"DEBUG: Failed to analyze {dtype} {item.id}: {e}")
             db.rollback()
-            # We don't mark as analyzed so it can be retried later
             
     print("DEBUG: Framework analysis job finished.")

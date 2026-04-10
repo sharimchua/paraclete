@@ -17,21 +17,51 @@ except ImportError:
 
 router = APIRouter(prefix="/framework", tags=["framework"])
 
+@router.get("/pending-count")
+async def get_pending_count(
+    person_id: Optional[int] = None,
+    group_id: Optional[int] = None,
+    persona_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Returns the number of un-analyzed artifacts for the given scope."""
+    from ..services.framework_analysis_job import get_pending_analysis_count
+    counts = await get_pending_analysis_count(
+        db, person_id=person_id, group_id=group_id, persona_id=persona_id
+    )
+    return counts
+
 @router.post("/analyze")
-async def trigger_framework_analysis():
-    """Triggers the background framework analysis job."""
+async def trigger_framework_analysis(
+    person_id: Optional[int] = None,
+    group_id: Optional[int] = None,
+    persona_id: Optional[int] = None
+):
+    """Triggers the background framework analysis job with optional scoping."""
     # We create a internal worker function that manages the session
     async def worker(interrupt_event):
         db = SessionLocal()
         try:
-            await run_framework_analysis(db, interrupt_event=interrupt_event)
+            from ..services.framework_analysis_job import run_framework_analysis
+            await run_framework_analysis(
+                db, 
+                interrupt_event=interrupt_event,
+                person_id=person_id,
+                group_id=group_id,
+                persona_id=persona_id
+            )
         finally:
             db.close()
 
+    scope_str = ""
+    if person_id: scope_str = f" (Person: {person_id})"
+    elif group_id: scope_str = f" (Group: {group_id})"
+    elif persona_id: scope_str = f" (Persona: {persona_id})"
+
     job_id = background_manager.add_job(
-        "Framework Analysis", 
+        f"Framework Analysis{scope_str}", 
         worker,
-        interrupt_event=True # Signals to pass the event
+        interrupt_event=True
     )
     return {"status": "started", "job_id": job_id}
 
