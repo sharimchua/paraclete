@@ -209,6 +209,7 @@ class FrameworkProposalStatus(str, enum.Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
+    SUPERSEDED = "superseded"
 
 class FrameworkProposal(Base):
     __tablename__ = "framework_proposals"

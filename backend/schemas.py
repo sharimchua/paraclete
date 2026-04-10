@@ -199,6 +199,7 @@ class FrameworkProposalStatus(str, Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
+    SUPERSEDED = "superseded"
 
 class FrameworkProposalBase(BaseModel):
     source_type: str
@@ -206,6 +207,9 @@ class FrameworkProposalBase(BaseModel):
     aspect: str
     action: str
     value: str
+    source_context: Optional[str] = None # Hydrated dynamically
+    source_owner: Optional[str] = None # Hydrated dynamically
+    source_date: Optional[str] = None # Hydrated dynamically
     persona_id: Optional[int] = None
     is_core: bool = False
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING

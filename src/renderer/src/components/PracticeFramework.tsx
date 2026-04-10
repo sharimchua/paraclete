@@ -341,6 +341,30 @@ const PracticeFramework: React.FC = () => {
 
                 {activeTab === 'proposals' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                Review AI-generated suggestions to evolve your professional style.
+                            </p>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', borderColor: 'var(--primary)' }}
+                                onClick={async () => {
+                                    setLoading(true);
+                                    try {
+                                        await api.post('/api/framework/proposals/synthesize', {});
+                                        await fetchData();
+                                    } catch (err) {
+                                        console.error('Synthesis failed:', err);
+                                        alert('Synthesis failed.');
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }}
+                            >
+                                🪄 Synthesize & De-duplicate
+                            </button>
+                        </div>
+
                         {proposals.length === 0 ? (
                             <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
                                 <p style={{ color: 'var(--text-muted)' }}>No new proposals. Try running an analysis job!</p>
@@ -364,9 +388,18 @@ const PracticeFramework: React.FC = () => {
                                                 </span>
                                             </div>
                                             <p style={{ fontSize: '1.1rem', fontWeight: 500, margin: '0 0 12px 0' }}>{proposal.value}</p>
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                Source: {proposal.source_type} #{proposal.source_id}
-                                            </p>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                <span>Source: <strong>{proposal.source_context || `${proposal.source_type} #${proposal.source_id}`}</strong></span>
+                                                {proposal.source_owner && (
+                                                    <span>Owner: <strong>{proposal.source_owner}</strong></span>
+                                                )}
+                                                {proposal.source_date && (
+                                                    <span>Date: <strong>{proposal.source_date}</strong></span>
+                                                )}
+                                                {proposal.persona_id && (
+                                                    <span>Original Persona: <strong>{personas.find(p => p.id === proposal.persona_id)?.name || 'Unknown'}</strong></span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 

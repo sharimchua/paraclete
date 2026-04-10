@@ -168,26 +168,54 @@ async def run_framework_analysis(
         target_persona_name = "Core"
         target_persona_id = None
         
-        # Extract content and contextual persona
+        # Robust hierarchical persona resolution
+        target_persona = None
+        
         if dtype == "note":
             content = f"Title: {item.title}\n{item.cleaned_text or item.raw_capture}"
-            # Find associated persona
-            if item.person and item.person.persona:
-                target_persona_name = item.person.persona.name
-                target_persona_id = item.person.persona.id
-            elif item.group and item.group.persona:
-                target_persona_name = item.group.persona.name
-                target_persona_id = item.group.persona.id
+            # Prioritize Person -> Inherited Group -> Direct Group
+            if item.person:
+                if item.person.persona:
+                    target_persona = item.person.persona
+                elif item.person.groups:
+                    for g in item.person.groups:
+                        if g.persona:
+                            target_persona = g.persona
+                            break
+            if not target_persona and item.group:
+                if item.group.persona:
+                    target_persona = item.group.persona
+                    
         elif dtype == "reference":
             content = f"Title: {item.title}\n{item.body}"
-            if item.source_note and item.source_note.person and item.source_note.person.persona:
-                target_persona_id = item.source_note.person.persona.id
-                target_persona_name = item.source_note.person.persona.name
+            if item.source_note:
+                n = item.source_note
+                if n.person:
+                    if n.person.persona: target_persona = n.person.persona
+                    elif n.person.groups:
+                        for g in n.person.groups:
+                            if g.persona:
+                                target_persona = g.persona
+                                break
+                if not target_persona and n.group:
+                    if n.group.persona: target_persona = n.group.persona
+
         elif dtype == "message":
             content = item.draft_text
-            if item.note and item.note.person and item.note.person.persona:
-                target_persona_name = item.note.person.persona.name
-                target_persona_id = item.note.person.persona.id
+            if item.note:
+                n = item.note
+                if n.person:
+                    if n.person.persona: target_persona = n.person.persona
+                    elif n.person.groups:
+                        for g in n.person.groups:
+                            if g.persona:
+                                target_persona = g.persona
+                                break
+                if not target_persona and n.group:
+                    if n.group.persona: target_persona = n.group.persona
+
+        target_persona_name = target_persona.name if target_persona else "Core"
+        target_persona_id = target_persona.id if target_persona else None
 
         if not content.strip():
             item.analyzed_for_framework = True

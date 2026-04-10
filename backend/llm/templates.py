@@ -187,3 +187,28 @@ def persona_draft(note_content: str, persona_name: str, persona_bio: str, refere
 
 ### DRAFT MESSAGE:
 """
+def synthesize_proposals(proposals_text: str) -> str:
+    return f"""You are an expert at distilling professional insights. Your task is to take a list of raw proposals for a Practice Framework and merge them into a smaller, unique, and high-impact set.
+    
+    ### RAW PROPOSALS:
+    {proposals_text}
+    
+    ### INSTRUCTIONS:
+    1. Group similar entries by their "aspect" (Tone, Formatting, etc.).
+    2. De-duplicate redundant observations.
+    3. Combine related minor points into broader, more actionable principles.
+    4. Keep the output professional and concise.
+    5. Return valid JSON in the and match the format of the input.
+
+    Format:
+    {{
+      "proposals": [
+        {{
+          "aspect": "Tone & Idioms",
+          "action": "Add",
+          "value": "Consolidated observation text..."
+        }}
+      ]
+    }}
+
+    JSON:"""

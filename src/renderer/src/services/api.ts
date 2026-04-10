@@ -72,6 +72,9 @@ export interface FrameworkProposal {
     aspect: string;
     action: string;
     value: string;
+    source_context?: string;
+    source_owner?: string;
+    source_date?: string;
     source_type: string;
     source_id: number;
     persona_id?: number;

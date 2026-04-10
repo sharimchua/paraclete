@@ -161,8 +161,47 @@ def delete_persona(persona_id: int, db: Session = Depends(get_db)):
 def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(models.FrameworkProposal)
     if status:
-        query = query.filter(models.FrameworkProposal.status == status)
-    return query.order_by(models.FrameworkProposal.created_at.desc()).all()
+        # Handle case-insensitive status filtering to match DB Enum names
+        s = status.upper()
+        if s in models.FrameworkProposalStatus.__members__:
+            query = query.filter(models.FrameworkProposal.status == models.FrameworkProposalStatus[s])
+        else:
+            query = query.filter(models.FrameworkProposal.status == status)
+    query = query.order_by(models.FrameworkProposal.created_at.desc())
+    proposals = query.all()
+    
+    # Hydrate on the fly
+    for p in proposals:
+        source_note = None
+        if p.source_type == "Note":
+            source_note = db.query(models.Note).filter(models.Note.id == p.source_id).first()
+            if source_note:
+                p.source_context = f"Note: {source_note.title}"
+        elif p.source_type == "Message":
+            msg = db.query(models.Message).filter(models.Message.id == p.source_id).first()
+            if msg and msg.note:
+                source_note = msg.note
+                p.source_context = f"Message for: {source_note.title}"
+            else:
+                p.source_context = "Draft Message"
+        elif p.source_type == "Reference":
+            ref = db.query(models.Reference).filter(models.Reference.id == p.source_id).first()
+            if ref:
+                p.source_context = f"Reference: {ref.title}"
+                source_note = ref.source_note
+        elif p.source_type == "Synthesis":
+            p.source_context = "AI Synthesis Job"
+        
+        if source_note:
+            p.source_date = source_note.date.strftime("%Y-%m-%d") if source_note.date else "Unknown"
+            if source_note.person:
+                p.source_owner = f"Person: {source_note.person.name}"
+            elif source_note.group:
+                p.source_owner = f"Group: {source_note.group.name}"
+            else:
+                p.source_owner = "Generic"
+            
+    return proposals
 
 class ProposalResolution(BaseModel):
     approved: bool
@@ -229,6 +268,63 @@ class PersonaLink(BaseModel):
     persona_id: int
     entity_type: str # 'person' or 'group'
     entity_id: int
+
+@router.post("/proposals/synthesize")
+async def synthesize_all_proposals(db: Session = Depends(get_db)):
+    """Merges and de-duplicates all pending proposals using the LLM."""
+    proposals = db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING).all()
+    if not proposals:
+        return {"status": "success", "count": 0}
+
+    # Group and stringify
+    prop_list = []
+    for p in proposals:
+        prop_list.append(f"ID: {p.id} | Aspect: {p.aspect} | Action: {p.action} | Value: {p.value} | Scope: {'Core' if p.is_core else f'Persona {p.persona_id}'}")
+    
+    proposals_text = "\n".join(prop_list)
+
+    from backend import llm
+    import json
+    import asyncio
+
+    try:
+        # Offload to thread for safety
+        result_text = await asyncio.to_thread(
+            llm.core.llm_manager.call,
+            llm.templates.synthesize_proposals(proposals_text)
+        )
+        
+        # Parse JSON
+        start_idx = result_text.find('{')
+        end_idx = result_text.rfind('}') + 1
+        if start_idx == -1 or end_idx == 0:
+            raise Exception("Invalid LLM response format")
+        
+        data = json.loads(result_text[start_idx:end_idx])
+        new_proposals = data.get("proposals", [])
+
+        # Mark old as superseded
+        for p in proposals:
+            p.status = models.FrameworkProposalStatus.SUPERSEDED
+        
+        # Add new ones
+        for np in new_proposals:
+            db_prop = models.FrameworkProposal(
+                source_type="Synthesis",
+                source_id=0,
+                aspect=np.get("aspect", "Miscellaneous"),
+                action=np.get("action", "Add"),
+                value=np.get("value", ""),
+                is_core=True, # Default to core for synthesis, user can retarget
+                status=models.FrameworkProposalStatus.PENDING
+            )
+            db.add(db_prop)
+        
+        db.commit()
+        return {"status": "success", "count": len(new_proposals)}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/link")
 def link_persona_to_entity(link: PersonaLink, db: Session = Depends(get_db)):
