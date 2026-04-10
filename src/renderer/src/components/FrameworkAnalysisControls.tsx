@@ -54,7 +54,7 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
             if (queryString) url += `?${queryString}`;
 
             const resp = await api.post<any>(url, {});
-            if (onStarted) onStarted(resp.job_id);
+            if (onStarted && resp.job_ids?.[0]) onStarted(resp.job_ids[0]);
             // Non-intrusive: reset count and let background worker handle it
             setCounts({ notes: 0, messages: 0, references: 0, total: 0 });
         } catch (err) {

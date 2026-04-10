@@ -149,6 +149,36 @@ const AdminPanel: React.FC = () => {
                 </div>
 
                 <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ opacity: 0.7 }}>🛠️</span> Maintenance
+                    </h4>
+                    <div className="admin-card" style={{ padding: '16px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                        <h5 style={{ fontWeight: 600, marginBottom: '8px', color: '#fca5a5' }}>Reset Framework Analysis</h5>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                            Clears the "analyzed" flag for all notes, messages, and references. 
+                            This allows you to re-run the framework extraction process on all existing data.
+                        </p>
+                        <button 
+                            className="btn-secondary" 
+                            style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                            onClick={async () => {
+                                if (confirm('Are you sure you want to reset all framework analysis flags? This will not delete your framework, but will allow you to re-analyze all items.')) {
+                                    try {
+                                        const res = await fetch('http://127.0.0.1:8000/api/admin/reset-framework-analysis', { method: 'POST' });
+                                        const data = await res.json();
+                                        alert(`Success: Reset flags for ${data.reset_count} items.`);
+                                    } catch (err) {
+                                        alert('Failed to reset analysis flags.');
+                                    }
+                                }
+                            }}
+                        >
+                            Reset Global Analysis Flags
+                        </button>
+                    </div>
+                </div>
+
+                <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
                     <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', opacity: 0.5 }}>
                         Future Settings
                     </h4>

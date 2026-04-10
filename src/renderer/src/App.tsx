@@ -13,7 +13,7 @@ import NotesList from './components/NotesList';
 import ReferenceLibrary from './components/ReferenceLibrary';
 import PracticeFramework from './components/PracticeFramework';
 import Logo from './components/Logo';
-import DeveloperPanel from './components/DeveloperPanel';
+import ParacletePanel from './components/ParacletePanel';
 import StandardNavbar from './components/StandardNavbar';
 import MessagesList from './components/MessagesList';
 import MessageAuthoring from './components/MessageAuthoring';
@@ -382,7 +382,7 @@ const App: React.FC = () => {
                     {renderContent()}
                 </div>
             </main>
-            <DeveloperPanel />
+            <ParacletePanel />
             
             {personaLinkingTarget && (
                 <PersonaSelectionModal 
