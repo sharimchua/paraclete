@@ -1,9 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const AdminPanel: React.FC = () => {
     const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error' | 'idle', message: string }>({ type: 'idle', message: '' });
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [settings, setSettings] = useState<Record<string, string>>({});
+    const [isSavingSetting, setIsSavingSetting] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch('http://127.0.0.1:8000/api/admin/settings');
+            const data = await res.json();
+            setSettings(data);
+        } catch (err) {
+            console.error('Failed to fetch settings:', err);
+        }
+    };
+
+    const updateSetting = async (key: string, value: string) => {
+        setIsSavingSetting(key);
+        try {
+            await fetch(`http://127.0.0.1:8000/api/admin/settings/${key}?value=${encodeURIComponent(value)}`, {
+                method: 'POST'
+            });
+            setSettings(prev => ({ ...prev, [key]: value }));
+        } catch (err) {
+            console.error('Failed to update setting:', err);
+            alert('Failed to save setting.');
+        } finally {
+            setIsSavingSetting(null);
+        }
+    };
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -75,6 +106,8 @@ const AdminPanel: React.FC = () => {
             setIsImporting(false);
         }
     };
+
+    const currentThreshold = parseFloat(settings['framework_similarity_threshold'] || '0.8');
 
     return (
         <div className="admin-panel animate-in">
@@ -150,18 +183,119 @@ const AdminPanel: React.FC = () => {
 
                 <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
                     <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ opacity: 0.7 }}>🧠</span> Intelligence Configuration
+                    </h4>
+                    <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <div>
+                                <h5 style={{ fontWeight: 600, margin: 0 }}>Framework Similarity Threshold</h5>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                    Higher values require a more exact match to merge proposals.
+                                </p>
+                            </div>
+                            <span style={{ 
+                                background: 'var(--primary)', 
+                                color: 'white', 
+                                padding: '4px 12px', 
+                                borderRadius: '6px', 
+                                fontSize: '1.1rem', 
+                                fontWeight: 800 
+                            }}>
+                                {currentThreshold.toFixed(1)}
+                            </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                            {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map(val => (
+                                <button
+                                    key={val}
+                                    onClick={() => updateSetting('framework_similarity_threshold', val.toString())}
+                                    disabled={isSavingSetting === 'framework_similarity_threshold'}
+                                    style={{
+                                        padding: '8px 12px',
+                                        borderRadius: '6px',
+                                        border: '1px solid var(--border-color)',
+                                        background: currentThreshold === val ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                                        color: currentThreshold === val ? 'white' : 'var(--text-secondary)',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 600,
+                                        transition: 'all 0.2s ease',
+                                        flex: '1 0 10%',
+                                        minWidth: '60px'
+                                    }}
+                                >
+                                    {val.toFixed(1)}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                            <span>Thematic (Loose)</span>
+                            <span>Strict (Exact)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ opacity: 0.7 }}>🔍</span> Forensics Visibility
+                    </h4>
+                    <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                            Control which diagnostic signals are broadcast to the Forensics trace panel.
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {[
+                                { key: 'forensic_llm_start', label: 'LLM Initiation (Prompt Tracing)', icon: '🚀' },
+                                { key: 'forensic_llm_finish', label: 'LLM Completion (Output Tracing)', icon: '✅' },
+                                { key: 'forensic_llm_match', label: 'Intelligence: Similarity Matches', icon: '🤝' },
+                                { key: 'forensic_llm_no_match', label: 'Intelligence: Skips / Close-calls', icon: '🚫' }
+                            ].map(item => (
+                                <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{item.label}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => updateSetting(item.key, settings[item.key] === 'true' ? 'false' : 'true')}
+                                        disabled={isSavingSetting === item.key}
+                                        style={{
+                                            padding: '6px 16px',
+                                            borderRadius: '20px',
+                                            border: 'none',
+                                            background: settings[item.key] === 'true' ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                                            color: 'white',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            minWidth: '70px',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        {(settings[item.key] || 'true') === 'true' ? 'ENABLED' : 'DISABLED'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ opacity: 0.7 }}>🛠️</span> Maintenance
                     </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                        <div className="admin-card" style={{ padding: '16px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                            <h5 style={{ fontWeight: 600, marginBottom: '8px', color: '#fca5a5' }}>Reset Analytics Context</h5>
+                        <div className="admin-card" style={{ padding: '16px', backgroundColor: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                            <h5 style={{ fontWeight: 600, marginBottom: '8px', color: '#fcd34d' }}>Reset Analytics Context</h5>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                                 Clears the "analyzed" flag for all content AND deletes all pending AI proposals. 
                                 Forces a complete re-analysis of your content.
                             </p>
                             <button 
                                 className="btn-secondary" 
-                                style={{ borderColor: '#ef4444', color: '#ef4444', width: '100%' }}
+                                style={{ borderColor: '#f59e0b', color: '#f59e0b', width: '100%' }}
                                 onClick={async () => {
                                     if (confirm('Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.')) {
                                         try {
@@ -203,15 +337,6 @@ const AdminPanel: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
-
-                <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', opacity: 0.5 }}>
-                        Future Settings
-                    </h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                        Additional configuration options like LLM settings, theme customization, and plugin management will appear here in future updates.
-                    </p>
                 </div>
             </div>
         </div>

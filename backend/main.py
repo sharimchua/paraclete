@@ -48,25 +48,16 @@ app.include_router(messages.router)
 app.include_router(admin.router)
 app.include_router(paraclete.router)
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
+from .websockets_manager import ws_manager
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections:
-            try:
-                await connection.send_json(message)
-            except:
-                pass
-
-manager = ConnectionManager()
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except:
+        ws_manager.disconnect(websocket)
 
 # --- Companion & Upload Infrastructure ---
 UPLOAD_DIR = "uploads"
@@ -832,7 +823,7 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
             text=f"EXISTING TAGS: {tag_context}\n\nRAW SESSION NOTE: {db_note.raw_capture}", 
             grammar=grammar
         )
-        await manager.broadcast({
+        await ws_manager.broadcast({
             "event": "llm_finish",
             "data": {
                 "type": "extract_entities",

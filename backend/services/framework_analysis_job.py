@@ -170,10 +170,9 @@ async def run_item_analysis_task(
         resp_text = await asyncio.to_thread(
             llm.llm_manager.call,
             prompt,
-            system="You are an expert at identifying professional practice styles. Extract patterns into JSON proposals."
+            system="You are an expert at identifying professional practice styles. Extract patterns into instructional directives."
         )
         
-        # Simple extraction logic (can be hardened later)
         clean_json = resp_text.strip()
         if "```json" in clean_json:
             clean_json = clean_json.split("```json")[1].split("```")[0].strip()
@@ -182,22 +181,70 @@ async def run_item_analysis_task(
         
         data = json.loads(clean_json)
         if "proposals" in data:
-            for p in data["proposals"]:
-                # Check for existing pending proposal for this persona/aspect/value
-                aspect = p.get("aspect", "Principles")
-                value = p.get("value", "")
-                
-                existing = db.query(models.FrameworkProposal).filter(
-                    models.FrameworkProposal.aspect == aspect,
-                    models.FrameworkProposal.value == value,
-                    models.FrameworkProposal.persona_id == target_persona_id,
-                    models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING
-                ).first()
+            import difflib
+            
+            # Fetch ALL pending proposals for this scope ONCE
+            pending_db_proposals = db.query(models.FrameworkProposal).filter(
+                models.FrameworkProposal.persona_id == target_persona_id,
+                models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING
+            ).all()
+            
+            # Track newly created proposals in this session for internal de-duplication
+            session_proposals = []
 
-                if existing:
-                    existing.observation_count += 1
+            for p in data["proposals"]:
+                aspect = p.get("aspect", "Principles")
+                value = p.get("value", "").strip()
+                if not value: continue
+                
+                # --- Dynamic Similarity Matching ---
+                # Fetch threshold from settings, default to 0.8
+                threshold_setting = db.query(models.Setting).filter(models.Setting.key == "framework_similarity_threshold").first()
+                threshold = float(threshold_setting.value) if threshold_setting else 0.8
+                
+                existing_similar = None
+                
+                # Check against existing DB proposals
+                for candidate in pending_db_proposals:
+                    if candidate.aspect == aspect:
+                        similarity = difflib.SequenceMatcher(None, value.lower(), candidate.value.lower()).ratio()
+                        
+                        # Debug logging
+                        if similarity > (threshold - 0.2): # Log close calls as well
+                            is_match = similarity > threshold
+                            match_str = "MATCH=True" if is_match else "MATCH=False"
+                            log_msg = f"[FRAMEWORK] Similarity {similarity:.2f} | {match_str} (Target: {threshold})\n  NEW: {value[:100]}...\n  DB:  {candidate.value[:100]}..."
+                            print(log_msg)
+                            
+                            from ..websockets_manager import ws_manager
+                            await ws_manager.broadcast({
+                                "event": "llm_match" if is_match else "llm_no_match",
+                                "data": log_msg
+                            }, db=db)
+                            existing_similar = candidate
+                            break
+                
+                # If not in DB, check against what we've already created in this loop
+                if not existing_similar:
+                    for s_prop in session_proposals:
+                        if s_prop.aspect == aspect:
+                            similarity = difflib.SequenceMatcher(None, value.lower(), s_prop.value.lower()).ratio()
+                            if similarity > threshold:
+                                log_msg = f"[FRAMEWORK] Session Similarity {similarity:.2f} | MATCH=True"
+                                print(log_msg)
+                                
+                                from ..websockets_manager import ws_manager
+                                await ws_manager.broadcast({
+                                    "event": "llm_match",
+                                    "data": log_msg
+                                }, db=db)
+                                existing_similar = s_prop
+                                break
+
+                if existing_similar:
+                    existing_similar.observation_count += 1
                 else:
-                    proposal = models.FrameworkProposal(
+                    new_proposal = models.FrameworkProposal(
                         source_type=item_type.capitalize(),
                         source_id=item_id,
                         aspect=aspect,
@@ -206,7 +253,8 @@ async def run_item_analysis_task(
                         persona_id=target_persona_id,
                         is_core=(target_persona_id is None)
                     )
-                    db.add(proposal)
+                    db.add(new_proposal)
+                    session_proposals.append(new_proposal)
         
         item.analyzed_for_framework = True
         db.commit()

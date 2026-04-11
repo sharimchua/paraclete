@@ -274,7 +274,12 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                     background: 'rgba(255,255,255,0.02)',
                     padding: '10px',
                     borderRadius: '8px',
-                    borderLeft: `2px solid ${ev.event === 'llm_start' ? '#3b82f6' : ev.event === 'llm_finish' ? '#22c55e' : '#ef4444'}`
+                    borderLeft: `2px solid ${
+                        ev.event === 'llm_start' ? '#3b82f6' : 
+                        ev.event === 'llm_finish' ? '#8b5cf6' : 
+                        ev.event === 'llm_match' ? '#22c55e' : 
+                        ev.event === 'llm_no_match' ? '#f59e0b' : '#64748b'
+                    }`
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', opacity: 0.4, fontSize: '0.6rem' }}>
                         <span>{ev.event.toUpperCase()}</span>

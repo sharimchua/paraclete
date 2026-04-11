@@ -1,11 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from typing import Optional
-from ..database import get_db
-from .. import models
+from typing import Optional, List, Dict
+try:
+    from ..database import get_db
+    from .. import models, schemas
+except ImportError:
+    from database import get_db
+    import models, schemas
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+@router.get("/settings")
+async def get_settings(db: Session = Depends(get_db)):
+    settings = db.query(models.Setting).all()
+    return {s.key: s.value for s in settings}
+
+@router.post("/settings/{key}")
+async def update_setting(key: str, value: str, db: Session = Depends(get_db)):
+    setting = db.query(models.Setting).filter(models.Setting.key == key).first()
+    if not setting:
+        setting = models.Setting(key=key, value=value)
+        db.add(setting)
+    else:
+        setting.value = value
+    db.commit()
+    return {"status": "success", "key": key, "value": value}
 
 @router.post("/reset-framework-analysis")
 async def reset_framework_analysis(

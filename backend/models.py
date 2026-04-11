@@ -255,3 +255,8 @@ class FrameworkProposal(Base):
     is_core = Column(Boolean, default=False)
     status = Column(Enum(FrameworkProposalStatus), default=FrameworkProposalStatus.PENDING)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Setting(Base):
+    __tablename__ = "settings"
+    key = Column(String, primary_key=True)
+    value = Column(String)

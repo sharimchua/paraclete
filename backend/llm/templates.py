@@ -179,31 +179,38 @@ SESSION NOTE:
 RECOMMENDED TITLE:"""
 
 def analyze_framework(content: str, persona_name: str, context: str = "") -> str:
-    """Analyze content for framework improvements with instructional constraints."""
-    return f"""You are an expert at identifying professional practice styles and extracting actionable practice directives.
-Analyze the following content to identify unique patterns, idioms, tones, and principles that define "{persona_name}".
+    """Analyze content for thematic framework improvements."""
+    return f"""You are a Strategic Practice Architect. 
+Your goal is to extract the high-level "Professional DNA" from the content below. 
 
+### CONTEXT: Existing Framework for {persona_name}
 {context}
 
 ### CONTENT TO ANALYZE:
 {content}
 
-### INSTRUCTIONS:
-1. IDENTIFY: Look for patterns that are NOT already in the "Current Framework Directives" above.
-2. CATEGORIZE: Use only the following aspects: 'Tone', 'Phrasing', 'Formatting', 'Principles'.
-3. ACTION: 
-   - 'Add': For new unique observations.
-   - 'Update': If an existing directive is refined or contradicted.
-4. VALUE: The value should be a concise, instructional directive (e.g. "Uses 'weaving' metaphors for complex ideas", "Prefers bullet points for next steps").
-5. FORMAT: Return VALID JSON only.
+### EXTRACTION GOALS:
+1. **ABSTRACTION**: Do NOT extract specific one-off phrases or mentions. Instead, identify the *underlying principle* or *thematic style* they represent.
+   - TOO SPECIFIC: "Mentioned the 3-step breathing technique."
+   - STRATEGIC DNA: "Incorporate somatic anchoring techniques (like breathing or grounding) when discussing stress management."
+2. **THEMATIC DIRECTIVES**: Phrase every observation as a broad, imperative instruction for an LLM that aims to maintain this practitioner's signature edge.
+3. **MINIMALISM**: Only output 1-3 high-impact proposals that represent a significant or recurring pattern. Avoid cluttering the framework with generic observations.
 
-Return JSON format:
+### CATEGORIES:
+- 'Tone': The emotional resonance and authority level.
+- 'Phrasing': Signature linguistic markers or structural idioms.
+- 'Formatting': Broad architectural choices for information display.
+- 'Principles': The core professional tenets and philosophies.
+
+### OUTPUT FORMAT:
+Return valid JSON only.
+
 {{
   "proposals": [
     {{
-      "aspect": "Tone",
+      "aspect": "Phrasing",
       "action": "Add",
-      "value": "Consistently uses musical analogies..."
+      "value": "Use dynamic systems metaphors (e.g., feedback loops, equilibrium, nodes) when describing social or technical dynamics."
     }}
   ]
 }}

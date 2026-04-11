@@ -343,7 +343,7 @@ const PracticeFramework: React.FC = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                Review AI-generated suggestions to evolve your professional style.
+                                Review AI-generated suggestions to evolve your professional style. Items with higher <strong>Weight</strong> were observed more frequently across your practice history.
                             </p>
                             <button 
                                 className="btn-secondary" 
@@ -369,73 +369,107 @@ const PracticeFramework: React.FC = () => {
                             <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
                                 <p style={{ color: 'var(--text-muted)' }}>No new proposals. Try running an analysis job!</p>
                             </div>
-                        ) : (
-                            proposals.map(proposal => (
-                                <div key={proposal.id} className="card" style={{ borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', marginBottom: '8px' }}>
-                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)' }}>{proposal.aspect}</span>
-                                                <span style={{ 
-                                                    fontSize: '0.65rem', 
-                                                    fontWeight: 700, 
-                                                    padding: '2px 6px', 
-                                                    borderRadius: '4px', 
-                                                    background: proposal.action === 'Add' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(56, 189, 248, 0.1)',
-                                                    color: proposal.action === 'Add' ? '#22c55e' : 'var(--primary)'
-                                                }}>
-                                                    {proposal.action.toUpperCase()}
-                                                </span>
-                                            </div>
-                                            <p style={{ fontSize: '1.1rem', fontWeight: 500, margin: '0 0 12px 0' }}>{proposal.value}</p>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                <span>Source: <strong>{proposal.source_context || `${proposal.source_type} #${proposal.source_id}`}</strong></span>
-                                                {proposal.source_owner && (
-                                                    <span>Owner: <strong>{proposal.source_owner}</strong></span>
-                                                )}
-                                                {proposal.source_date && (
-                                                    <span>Date: <strong>{proposal.source_date}</strong></span>
-                                                )}
-                                                {proposal.persona_id && (
-                                                    <span>Original Persona: <strong>{personas.find(p => p.id === proposal.persona_id)?.name || 'Unknown'}</strong></span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                        ) : (() => {
+                            const weights = proposals.map(p => p.observation_count || 1);
+                            const minWeight = Math.min(...weights);
+                            const maxWeight = Math.max(...weights);
+                            
+                            const getWeightColor = (weight: number) => {
+                                if (maxWeight === minWeight) return 'var(--primary)';
+                                const normalized = (weight - minWeight) / (maxWeight - minWeight);
+                                // Hue: 120 (Green) to 0 (Red)
+                                const hue = Math.max(0, 120 - (normalized * 120));
+                                return `hsl(${hue}, 70%, 50%)`;
+                            };
 
-                                    <div style={{ display: 'flex', borderTop: '1px solid var(--border)', paddingTop: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Target Scope:</label>
-                                            <select 
-                                                className="input-field" 
-                                                style={{ width: 'auto', padding: '4px 8px', fontSize: '0.8rem' }}
-                                                value={proposal.is_core ? 'core' : (proposal.persona_id || 'core')}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    const updated = proposals.map(p => {
-                                                        if (p.id === proposal.id) {
-                                                            if (val === 'core') return { ...p, is_core: true, persona_id: undefined };
-                                                            return { ...p, is_core: false, persona_id: parseInt(val) };
-                                                        }
-                                                        return p;
-                                                    });
-                                                    setProposals(updated);
-                                                }}
-                                            >
-                                                <option value="core">Global Core</option>
-                                                {personas.map(p => (
-                                                    <option key={p.id} value={p.id}>Persona: {p.name}</option>
-                                                ))}
-                                            </select>
+                            return [...proposals].sort((a, b) => (b.observation_count || 1) - (a.observation_count || 1)).map(proposal => {
+                                const weight = proposal.observation_count || 1;
+                                const weightColor = getWeightColor(weight);
+                                
+                                return (
+                                    <div key={proposal.id} className="card" style={{ borderLeft: `4px solid ${weightColor}`, display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', top: '16px', right: '16px', textAlign: 'right' }}>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '2px' }}>Weight</div>
+                                            <div style={{ 
+                                                background: weight > 1 ? weightColor : 'var(--bg-deep)', 
+                                                color: weight > 1 ? 'white' : 'var(--text-secondary)',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontWeight: 800,
+                                                fontSize: '1rem',
+                                                border: `1px solid ${weight > 1 ? weightColor : 'var(--border)'}`,
+                                                boxShadow: weight > 5 ? `0 0 10px ${weightColor}44` : 'none',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                minWidth: '40px'
+                                            }}>
+                                                {weight}
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => resolveProposal(proposal.id, false)}>Reject</button>
-                                            <button className="btn-primary" onClick={() => resolveProposal(proposal.id, true, proposal.persona_id, proposal.is_core)}>Approve & Apply</button>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingRight: '80px' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', marginBottom: '8px' }}>
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: weightColor }}>{proposal.aspect}</span>
+                                                    <span style={{ 
+                                                        fontSize: '0.65rem', 
+                                                        fontWeight: 700, 
+                                                        padding: '2px 6px', 
+                                                        borderRadius: '4px', 
+                                                        background: proposal.action === 'Add' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(56, 189, 248, 0.1)',
+                                                        color: proposal.action === 'Add' ? '#22c55e' : 'var(--primary)'
+                                                    }}>
+                                                        {proposal.action.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <p style={{ fontSize: '1.1rem', fontWeight: 500, margin: '0 0 12px 0', maxWidth: '90%', lineHeight: '1.4' }}>{proposal.value}</p>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                    <span>Source: <strong>{proposal.source_context || `${proposal.source_type} #${proposal.source_id}`}</strong></span>
+                                                    {proposal.source_owner && (
+                                                        <span>Owner: <strong>{proposal.source_owner}</strong></span>
+                                                    )}
+                                                    {proposal.source_date && (
+                                                        <span>Date: <strong>{proposal.source_date}</strong></span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', borderTop: '1px solid var(--border)', paddingTop: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Target Scope:</label>
+                                                <select 
+                                                    className="input-field" 
+                                                    style={{ width: 'auto', padding: '4px 8px', fontSize: '0.8rem' }}
+                                                    value={proposal.is_core ? 'core' : (proposal.persona_id || 'core')}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        const updated = proposals.map(p => {
+                                                            if (p.id === proposal.id) {
+                                                                if (val === 'core') return { ...p, is_core: true, persona_id: undefined };
+                                                                return { ...p, is_core: false, persona_id: parseInt(val) };
+                                                            }
+                                                            return p;
+                                                        });
+                                                        setProposals(updated);
+                                                    }}
+                                                >
+                                                    <option value="core">Global Core</option>
+                                                    {personas.map(p => (
+                                                        <option key={p.id} value={p.id}>Persona: {p.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => resolveProposal(proposal.id, false)}>Reject</button>
+                                                <button className="btn-primary" onClick={() => resolveProposal(proposal.id, true, proposal.persona_id, proposal.is_core)}>Approve & Apply</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))
-                        )}
+                                );
+                            });
+                        })()}
                     </div>
                 )}
             </div>
