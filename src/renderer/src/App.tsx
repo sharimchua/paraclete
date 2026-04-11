@@ -34,6 +34,8 @@ const App: React.FC = () => {
     const [showContactSelection, setShowContactSelection] = useState(false);
     const [isParacletePanelOpen, setIsParacletePanelOpen] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
+    const [isLlmReady, setIsLlmReady] = useState(false);
+    const [isWarming, setIsWarming] = useState(false);
 
     useEffect(() => {
         // Query if setup is complete
@@ -68,15 +70,44 @@ const App: React.FC = () => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.event === 'llm_start') {
-                    setIsThinking(true);
+                    if (data.data?.type === 'warmup') {
+                        setIsWarming(true);
+                    } else {
+                        setIsThinking(true);
+                    }
                 } else if (data.event === 'llm_finish' || data.event === 'llm_error') {
                     setIsThinking(false);
+                    if (data.data?.type === 'warmup') {
+                        setIsWarming(false);
+                        setIsLlmReady(true);
+                        window.dispatchEvent(new CustomEvent('paraclete-toast', { 
+                            detail: { 
+                                message: 'Neural Engine Online. Paraclete Core is ready.', 
+                                type: 'success' 
+                            } 
+                        }));
+                    }
+                } else if (data.event === 'background_jobs') {
+                    const isAnyJobRunning = data.data.some((j: any) => j.status === 'running');
+                    // We don't force false here because other direct LLM tasks might be running
+                    if (isAnyJobRunning) setIsThinking(true);
                 }
                 window.dispatchEvent(new CustomEvent('global-ws-message', { detail: data }));
             } catch (e) {
                 console.error('Core WS Error:', e);
             }
         };
+
+        const checkLLM = async () => {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/llm/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.is_ready) setIsLlmReady(true);
+                }
+            } catch (e) {}
+        };
+        checkLLM();
 
         return () => {
             window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
@@ -331,11 +362,17 @@ const App: React.FC = () => {
                     onClick={() => setIsParacletePanelOpen(true)}
                     style={{ cursor: 'pointer' }}
                 >
-                    <div className="logo-area-content" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="logo-icon">
-                            <Logo isThinking={isThinking} />
-                        </div>
-                        <span className="app-name">Paraclete</span>
+                    <div onClick={() => setCurrentView('dashboard')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
+                        <h1 style={{ 
+                            margin: 0, 
+                            fontSize: '1.2rem', 
+                            letterSpacing: '2px',
+                            fontWeight: 800,
+                            background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
+                        }}>PARACLETE</h1>
                     </div>
                 </div>
                 

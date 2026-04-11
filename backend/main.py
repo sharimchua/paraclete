@@ -23,12 +23,21 @@ from fastapi.staticfiles import StaticFiles
 # In production, Alembic handles this.
 models.Base.metadata.create_all(bind=database.engine)
 
+async def load_llm_with_broadcast():
+    # Wait a moment to ensure the server is ready to accept socket connections
+    await asyncio.sleep(2)
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "warmup", "prompt": "Warming up Gemma 4 MoE..."}})
+    try:
+        await asyncio.to_thread(llm.llm_manager.load_model)
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "warmup", "result": "Gemma 4 MoE Ready"}})
+    except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Pre-load the 20GB MoE model into VRAM on startup
     print(">>> Pre-loading Gemma 4 26B MoE into VRAM...")
-    # Run in thread to not block the event loop
-    asyncio.create_task(asyncio.to_thread(llm.llm_manager.load_model))
+    asyncio.create_task(load_llm_with_broadcast())
     yield
 
 app = FastAPI(title="Paraclete Backend", lifespan=lifespan)

@@ -21,6 +21,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [jobs, setJobs] = useState<BackgroundJob[]>([]);
     const [isThinking, setIsThinking] = useState(false);
     const [isLlmReady, setIsLlmReady] = useState(false);
+    const [isWarming, setIsWarming] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [shouldRender, setShouldRender] = useState(isOpen);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -197,8 +198,17 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                 
                 if (data.event?.startsWith('llm_')) {
                     setEvents(prev => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }]);
-                    if (data.event === 'llm_start') setIsThinking(true);
-                    if (data.event === 'llm_finish' || data.event === 'llm_error') setIsThinking(false);
+                    if (data.event === 'llm_start') {
+                        if (data.data?.type === 'warmup') setIsWarming(true);
+                        else setIsThinking(true);
+                    }
+                    if (data.event === 'llm_finish' || data.event === 'llm_error') {
+                        setIsThinking(false);
+                        if (data.data?.type === 'warmup') {
+                            setIsWarming(false);
+                            setIsLlmReady(true);
+                        }
+                    }
                 } 
                 
                 if (data.event === 'background_jobs') {
@@ -357,7 +367,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '24px' }}>
-                            <Logo isThinking={isThinking} />
+                            <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
                         </div>
                         <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                             Paraclete Global Intelligence

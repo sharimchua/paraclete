@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
-const Logo: React.FC<{ className?: string; isThinking?: boolean }> = ({ className, isThinking }) => {
-  const [isMounted, setIsMounted] = useState(false);
+const Logo: React.FC<{ 
+  className?: string; 
+  isThinking?: boolean; 
+  isLlmReady?: boolean;
+  isWarming?: boolean;
+}> = ({ className, isThinking, isLlmReady, isWarming }) => {
+  const [isRendered, setIsRendered] = useState(false);
 
   useEffect(() => {
-    // Tiny delay to ensure the mount animation fires safely on startup
-    const timer = setTimeout(() => setIsMounted(true), 50);
-    return () => clearTimeout(timer);
+    setIsRendered(true);
   }, []);
 
   return (
@@ -32,24 +35,23 @@ const Logo: React.FC<{ className?: string; isThinking?: boolean }> = ({ classNam
           <stop offset="100%" stopColor="#6366f1" />
         </linearGradient>
       </defs>
-      {/* The Practitioner - Constant Stem */}
       <rect 
           x="6" y="2" width="8" rx="4" 
           fill="url(#logo-grad-practitioner)" 
           style={{
-              height: isMounted ? 28 : 0,
-              transition: 'height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              height: isRendered ? 28 : 0,
+              transition: 'height 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
               animation: isThinking ? 'pulse-stem 2s infinite ease-in-out' : 'none'
           }}
       />
-      {/* The AI - Shorter right bar that animates when LLM is active */}
       <rect 
           x="18" y="2" width="8" rx="4" 
           fill="url(#logo-grad-ai)" 
           style={{
-              height: isMounted ? 15 : 0,
-              transition: 'height 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s', /* Staggered load */
-              animation: isThinking ? 'bounce-ai 1.2s infinite ease-in-out' : 'none',
+              height: isLlmReady ? 15 : (isWarming ? 8 : 0),
+              transition: 'height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              animation: isWarming ? 'warmup-ai 1.8s infinite ease-in-out' : (isThinking ? 'bounce-ai 1.2s infinite ease-in-out' : 'none'),
+              opacity: (isLlmReady || isWarming) ? 1 : 0,
               transformOrigin: 'top center'
           }}
       />
@@ -61,6 +63,10 @@ const Logo: React.FC<{ className?: string; isThinking?: boolean }> = ({ classNam
           @keyframes bounce-ai {
               0%, 100% { height: 15px; filter: brightness(1); }
               50% { height: 28px; filter: brightness(1.4); }
+          }
+          @keyframes warmup-ai {
+              0%, 100% { height: 8px; filter: brightness(0.8) saturate(0.6); opacity: 0.6; }
+              50% { height: 15px; filter: brightness(1.2) saturate(1.2); opacity: 1; }
           }
       `}</style>
     </svg>

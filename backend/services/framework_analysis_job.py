@@ -184,12 +184,17 @@ async def run_item_analysis_task(
 
     prompt = llm.templates.analyze_framework(content, target_persona_name, context=current_framework_text, quantity=extraction_limit)
     
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "framework_analysis", "prompt": f"Extracting Patterns from {item_type.capitalize()}"}})
+
     try:
         resp_text = await asyncio.to_thread(
             llm.llm_manager.call,
             prompt,
             system="You are an expert at identifying professional practice styles. Extract patterns into instructional directives."
         )
+        
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "framework_analysis", "result": "Analysis Complete"}})
         
         clean_json = resp_text.strip()
         if "```json" in clean_json:

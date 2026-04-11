@@ -51,52 +51,38 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className={`paraclete-app ${activeToast && !isExiting ? 'has-active-toast' : ''}`}>
             {children}
             
-            {activeToast && (
+            <div className={`integrated-toast-container ${activeToast && !isExiting ? 'is-active' : ''}`}>
                 <div 
-                    className="integrated-toast-container"
+                    className="toast-card"
+                    onClick={() => setIsExiting(true)}
                     style={{
-                        position: 'fixed',
-                        top: '24px',
-                        left: '16px', // Align with sidebar padding
-                        width: '228px', // Sidebar (260) - padding (16*2)
-                        zIndex: 10000,
-                        pointerEvents: 'auto',
+                        width: '240px',
+                        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)',
+                        backdropFilter: 'blur(12px)',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'white',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
                     }}
                 >
-                    <div 
-                        onClick={() => setIsExiting(true)}
-                        className="toast-card"
-                        style={{
-                            background: 'rgba(15, 23, 42, 0.98)',
-                            backdropFilter: 'blur(16px)',
-                            border: `1px solid ${
-                                activeToast.type === 'success' ? '#22c55e' : 
-                                activeToast.type === 'error' ? '#ef4444' : 'var(--primary)'
-                            }`,
-                            padding: '16px',
-                            borderRadius: '12px',
-                            color: 'white',
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '8px',
-                        }}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6 }}>
-                           <div style={{ width: '12px', height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                               <Logo isThinking={false} />
-                           </div>
-                           <span>{activeToast.type === 'error' ? 'Paraclete Alert' : 'Paraclete'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6 }}>
+                        <div style={{ width: '12px', height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Logo isThinking={false} isLlmReady={true} />
                         </div>
-                        <div style={{ lineHeight: '1.4' }}>
-                            {activeToast.message}
-                        </div>
+                        <span>{activeToast?.type === 'error' ? 'Paraclete Alert' : 'Paraclete'}</span>
+                    </div>
+                    <div style={{ lineHeight: '1.4' }}>
+                        {activeToast?.message || ''}
                     </div>
                 </div>
-            )}
+            </div>
 
             <style>{`
                 /* Container for the logo area to allow card overlay */
@@ -109,53 +95,57 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 }
 
                 .logo-area-content {
-                    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-in;
-                    transition-delay: 0.15s; /* Delay when flipping back in so toast can flip out first */
+                    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.0s ease-out;
+                    transition-delay: 0.5s; /* Delay when flipping back in */
                     transform-origin: center center;
                     transform: rotateX(0deg);
                     opacity: 1;
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
                 }
 
-                /* When toast is active, flip the logo up and fade it backwards */
                 .has-active-toast .logo-area-content {
-                    transition-delay: 0s; /* No delay when flipping out */
-                    transform: rotateX(90deg) scale(0.9);
+                    transition: transform 1.0s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease-out;
+                    transition-delay: 0s;
+                    transform: rotateX(90deg) scale(0.8);
                     opacity: 0;
                     pointer-events: none;
                 }
 
-                /* The Toast Container provides its own 3D space */
-                .integrated-toast-container {
+                 .integrated-toast-container {
                     perspective: 1200px;
                     z-index: 10000;
+                    position: fixed;
+                    top: 24px;
+                    left: 16px;
+                    pointer-events: none;
                 }
 
-                /* The Toast Card itself */
                 .toast-card {
                     transform-origin: top center;
-                    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out;
-                    transition-delay: 0s; /* No delay when flipping out */
-                    /* Base state is flipped OUT (hidden state) */
-                    transform: rotateX(-90deg) scale(0.9);
+                    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.0s ease-out;
+                    transform: rotateX(-90deg) scale(0.85);
                     opacity: 0;
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
+                    pointer-events: none;
                 }
 
-                /* When toast is active, flip it IN */
-                .has-active-toast .toast-card {
+                .is-active .toast-card {
                     transform: rotateX(0deg) scale(1);
                     opacity: 1;
-                    /* Add a slight delay so it flips in AFTER the logo flips out */
-                    transition-delay: 0.15s; 
+                    transition-delay: 0.3s; 
+                    pointer-events: auto;
                 }
 
                 .has-active-toast .nav-section {
                     transform: translateY(16px);
-                    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                    transition: transform 1.0s cubic-bezier(0.16, 1, 0.3, 1);
                 }
 
                 .nav-section {
-                    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                    transition-delay: 0.1s; /* Slight delay when retracting to avoid clipping */
+                    transition: transform 1.0s cubic-bezier(0.16, 1, 0.3, 1);
+                    transition-delay: 0.2s;
                 }
             `}</style>
         </div>
