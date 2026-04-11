@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmationModal from './ConfirmationModal';
+import { toast } from './ToastProvider';
 
 const AdminPanel: React.FC = () => {
     const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error' | 'idle', message: string }>({ type: 'idle', message: '' });
@@ -6,6 +8,7 @@ const AdminPanel: React.FC = () => {
     const [isImporting, setIsImporting] = useState(false);
     const [settings, setSettings] = useState<Record<string, string>>({});
     const [isSavingSetting, setIsSavingSetting] = useState<string | null>(null);
+    const [confirmation, setConfirmation] = useState<{ title: string, message: string, variant?: 'danger' | 'primary', onConfirm: () => void } | null>(null);
 
     useEffect(() => {
         fetchSettings();
@@ -30,7 +33,7 @@ const AdminPanel: React.FC = () => {
             setSettings(prev => ({ ...prev, [key]: value }));
         } catch (err) {
             console.error('Failed to update setting:', err);
-            alert('Failed to save setting.');
+            toast.error('Failed to save setting.');
         } finally {
             setIsSavingSetting(null);
         }
@@ -55,7 +58,7 @@ const AdminPanel: React.FC = () => {
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Export error:', error);
-            alert('Failed to export data');
+            toast.error('Failed to export data');
         } finally {
             setIsExporting(false);
         }
@@ -65,11 +68,19 @@ const AdminPanel: React.FC = () => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        if (!confirm('Warning: Importing data will OVERWRITE all existing data in the application. Are you sure you want to proceed?')) {
-            event.target.value = '';
-            return;
-        }
+        setConfirmation({
+            title: 'Overwrite Data?',
+            message: 'Warning: Importing data will OVERWRITE all existing data in the application. This action cannot be undone. Are you sure you want to proceed?',
+            variant: 'danger',
+            onConfirm: () => {
+                executeImport(file);
+                setConfirmation(null);
+            }
+        });
+        event.target.value = '';
+    };
 
+    const executeImport = async (file: File) => {
         setIsImporting(true);
         setImportStatus({ type: 'idle', message: 'Importing...' });
 
@@ -346,17 +357,20 @@ const AdminPanel: React.FC = () => {
                             <button 
                                 className="btn-secondary" 
                                 style={{ borderColor: '#f59e0b', color: '#f59e0b', width: '100%' }}
-                                onClick={async () => {
-                                    if (confirm('Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.')) {
-                                        try {
-                                            const res = await fetch('http://127.0.0.1:8000/api/admin/reset-framework-analysis', { method: 'POST' });
-                                            const data = await res.json();
-                                            alert(`Success: Reset flags for ${data.reset_count} items and cleared pending queue.`);
-                                        } catch (err) {
-                                            alert('Failed to reset analysis flags.');
-                                        }
+                                onClick={() => setConfirmation({
+                                    title: 'Reset Analytics?',
+                                    message: 'Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.',
+                                    onConfirm: async () => {
+                try {
+                    const res = await fetch('http://127.0.0.1:8000/api/admin/reset-framework-analysis', { method: 'POST' });
+                    const data = await res.json();
+                    toast.success(`Reset flags for ${data.reset_count} items.`);
+                } catch (err) {
+                    toast.error('Failed to reset analysis flags.');
+                }
+                                        setConfirmation(null);
                                     }
-                                }}
+                                })}
                             >
                                 Reset Analysis Flags
                             </button>
@@ -371,17 +385,21 @@ const AdminPanel: React.FC = () => {
                             <button 
                                 className="btn-secondary" 
                                 style={{ borderColor: '#ef4444', color: '#ef4444', width: '100%' }}
-                                onClick={async () => {
-                                    if (confirm('CRITICAL: This will PERMANENTLY DELETE all your framework rules and proposals. This cannot be undone. Are you absolutely sure?')) {
-                                        try {
-                                            const res = await fetch('http://127.0.0.1:8000/api/admin/wipe-framework', { method: 'POST' });
-                                            const data = await res.json();
-                                            alert(`Success: Wiped ${data.deleted_items} rules and ${data.deleted_proposals} proposals.`);
-                                        } catch (err) {
-                                            alert('Failed to wipe framework.');
-                                        }
+                                onClick={() => setConfirmation({
+                                    title: 'Wipe All Rules?',
+                                    message: 'CRITICAL: This will PERMANENTLY DELETE all your framework rules and proposals. This cannot be undone. Are you absolutely sure?',
+                                    variant: 'danger',
+                                    onConfirm: async () => {
+                try {
+                    const res = await fetch('http://127.0.0.1:8000/api/admin/wipe-framework', { method: 'POST' });
+                    const data = await res.json();
+                    toast.success(`Wiped ${data.deleted_items} rules.`);
+                } catch (err) {
+                    toast.error('Failed to wipe framework.');
+                }
+                                        setConfirmation(null);
                                     }
-                                }}
+                                })}
                             >
                                 Wipe All Rules & Proposals
                             </button>
@@ -389,6 +407,16 @@ const AdminPanel: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {confirmation && (
+                <ConfirmationModal 
+                    title={confirmation.title}
+                    message={confirmation.message}
+                    variant={confirmation.variant || 'primary'}
+                    onConfirm={confirmation.onConfirm}
+                    onCancel={() => setConfirmation(null)}
+                />
+            )}
         </div>
     );
 };

@@ -3,6 +3,8 @@ import { api, Note, Person, Group } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import NoteAuthoring from './NoteAuthoring';
 import NoteUtilities from './NoteUtilities';
+import ConfirmationModal from './ConfirmationModal';
+import { toast } from './ToastProvider';
 
 interface Props {
     noteId: number;
@@ -15,6 +17,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     const [group, setGroup] = useState<Group | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
@@ -33,7 +36,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
             setLoading(false);
         } catch (err) {
             console.error(err);
-            alert('Failed to load note details');
+            toast.error('Failed to load note details');
             setLoading(false);
         }
     };
@@ -43,14 +46,14 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     }, [noteId]);
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-            try {
-                await api.delete(`/notes/${noteId}`);
-                onBack();
-            } catch (err) {
-                console.error(err);
-                alert('Failed to delete note');
-            }
+        try {
+            await api.delete(`/notes/${noteId}`);
+            onBack();
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete note');
+        } finally {
+            setShowDeleteConfirm(false);
         }
     };
 
@@ -108,7 +111,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                         <button className="btn-secondary" onClick={() => setIsEditing(true)}>
                             Edit Note
                         </button>
-                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={handleDelete}>Delete</button>
+                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => setShowDeleteConfirm(true)}>Delete</button>
                     </div>
                 </div>
 
@@ -214,6 +217,17 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                     <NoteUtilities note={note} />
                 </div>
             </aside>
+
+            {showDeleteConfirm && (
+                <ConfirmationModal 
+                    title="Delete Note?"
+                    message="Are you sure you want to delete this note? This action cannot be undone."
+                    variant="danger"
+                    confirmLabel="Delete Forever"
+                    onConfirm={handleDelete}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                />
+            )}
         </div>
     );
 };

@@ -315,10 +315,12 @@ const App: React.FC = () => {
                     onClick={() => setIsParacletePanelOpen(true)}
                     style={{ cursor: 'pointer' }}
                 >
-                    <div className="logo-icon">
-                        <Logo isThinking={isThinking} />
+                    <div className="logo-area-content" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="logo-icon">
+                            <Logo isThinking={isThinking} />
+                        </div>
+                        <span className="app-name">Paraclete</span>
                     </div>
-                    <span className="app-name">Paraclete</span>
                 </div>
                 
                 <nav className="nav-section">
@@ -394,44 +396,47 @@ const App: React.FC = () => {
             </main>
             <ParacletePanel isOpen={isParacletePanelOpen} onClose={() => setIsParacletePanelOpen(false)} />
             
-            {personaLinkingTarget && (
-                <PersonaSelectionModal 
-                    title={`Link Persona to ${personaLinkingTarget.type === 'person' ? 'Individual' : 'Group'}`}
-                    existingPersonaIds={personaLinkingTarget.existingPersonaIds}
-                    onClose={() => setPersonaLinkingTarget(null)}
-                    onSelect={async (personaId) => {
-                        try {
-                            await api.post('/api/framework/link', {
-                                persona_id: personaId,
-                                entity_type: personaLinkingTarget.type,
-                                entity_id: personaLinkingTarget.id
-                            });
-                            setPersonaLinkingTarget(null);
-                            // Dispatch refresh event
-                            window.dispatchEvent(new CustomEvent('refresh-profile'));
-                        } catch (err) {
-                            console.error(err);
-                            alert('Failed to link persona');
-                        }
-                    }}
-                />
-            )}
+            {/* Global Modals */}
+            <div id="modal-root">
+                {personaLinkingTarget && (
+                    <PersonaSelectionModal 
+                        title={`Link Persona to ${personaLinkingTarget.type === 'person' ? 'Individual' : 'Group'}`}
+                        existingPersonaIds={personaLinkingTarget.existingPersonaIds}
+                        onClose={() => setPersonaLinkingTarget(null)}
+                        onSelect={async (personaId) => {
+                            try {
+                                await api.post('/api/framework/link', {
+                                    persona_id: personaId,
+                                    entity_type: personaLinkingTarget.type,
+                                    entity_id: personaLinkingTarget.id
+                                });
+                                setPersonaLinkingTarget(null);
+                                // Dispatch refresh event
+                                window.dispatchEvent(new CustomEvent('refresh-profile'));
+                            } catch (err) {
+                                console.error(err);
+                                alert('Failed to link persona');
+                            }
+                        }}
+                    />
+                )}
 
-            {showContactSelection && (
-                <EntitySelectionModal
-                    title="New Outreach"
-                    subtitle="Select a contact to start drafting a message."
-                    allowGeneral={false}
-                    onClose={() => setShowContactSelection(false)}
-                    onSelect={(target) => {
-                        navigateTo('message-authoring', 
-                            target.type === 'person' ? target.id : null,
-                            target.type === 'group' ? target.id : null
-                        );
-                        setShowContactSelection(false);
-                    }}
-                />
-            )}
+                {showContactSelection && (
+                    <EntitySelectionModal
+                        title="New Outreach"
+                        subtitle="Select a contact to start drafting a message."
+                        allowGeneral={false}
+                        onClose={() => setShowContactSelection(false)}
+                        onSelect={(target) => {
+                            navigateTo('message-authoring', 
+                                target.type === 'person' ? target.id : null,
+                                target.type === 'group' ? target.id : null
+                            );
+                            setShowContactSelection(false);
+                        }}
+                    />
+                )}
+            </div>
         </div>
     );
 };

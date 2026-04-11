@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api, Person, Note, API_BASE } from '../services/api';
 import ReactMarkdown from 'react-markdown';
+import ConfirmationModal from './ConfirmationModal';
+import { toast } from './ToastProvider';
 
 
 interface Props {
@@ -43,6 +45,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     const [companionUrl, setCompanionUrl] = useState<string | null>(null);
     const [companionImages, setCompanionImages] = useState<any[]>([]);
     const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Load existing note if noteId is provided
     useEffect(() => {
@@ -301,14 +304,18 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
     const handleDeleteNote = async () => {
         if (!noteId) return;
-        if (window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-            try {
-                await api.delete(`/notes/${noteId}`);
-                onComplete();
-            } catch (err) {
-                console.error('Delete failed:', err);
-                alert('Failed to delete note.');
-            }
+        setShowDeleteConfirm(true);
+    };
+
+    const executeDelete = async () => {
+        try {
+            await api.delete(`/notes/${noteId}`);
+            onComplete();
+        } catch (err) {
+            console.error('Delete failed:', err);
+            toast.error('Failed to delete note.');
+        } finally {
+            setShowDeleteConfirm(false);
         }
     };
 
@@ -873,6 +880,17 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showDeleteConfirm && (
+                <ConfirmationModal 
+                    title="Delete Note?"
+                    message="Are you sure you want to delete this note? This action cannot be undone."
+                    variant="danger"
+                    confirmLabel="Delete Forever"
+                    onConfirm={executeDelete}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                />
             )}
         </div>
     );
