@@ -65,6 +65,14 @@ export interface PractiseFramework {
     common_phrasing?: string;
     created_at: string;
     updated_at: string;
+    items?: PractiseFrameworkItem[];
+}
+
+export interface PractiseFrameworkItem {
+    id: number;
+    aspect: string;
+    value: string;
+    created_at: string;
 }
 
 export interface FrameworkProposal {
@@ -79,8 +87,17 @@ export interface FrameworkProposal {
     source_type: string;
     source_id: number;
     persona_id?: number;
+    person_id?: number;
+    group_id?: number;
     is_core: boolean;
     created_at: string;
+}
+
+export interface CustomFrameworkRecord {
+    type: 'person' | 'group';
+    id: number;
+    name: string;
+    framework: PractiseFramework;
 }
 
 export interface Persona {

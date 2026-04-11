@@ -146,6 +146,20 @@ async def run_item_analysis_task(
 
     target_persona_name = target_persona.name if target_persona else "Core"
     target_persona_id = target_persona.id if target_persona else None
+    
+    # Capture specific entity attribution
+    item_person_id = None
+    item_group_id = None
+    if item_type == "note":
+        item_person_id = item.person_id
+        item_group_id = item.group_id
+    elif item_type == "message":
+        item_person_id = item.person_id
+        item_group_id = item.group_id
+    elif item_type == "reference":
+        if item.source_note:
+            item_person_id = item.source_note.person_id
+            item_group_id = item.source_note.group_id
 
     # 2. Build Context String (For Phase 1, we still use the old text columns if they exist, but will migrate later)
     # Actually, we already dropped them in models.py, so we should fetch items instead.
@@ -277,7 +291,9 @@ async def run_item_analysis_task(
                         action=p.get("action", "Add"),
                         value=value,
                         persona_id=target_persona_id,
-                        is_core=(target_persona_id is None)
+                        person_id=item_person_id,
+                        group_id=item_group_id,
+                        is_core=(target_persona_id is None and not item_person_id and not item_group_id)
                     )
                     db.add(new_proposal)
                     session_proposals.append(new_proposal)

@@ -44,10 +44,17 @@ def resolve_framework_items(
             resolved_items.extend(persona.framework.items)
             
     # 3. Group Custom
+    # If group_id is provided, use it. If not, and person_id is provided, inherit from all their groups.
     if group_id:
         group = db.query(models.Group).filter(models.Group.id == group_id).first()
         if group and group.custom_framework:
             resolved_items.extend(group.custom_framework.items)
+    elif person_id:
+        person = db.query(models.Person).filter(models.Person.id == person_id).first()
+        if person:
+            for group in person.groups:
+                if group.custom_framework:
+                    resolved_items.extend(group.custom_framework.items)
             
     # 4. Person Custom
     if person_id:

@@ -252,9 +252,16 @@ class FrameworkProposal(Base):
     value = Column(Text) # The proposed text or JSON
     observation_count = Column(Integer, default=1)
     persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
+    person_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
     is_core = Column(Boolean, default=False)
     status = Column(Enum(FrameworkProposalStatus), default=FrameworkProposalStatus.PENDING)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    persona = relationship("Persona")
+    person = relationship("Person")
+    group = relationship("Group")
 
 class Setting(Base):
     __tablename__ = "settings"

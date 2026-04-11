@@ -265,6 +265,8 @@ class FrameworkProposalBase(BaseModel):
     source_owner: Optional[str] = None # Hydrated dynamically
     source_date: Optional[str] = None # Hydrated dynamically
     persona_id: Optional[int] = None
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
     is_core: bool = False
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
 

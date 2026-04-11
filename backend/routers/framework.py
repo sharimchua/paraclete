@@ -358,6 +358,8 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
 class ProposalResolution(BaseModel):
     approved: bool
     override_persona_id: Optional[int] = None
+    override_person_id: Optional[int] = None
+    override_group_id: Optional[int] = None
     override_is_core: Optional[bool] = None
 
 @router.post("/proposals/{proposal_id}/resolve")
@@ -373,11 +375,27 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
         # Use overrides if provided, otherwise fall back to proposal defaults
         effective_is_core = resolution.override_is_core if resolution.override_is_core is not None else proposal.is_core
         effective_persona_id = resolution.override_persona_id if resolution.override_persona_id is not None else proposal.persona_id
+        effective_person_id = resolution.override_person_id if resolution.override_person_id is not None else proposal.person_id
+        effective_group_id = resolution.override_group_id if resolution.override_group_id is not None else proposal.group_id
 
         # Determine which framework to update
         target_framework = None
         if effective_is_core:
             target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
+        elif effective_person_id:
+            person = db.query(models.Person).filter(models.Person.id == effective_person_id).first()
+            if person:
+                if not person.custom_framework_id:
+                    person.custom_framework = models.PractiseFramework(name=f"{person.name} Custom", is_core=False)
+                    db.commit()
+                target_framework = person.custom_framework
+        elif effective_group_id:
+            group = db.query(models.Group).filter(models.Group.id == effective_group_id).first()
+            if group:
+                if not group.custom_framework_id:
+                    group.custom_framework = models.PractiseFramework(name=f"{group.name} Custom", is_core=False)
+                    db.commit()
+                target_framework = group.custom_framework
         elif effective_persona_id:
             persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
             if persona:
@@ -408,6 +426,62 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
     
     db.commit()
     return {"status": "success", "new_status": proposal.status}
+
+@router.post("/proposals/reject-all")
+def reject_all_pending_proposals(db: Session = Depends(get_db)):
+    """Convenience method to clear the analysis queue."""
+    db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING).update({models.FrameworkProposal.status: models.FrameworkProposalStatus.REJECTED})
+    db.commit()
+    return {"status": "success"}
+
+@router.get("/custom")
+def read_custom_frameworks(db: Session = Depends(get_db)):
+    """Returns Persons and Groups that have custom frameworks."""
+    persons = db.query(models.Person).filter(models.Person.custom_framework_id != None).all()
+    groups = db.query(models.Group).filter(models.Group.custom_framework_id != None).all()
+    
+    result = []
+    for p in persons:
+        stitch_framework(p.custom_framework)
+        result.append({"type": "person", "id": p.id, "name": p.name, "framework": p.custom_framework})
+    for g in groups:
+        stitch_framework(g.custom_framework)
+        result.append({"type": "group", "id": g.id, "name": g.name, "framework": g.custom_framework})
+    return result
+
+@router.get("/consolidated/{entity_type}/{entity_id}")
+async def get_consolidated_framework(entity_type: str, entity_id: int, db: Session = Depends(get_db)):
+    """Merges Core + Persona + Custom items into a single view."""
+    from ..services.framework_resolver import resolve_framework_items
+    
+    persona_id = None
+    person_id = None
+    group_id = None
+    
+    if entity_type == "person":
+        person_id = entity_id
+        person = db.query(models.Person).filter(models.Person.id == entity_id).first()
+        if person: persona_id = person.persona_id
+    elif entity_type == "group":
+        group_id = entity_id
+        group = db.query(models.Group).filter(models.Group.id == entity_id).first()
+        if group: persona_id = group.persona_id
+
+    # We want a structured response, not just text
+    # But resolve_framework_items returns text. Let's see if we can get items.
+    # For now, we'll return the text but wrapped.
+    from ..services.framework_resolver import resolve_framework_items
+    text = resolve_framework_items(db, persona_id=persona_id, person_id=person_id, group_id=group_id)
+    return {"consolidated_text": text}
+
+@router.post("/proposals/reject-all")
+def reject_all_proposals(db: Session = Depends(get_db)):
+    """Rejects all pending framework proposals."""
+    db.query(models.FrameworkProposal).filter(
+        models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING
+    ).update({"status": models.FrameworkProposalStatus.REJECTED})
+    db.commit()
+    return {"status": "success"}
 
 # --- Entity Links (Personas to Persons/Groups) ---
 class PersonaLink(BaseModel):
