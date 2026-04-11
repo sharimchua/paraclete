@@ -14,3 +14,5 @@ scripts/
 design/import/
 uploads/companion/
 Agents.md
+paraclete.db-shm
+paraclete.db-wal

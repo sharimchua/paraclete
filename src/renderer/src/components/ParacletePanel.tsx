@@ -305,7 +305,10 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                     background: 'rgba(2, 6, 23, 0.7)',
                     backdropFilter: 'blur(4px)',
                     zIndex: 1999,
-                    animation: isClosing ? 'fadeOut 0.3s ease-in forwards' : 'fadeIn 0.3s ease-out forwards'
+                    animation: isClosing ? 'fadeOut 0.3s ease-in forwards' : 'fadeIn 0.3s ease-out forwards',
+                    pointerEvents: isClosing ? 'none' : 'auto',
+                    visibility: isClosing && !isOpen ? 'hidden' : 'visible',
+                    transition: 'visibility 0.3s'
                 }}
             />
             <div style={{

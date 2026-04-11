@@ -25,6 +25,7 @@ async def get_pending_count(
     db: Session = Depends(get_db)
 ):
     """Returns the number of un-analyzed artifacts for the given scope."""
+    db.expire_all() 
     from ..services.framework_analysis_job import get_pending_analysis_count
     counts = await get_pending_analysis_count(
         db, person_id=person_id, group_id=group_id, persona_id=persona_id

@@ -98,7 +98,7 @@ async def run_item_analysis_task(
     else:
         return
 
-    if not item or item.analyzed_for_framework:
+    if not item:
         return
 
     # 1. Resolve Persona context
@@ -282,8 +282,37 @@ async def run_item_analysis_task(
                     db.add(new_proposal)
                     session_proposals.append(new_proposal)
         
-        item.analyzed_for_framework = True
+        # Successful completion - Mark as analyzed
+        if item_type == "note":
+            db.query(models.Note).filter(models.Note.id == item_id).update({"analyzed_for_framework": True})
+        elif item_type == "message":
+            db.query(models.Message).filter(models.Message.id == item_id).update({"analyzed_for_framework": True})
+        elif item_type == "reference":
+            db.query(models.Reference).filter(models.Reference.id == item_id).update({"analyzed_for_framework": True})
+        
         db.commit()
+
     except Exception as e:
         db.rollback()
-        raise e
+        error_msg = str(e)
+        # If it's a model loading error, WE DO NOT mark it as analyzed so it can be retried
+        is_model_error = "Model not loaded" in error_msg or "RuntimeError" in error_msg
+        
+        if not is_model_error:
+            # Mark as analyzed anyway to avoid poison pills for logic/parsing errors
+            if item_type == "note":
+                db.query(models.Note).filter(models.Note.id == item_id).update({"analyzed_for_framework": True})
+            elif item_type == "message":
+                db.query(models.Message).filter(models.Message.id == item_id).update({"analyzed_for_framework": True})
+            elif item_type == "reference":
+                db.query(models.Reference).filter(models.Reference.id == item_id).update({"analyzed_for_framework": True})
+            db.commit()
+
+        full_error = f"[CRITICAL ERROR] Extraction failed for {item_type} {item_id}: {error_msg}"
+        print(full_error)
+        from ..websockets_manager import ws_manager
+        await ws_manager.broadcast({
+            "event": "llm_no_match",
+            "data": full_error
+        }, db=db)
+        # We don't raise here so the worker can continue to next job
