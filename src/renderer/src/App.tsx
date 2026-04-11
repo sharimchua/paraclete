@@ -63,11 +63,27 @@ const App: React.FC = () => {
         const handleThinking = (e: any) => setIsThinking(e.detail);
         window.addEventListener('paraclete-thinking' as any, handleThinking);
 
+        const socket = new WebSocket('ws://127.0.0.1:8000/ws');
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.event === 'llm_start') {
+                    setIsThinking(true);
+                } else if (data.event === 'llm_finish' || data.event === 'llm_error') {
+                    setIsThinking(false);
+                }
+                window.dispatchEvent(new CustomEvent('global-ws-message', { detail: data }));
+            } catch (e) {
+                console.error('Core WS Error:', e);
+            }
+        };
+
         return () => {
             window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
             window.removeEventListener('navigate' as any, handleNavigate);
             window.removeEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
             window.removeEventListener('paraclete-thinking' as any, handleThinking);
+            socket.close();
         };
     }, []);
 

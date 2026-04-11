@@ -20,6 +20,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [events, setEvents] = useState<any[]>([]);
     const [jobs, setJobs] = useState<BackgroundJob[]>([]);
     const [isThinking, setIsThinking] = useState(false);
+    const [isLlmReady, setIsLlmReady] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [shouldRender, setShouldRender] = useState(isOpen);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -33,6 +34,28 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
             chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [chatMessages]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        const checkLLM = async () => {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/llm/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.is_ready) {
+                        setIsLlmReady(true);
+                        clearInterval(interval);
+                    }
+                }
+            } catch (e) {
+                // backend might still be down
+            }
+        };
+
+        checkLLM();
+        interval = setInterval(checkLLM, 2000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleSendChat = async () => {
         if (!chatInput.trim() || isSending) return;
@@ -168,36 +191,29 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     };
 
     useEffect(() => {
-        const socket = new WebSocket('ws://127.0.0.1:8000/ws');
-
-        socket.onmessage = (event) => {
+        const handleWsMessage = (event: any) => {
             try {
-                const data = JSON.parse(event.data);
+                const data = event.detail;
                 
                 if (data.event?.startsWith('llm_')) {
                     setEvents(prev => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }]);
-                    if (data.event === 'llm_start') {
-                        setIsThinking(true);
-                        window.dispatchEvent(new CustomEvent('paraclete-thinking', { detail: true }));
-                    }
-                    if (data.event === 'llm_finish') {
-                        setIsThinking(false);
-                        window.dispatchEvent(new CustomEvent('paraclete-thinking', { detail: false }));
-                    }
+                    if (data.event === 'llm_start') setIsThinking(true);
+                    if (data.event === 'llm_finish' || data.event === 'llm_error') setIsThinking(false);
                 } 
                 
                 if (data.event === 'background_jobs') {
                     setJobs(data.data);
                 }
             } catch (e) {
-                console.error('WS Error:', e);
+                console.error('WS Event Error:', e);
             }
         };
 
+        window.addEventListener('global-ws-message', handleWsMessage);
         fetchJobs();
 
         return () => {
-            socket.close();
+            window.removeEventListener('global-ws-message', handleWsMessage);
         };
     }, []);
 
@@ -408,11 +424,11 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ 
                             width: '8px', height: '8px', borderRadius: '4px', 
-                            background: isThinking ? 'var(--primary)' : '#22c55e',
-                            boxShadow: isThinking ? '0 0 12px var(--primary)' : '0 0 8px rgba(34, 197, 94, 0.4)'
+                            background: isThinking ? 'var(--primary)' : !isLlmReady ? '#f59e0b' : '#22c55e',
+                            boxShadow: isThinking ? '0 0 12px var(--primary)' : !isLlmReady ? '0 0 8px rgba(245, 158, 11, 0.4)' : '0 0 8px rgba(34, 197, 94, 0.4)'
                         }} />
                         <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.8 }}>
-                            {isThinking ? 'NEURAL ENGINE ACTIVE' : 'PARACLETE CORE STABLE'}
+                            {isThinking ? 'NEURAL ENGINE ACTIVE' : !isLlmReady ? 'WARMING UP NEURAL ENGINE...' : 'PARACLETE CORE STABLE'}
                         </span>
                     </div>
                     <button 

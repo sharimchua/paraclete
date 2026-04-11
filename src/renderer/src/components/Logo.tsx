@@ -1,6 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Logo: React.FC<{ className?: string; isThinking?: boolean }> = ({ className, isThinking }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // Tiny delay to ensure the mount animation fires safely on startup
+    const timer = setTimeout(() => setIsMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <svg 
         width="32" 
@@ -26,30 +34,33 @@ const Logo: React.FC<{ className?: string; isThinking?: boolean }> = ({ classNam
       </defs>
       {/* The Practitioner - Constant Stem */}
       <rect 
-          x="6" y="2" width="8" height="28" rx="4" 
+          x="6" y="2" width="8" rx="4" 
           fill="url(#logo-grad-practitioner)" 
           style={{
+              height: isMounted ? 28 : 0,
+              transition: 'height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
               animation: isThinking ? 'pulse-stem 2s infinite ease-in-out' : 'none'
           }}
       />
-      {/* The AI - Moved up to form the 'P' loop shape while remaining beside */}
+      {/* The AI - Shorter right bar that animates when LLM is active */}
       <rect 
-          x="18" y="2" width="8" height="15" rx="4" 
+          x="18" y="2" width="8" rx="4" 
           fill="url(#logo-grad-ai)" 
           style={{
-              animation: isThinking ? 'float-ai 1.5s infinite ease-in-out' : 'none'
+              height: isMounted ? 15 : 0,
+              transition: 'height 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s', /* Staggered load */
+              animation: isThinking ? 'bounce-ai 1.2s infinite ease-in-out' : 'none',
+              transformOrigin: 'top center'
           }}
       />
       <style>{`
           @keyframes pulse-stem {
-              0% { opacity: 1; }
-              50% { opacity: 0.7; }
-              100% { opacity: 1; }
+              0%, 100% { opacity: 1; filter: brightness(1); }
+              50% { opacity: 0.8; filter: brightness(1.2); }
           }
-          @keyframes float-ai {
-              0% { transform: translateY(0); }
-              50% { transform: translateY(-4px); filter: brightness(1.2); }
-              100% { transform: translateY(0); }
+          @keyframes bounce-ai {
+              0%, 100% { height: 15px; filter: brightness(1); }
+              50% { height: 28px; filter: brightness(1.4); }
           }
       `}</style>
     </svg>

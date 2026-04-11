@@ -139,12 +139,12 @@ async def process_ocr(files: List[UploadFile] = File(...)):
                 tmp.write(await file.read())
             temp_paths.append(temp_path)
             
-        await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(temp_paths)} image(s)"}})
+        await ws_manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(temp_paths)} image(s)"}})
         
         # Use the specialized OCR workflow with multiple paths
         result = await llm.workflows.run_ocr(temp_paths)
         
-        await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
         return {"text": result}
     finally:
         for tp in temp_paths:
@@ -159,25 +159,25 @@ async def process_ocr_companion(sid: str):
     
     image_paths = COMPANION_SESSIONS[sid]
     
-    await manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(image_paths)} companion image(s)"}})
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(image_paths)} companion image(s)"}})
     
     try:
         # Use the specialized OCR workflow
         result = await llm.workflows.run_ocr(image_paths)
         
-        await manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "ocr", "result": result}})
         return {"text": result}
     except Exception as e:
-        await manager.broadcast({"event": "llm_error", "data": str(e)})
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/process/dictate")
 async def process_dictate(file: UploadFile = File(...)):
-    await manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "prompt": "Cleaning Audio Capture"}})
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "dictation", "prompt": "Cleaning Audio Capture"}})
     
     result = await llm.workflows.run_dictation(file.filename)
     
-    await manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
+    await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
     return {"text": result}
 
 app.add_middleware(
@@ -391,20 +391,26 @@ async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_
             if notes:
                 history_text = "\n".join([f"- {n.date}: {n.cleaned_text[:300]}..." for n in notes if n.cleaned_text])
 
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "session_brief", "prompt": "Synthesizing Session Brief"}})
     try:
         brief = await llm.workflows.run_session_brief(person_name, history_text)
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "session_brief", "result": brief}})
         return {"result": brief}
     except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analysis/suggest-title")
 async def suggest_note_title(req: TitleSuggestionRequest):
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "title_suggestion", "prompt": "Generating Title"}})
     try:
         title = await llm.workflows.run_suggest_title(req.text)
         # Cleanup quotes if any
         title = title.strip().strip('"').strip("'")
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "title_suggestion", "result": title}})
         return {"result": title}
     except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 from .services.framework_resolver import resolve_framework_items
@@ -673,13 +679,13 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
         "framework_expectations": framework_context
     }
     
-    await manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": "Expansion with Context"}})
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": "Expansion with Context"}})
     
     try:
         cleaned_text = await llm.workflows.run_note_cleanse(db_note.raw_capture, context)
-        await manager.broadcast({"event": "llm_finish", "data": {"type": "clean_note", "result": cleaned_text}})
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "clean_note", "result": cleaned_text}})
     except Exception as e:
-        await manager.broadcast({"event": "llm_error", "data": str(e)})
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
     # Update note with the AI draft, but keep it in CLEAN (Review) stage
@@ -714,13 +720,13 @@ async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
         "framework_context": framework_context
     }
     
-    await manager.broadcast({"event": "llm_start", "data": {"type": "draft_message", "prompt": "Drafting Follow-up"}})
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "draft_message", "prompt": "Drafting Follow-up"}})
     
     try:
         draft_text = await llm.workflows.run_draft_message(context)
-        await manager.broadcast({"event": "llm_finish", "data": {"type": "draft_message", "result": draft_text}})
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "draft_message", "result": draft_text}})
     except Exception as e:
-        await manager.broadcast({"event": "llm_error", "data": str(e)})
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
     
     # Create and save message
