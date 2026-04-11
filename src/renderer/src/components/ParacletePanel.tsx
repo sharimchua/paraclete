@@ -186,8 +186,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                     }
                 } 
                 
-                if (data.event === 'background_job_update') {
-                    fetchJobs();
+                if (data.event === 'background_jobs') {
+                    setJobs(data.data);
                 }
             } catch (e) {
                 console.error('WS Error:', e);
@@ -195,11 +195,9 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         };
 
         fetchJobs();
-        const pollInterval = setInterval(fetchJobs, 5000);
 
         return () => {
             socket.close();
-            clearInterval(pollInterval);
         };
     }, []);
 

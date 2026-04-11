@@ -16,6 +16,16 @@ class BackgroundTaskManager:
             cls._instance.interrupt_event = threading.Event()
         return cls._instance
 
+    async def _broadcast_jobs(self):
+        try:
+            from ..websockets_manager import ws_manager
+            await ws_manager.broadcast({
+                "event": "background_jobs",
+                "data": self.list_jobs()
+            })
+        except Exception as e:
+            print(f"DEBUG: Broadcast error: {e}")
+
     def start_worker(self):
         if self.worker_task is None or self.worker_task.done():
             self.worker_task = asyncio.create_task(self._worker_loop())
@@ -31,6 +41,7 @@ class BackgroundTaskManager:
                 await asyncio.sleep(0.5)
 
             self.jobs[job_id]["status"] = "running"
+            await self._broadcast_jobs()
             print(f"DEBUG: Starting background job: {self.jobs[job_id]['name']} ({job_id})")
             
             try:
@@ -38,6 +49,10 @@ class BackgroundTaskManager:
                 if "interrupt_event" in kwargs:
                      kwargs["interrupt_event"] = self.interrupt_event
                 
+                # If the job takes job_id, pass it so it can update progress
+                if "job_id" in kwargs:
+                    kwargs["job_id"] = job_id
+
                 await job_func(*args, **kwargs)
                 self.jobs[job_id]["status"] = "completed"
                 self.jobs[job_id]["progress"] = 100
@@ -50,6 +65,7 @@ class BackgroundTaskManager:
                 self.jobs[job_id]["error"] = str(e)
                 print(f"DEBUG: Error in background job {job_id}: {e}")
             finally:
+                await self._broadcast_jobs()
                 self.queue.task_done()
 
     def add_job(self, job_name: str, job_func, *args, **kwargs):
@@ -62,7 +78,15 @@ class BackgroundTaskManager:
         }
         self.queue.put_nowait((job_id, job_func, args, kwargs))
         self.start_worker()
+        
+        # Initial broadcast
+        asyncio.create_task(self._broadcast_jobs())
         return job_id
+
+    async def update_job_progress(self, job_id: str, progress: int):
+        if job_id in self.jobs:
+            self.jobs[job_id]["progress"] = progress
+            await self._broadcast_jobs()
 
     def interrupt(self):
         """Signals background jobs to yield hardware resources."""
