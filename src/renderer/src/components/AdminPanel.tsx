@@ -122,7 +122,7 @@ const AdminPanel: React.FC = () => {
     const extractionLimit = parseInt(settings['framework_extraction_limit'] || '5');
 
     return (
-        <div className="admin-panel animate-in">
+        <div className="admin-panel animate-in" style={{ paddingBottom: '100px' }}>
             <div className="card" style={{ maxWidth: '800px' }}>
                 <header style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Administrative Controls</h3>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Logo from './Logo';
 
 export interface Toast {
     id: string;
@@ -8,17 +9,35 @@ export interface Toast {
 
 const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [activeToast, setActiveToast] = useState<Toast | null>(null);
+    const [isExiting, setIsExiting] = useState(false);
 
     const addToast = useCallback((message: string, type: Toast['type'] = 'info') => {
         const id = Math.random().toString(36).substr(2, 9);
         const newToast = { id, message, type };
+        setIsExiting(false);
         setActiveToast(newToast);
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-            setActiveToast(prev => prev?.id === id ? null : prev);
-        }, 5000);
     }, []);
+
+    useEffect(() => {
+        // Handle auto-dismiss
+        if (!activeToast || isExiting) return undefined;
+        const timer = setTimeout(() => {
+            setIsExiting(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, [activeToast, isExiting]);
+
+    useEffect(() => {
+        // Handle unmount after exit animation
+        if (!isExiting) return undefined;
+        
+        const timer = setTimeout(() => {
+            setActiveToast(null);
+            setIsExiting(false);
+        }, 500); // 500ms allows the flip to finish
+        
+        return () => clearTimeout(timer);
+    }, [isExiting]);
 
     useEffect(() => {
         const handleToast = (e: any) => {
@@ -29,7 +48,7 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }, [addToast]);
 
     return (
-        <div className={`paraclete-app ${activeToast ? 'has-active-toast' : ''}`}>
+        <div className={`paraclete-app ${activeToast && !isExiting ? 'has-active-toast' : ''}`}>
             {children}
             
             {activeToast && (
@@ -45,7 +64,7 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     }}
                 >
                     <div 
-                        onClick={() => setActiveToast(null)}
+                        onClick={() => setIsExiting(true)}
                         className="toast-card"
                         style={{
                             background: 'rgba(15, 23, 42, 0.98)',
@@ -64,12 +83,13 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '8px',
-                            transformOrigin: 'center center',
-                            animation: 'toastCardSwap 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6 }}>
-                           {activeToast.type === 'error' ? '⚠️ Alert' : '✨ Assistant'}
+                           <div style={{ width: '12px', height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                               <Logo isThinking={false} />
+                           </div>
+                           <span>{activeToast.type === 'error' ? 'Paraclete Alert' : 'Paraclete'}</span>
                         </div>
                         <div style={{ lineHeight: '1.4' }}>
                             {activeToast.message}
@@ -79,41 +99,55 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
 
             <style>{`
-                @keyframes toastCardSwap {
-                    0% { transform: scale(0.9) translateY(-10px); opacity: 0; filter: blur(10px); }
-                    100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
-                }
-
-                @keyframes logoCardFadeOut {
-                    0% { transform: scale(1); opacity: 1; filter: blur(0); }
-                    100% { transform: scale(0.95); opacity: 0; filter: blur(8px); }
-                }
-
                 /* Container for the logo area to allow card overlay */
                 .logo-area {
                     position: relative;
-                    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
                     min-height: 48px; /* Ensure space for the replacement card */
                     z-index: 1;
+                    perspective: 1200px; /* Enable 3D space */
+                    transform-style: preserve-3d;
                 }
 
-                /* The "Card" base that always exists but becomes visible/styled when toast active */
-                .has-active-toast .logo-area::before {
-                    content: '';
-                    position: absolute;
-                    inset: -8px -4px;
-                    background: var(--bg-surface-elevated);
-                    border: 1px solid var(--border);
-                    border-radius: 12px;
-                    z-index: -1;
-                    animation: toastCardSwap 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                .logo-area-content {
+                    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-in;
+                    transition-delay: 0.15s; /* Delay when flipping back in so toast can flip out first */
+                    transform-origin: center center;
+                    transform: rotateX(0deg);
+                    opacity: 1;
                 }
 
+                /* When toast is active, flip the logo up and fade it backwards */
                 .has-active-toast .logo-area-content {
-                    animation: logoCardFadeOut 0.3s ease-out forwards;
+                    transition-delay: 0s; /* No delay when flipping out */
+                    transform: rotateX(90deg) scale(0.9);
+                    opacity: 0;
                     pointer-events: none;
                 }
-                
+
+                /* The Toast Container provides its own 3D space */
+                .integrated-toast-container {
+                    perspective: 1200px;
+                    z-index: 10000;
+                }
+
+                /* The Toast Card itself */
+                .toast-card {
+                    transform-origin: top center;
+                    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out;
+                    transition-delay: 0s; /* No delay when flipping out */
+                    /* Base state is flipped OUT (hidden state) */
+                    transform: rotateX(-90deg) scale(0.9);
+                    opacity: 0;
+                }
+
+                /* When toast is active, flip it IN */
+                .has-active-toast .toast-card {
+                    transform: rotateX(0deg) scale(1);
+                    opacity: 1;
+                    /* Add a slight delay so it flips in AFTER the logo flips out */
+                    transition-delay: 0.15s; 
+                }
+
                 .has-active-toast .nav-section {
                     transform: translateY(16px);
                     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -121,11 +155,7 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
                 .nav-section {
                     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                }
-
-                /* Ensure the toast stays perfectly within the card bounds */
-                .integrated-toast-container {
-                    perspective: 1000px;
+                    transition-delay: 0.1s; /* Slight delay when retracting to avoid clipping */
                 }
             `}</style>
         </div>
