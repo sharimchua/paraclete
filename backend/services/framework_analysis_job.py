@@ -178,7 +178,11 @@ async def run_item_analysis_task(
             current_framework_text = "### Current Framework Directives:\n" + "\n".join([f"- [{i.aspect}]: {i.value}" for i in items])
 
     # 3. LLM Call
-    prompt = llm.templates.analyze_framework(content, target_persona_name, context=current_framework_text)
+    # Fetch extraction limit from settings
+    limit_setting = db.query(models.Setting).filter(models.Setting.key == "framework_extraction_limit").first()
+    extraction_limit = int(limit_setting.value) if limit_setting else 5
+
+    prompt = llm.templates.analyze_framework(content, target_persona_name, context=current_framework_text, quantity=extraction_limit)
     
     try:
         resp_text = await asyncio.to_thread(

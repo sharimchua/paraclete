@@ -108,6 +108,7 @@ const AdminPanel: React.FC = () => {
     };
 
     const currentThreshold = parseFloat(settings['framework_similarity_threshold'] || '0.8');
+    const extractionLimit = parseInt(settings['framework_extraction_limit'] || '5');
 
     return (
         <div className="admin-panel animate-in">
@@ -190,7 +191,7 @@ const AdminPanel: React.FC = () => {
                             <div>
                                 <h5 style={{ fontWeight: 600, margin: 0 }}>Framework Similarity Threshold</h5>
                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                                    Higher values require a more exact match to merge proposals.
+                                    Higher values require a more exact match to merge professional proposals.
                                 </p>
                             </div>
                             <span style={{ 
@@ -215,8 +216,8 @@ const AdminPanel: React.FC = () => {
                                         padding: '8px 12px',
                                         borderRadius: '6px',
                                         border: '1px solid var(--border-color)',
-                                        background: currentThreshold === val ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                                        color: currentThreshold === val ? 'white' : 'var(--text-secondary)',
+                                        background: Math.abs(currentThreshold - val) < 0.01 ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                                        color: Math.abs(currentThreshold - val) < 0.01 ? 'white' : 'var(--text-secondary)',
                                         cursor: 'pointer',
                                         fontSize: '0.85rem',
                                         fontWeight: 600,
@@ -233,6 +234,55 @@ const AdminPanel: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
                             <span>Thematic (Loose)</span>
                             <span>Strict (Exact)</span>
+                        </div>
+                    </div>
+
+                    <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)', marginTop: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <div>
+                                <h5 style={{ fontWeight: 600, margin: 0 }}>Extraction Density</h5>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                    How many potential stylistic markers should the AI attempt to extract from each artifact?
+                                </p>
+                            </div>
+                            <span style={{ 
+                                background: 'var(--primary)', 
+                                color: 'white', 
+                                padding: '4px 12px', 
+                                borderRadius: '6px', 
+                                fontSize: '1rem', 
+                                fontWeight: 800 
+                            }}>
+                                {extractionLimit === 3 ? 'Minimal' : extractionLimit === 7 ? 'Extensive' : 'Moderate'} ({extractionLimit})
+                            </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {[
+                                { label: 'Minimal', value: '3' },
+                                { label: 'Moderate', value: '5' },
+                                { label: 'Extensive', value: '7' }
+                            ].map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => updateSetting('framework_extraction_limit', opt.value)}
+                                    disabled={isSavingSetting === 'framework_extraction_limit'}
+                                    style={{
+                                        flex: 1,
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid var(--border-color)',
+                                        background: extractionLimit === parseInt(opt.value) ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                                        color: extractionLimit === parseInt(opt.value) ? 'white' : 'var(--text-secondary)',
+                                        cursor: 'pointer',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>

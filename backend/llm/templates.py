@@ -178,7 +178,7 @@ SESSION NOTE:
 
 RECOMMENDED TITLE:"""
 
-def analyze_framework(content: str, persona_name: str, context: str = "") -> str:
+def analyze_framework(content: str, persona_name: str, context: str = "", quantity: int = 5) -> str:
     """Analyze content for thematic framework improvements."""
     return f"""You are a Strategic Practice Architect. 
 Your goal is to extract the high-level "Professional DNA" from the content below. 
@@ -194,7 +194,7 @@ Your goal is to extract the high-level "Professional DNA" from the content below
    - TOO SPECIFIC: "Mentioned the 3-step breathing technique."
    - STRATEGIC DNA: "Incorporate somatic anchoring techniques (like breathing or grounding) when discussing stress management."
 2. **THEMATIC DIRECTIVES**: Phrase every observation as a broad, imperative instruction for an LLM that aims to maintain this practitioner's signature edge.
-3. **MINIMALISM**: Only output 1-3 high-impact proposals that represent a significant or recurring pattern. Avoid cluttering the framework with generic observations.
+3. **DENSITY**: Extract EXACTLY {quantity} unique, high-impact proposals that represent significant or recurring patterns. Avoid cluttering with generic observations, but ensure you reach the target quantity to provide a comprehensive stylistic map.
 
 ### CATEGORIES:
 - 'Tone': The emotional resonance and authority level.
