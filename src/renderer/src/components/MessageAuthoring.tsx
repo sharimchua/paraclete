@@ -184,6 +184,55 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         }
     };
 
+    const copyFormattedMessage = async () => {
+        const text = message.draft_text || '';
+        if (!text) return;
+
+        // Simple markdown to HTML conversion for common email formatting
+        let html = text
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/^\- (.*$)/gim, '<li>$1</li>')
+            .trim();
+        
+        // Wrap lists
+        html = html.replace(/(<li>.*<\/li>)/gms, '<ul>$1</ul>');
+        
+        // Wrap paragraphs
+        html = html.split('\n\n').map(p => {
+            if (p.startsWith('<h') || p.startsWith('<ul')) return p;
+            return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+        }).join('\n');
+
+        const finalHtml = `<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11pt; color: #1f2937; line-height: 1.6;">${html}</div>`;
+
+        try {
+            const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
+            const textBlob = new Blob([text], { type: 'text/plain' });
+            const data = [new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })];
+            await navigator.clipboard.write(data);
+            
+            // Visual feedback
+            const btn = document.getElementById('copy-email-btn');
+            if (btn) {
+                const original = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                btn.style.borderColor = 'var(--primary)';
+                setTimeout(() => {
+                    btn.innerHTML = original;
+                    btn.style.borderColor = 'var(--border)';
+                }, 2000);
+            }
+        } catch (err) {
+            console.error('Copy failed:', err);
+            await navigator.clipboard.writeText(text);
+            alert('Copied as plain text (Formated copy blocked by browser/environment)');
+        }
+    };
+
     if (loading) return <div className="loader" />;
 
     return (
@@ -437,6 +486,26 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                                 No source note associated with this message.
                             </div>
                         )}
+                    </div>
+
+                    <div className="card" style={{ padding: '20px' }}>
+                        <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>Export Actions</h4>
+                        <button 
+                            id="copy-email-btn"
+                            className="btn-secondary" 
+                            onClick={copyFormattedMessage}
+                            style={{ 
+                                width: '100%', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                gap: '8px',
+                                background: 'rgba(255,255,255,0.02)',
+                                padding: '10px'
+                            }}
+                        >
+                            <span>📋</span> Copy as Formatted Email
+                        </button>
                     </div>
 
                     <div className="card" style={{ padding: '20px' }}>
