@@ -183,11 +183,18 @@ async def run_item_analysis_task(
         if "proposals" in data:
             import difflib
             
-            # Fetch ALL pending proposals for this scope ONCE
+            # Fetch ALL pending proposals and APPROVED items for this scope ONCE
             pending_db_proposals = db.query(models.FrameworkProposal).filter(
                 models.FrameworkProposal.persona_id == target_persona_id,
                 models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING
             ).all()
+            
+            # Fetch approved items for de-duplication as well
+            approved_items = []
+            if framework_to_fetch:
+                approved_items = db.query(models.PractiseFrameworkItem).filter(
+                    models.PractiseFrameworkItem.framework_id == framework_to_fetch.id
+                ).all()
             
             # Track newly created proposals in this session for internal de-duplication
             session_proposals = []
@@ -203,8 +210,27 @@ async def run_item_analysis_task(
                 threshold = float(threshold_setting.value) if threshold_setting else 0.8
                 
                 existing_similar = None
+                already_approved = False
                 
-                # Check against existing DB proposals
+                # 1. Check against APPROVED items first (highest priority de-dupe)
+                for item in approved_items:
+                    if item.aspect == aspect:
+                        similarity = difflib.SequenceMatcher(None, value.lower(), item.value.lower()).ratio()
+                        if similarity > threshold:
+                            log_msg = f"[FRAMEWORK] matches APPROVED item ({similarity:.2f}) | Skipping proposal.\n  NEW: {value[:100]}...\n  DB:  {item.value[:100]}..."
+                            print(log_msg)
+                            from ..websockets_manager import ws_manager
+                            await ws_manager.broadcast({
+                                "event": "llm_match",
+                                "data": log_msg
+                            }, db=db)
+                            already_approved = True
+                            break
+                
+                if already_approved:
+                    continue
+
+                # 2. Check against existing PENDING DB proposals
                 for candidate in pending_db_proposals:
                     if candidate.aspect == aspect:
                         similarity = difflib.SequenceMatcher(None, value.lower(), candidate.value.lower()).ratio()
@@ -224,7 +250,7 @@ async def run_item_analysis_task(
                             existing_similar = candidate
                             break
                 
-                # If not in DB, check against what we've already created in this loop
+                # 3. Check against session proposals
                 if not existing_similar:
                     for s_prop in session_proposals:
                         if s_prop.aspect == aspect:
