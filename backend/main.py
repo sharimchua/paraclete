@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Paraclete Backend", lifespan=lifespan)
-manager = None
+
 
 # Include Routers with /api prefix
 app.include_router(references.router, prefix="/api")
@@ -77,14 +77,45 @@ os.makedirs(COMPANION_DIR, exist_ok=True)
 COMPANION_SESSIONS = {} # session_id -> list of file paths
 
 def get_local_ip():
+    """
+    Finds the primary local IP address of the machine.
+    Tries multiple methods for robustness across different network configurations.
+    """
+    # Method 1: Try connecting to an external address (won't actually send data)
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+        # 8.8.8.8 is Google DNS, but we just need any valid public IP
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
-        return ip
+        if ip and not ip.startswith("127."):
+            return ip
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    # Method 2: Use socket.gethostbyname with hostname
+    try:
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        if ip and not ip.startswith("127."):
+            return ip
+    except Exception:
+        pass
+
+    # Method 3: Iterate through all network interfaces (more thorough)
+    try:
+        # This works on many systems including Windows
+        interfaces = socket.getaddrinfo(socket.gethostname(), None)
+        for interface in interfaces:
+            # Check for IPv4 and non-loopback
+            ip = interface[4][0]
+            if "." in ip and not ip.startswith("127."):
+                return ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
 
 @app.post("/companion/session")
 async def create_companion_session():
@@ -112,7 +143,7 @@ async def companion_upload(sid: str, file: UploadFile = File(...)):
     COMPANION_SESSIONS[sid].append(filepath)
     
     # Broadcast to desktop
-    await manager.broadcast({
+    await ws_manager.broadcast({
         "event": "companion_image",
         "data": {
             "session_id": sid,
@@ -847,7 +878,7 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
         })
         return data
     except Exception as e:
-        await manager.broadcast({"event": "llm_error", "data": f"Workflow Error: {e}"})
+        await ws_manager.broadcast({"event": "llm_error", "data": f"Workflow Error: {e}"})
         raise HTTPException(status_code=500, detail=f"Failed to extract entities: {e}")
 
 @app.delete("/notes/{note_id}")
@@ -1209,17 +1240,6 @@ def get_reference_usage(db: Session = Depends(get_db)):
     usage.sort(key=lambda x: x["usage_count"], reverse=True)
     return usage[:10]
 
-# --- WebSocket Support ---
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # Echo for testing
-            await websocket.send_json({"event": "echo", "data": data})
-    except Exception:
-        manager.disconnect(websocket) 
 
  
 # (Removed duplicate get_local_ip)
