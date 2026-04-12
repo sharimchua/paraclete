@@ -669,7 +669,7 @@ const PracticeFramework: React.FC = () => {
                                                 <select 
                                                     className="input-field" 
                                                     style={{ width: 'auto', padding: '4px 8px', fontSize: '0.8rem' }}
-                                                    value={proposal.is_core ? 'core' : (proposal.person_id ? `person-${proposal.person_id}` : (proposal.group_id ? `group-${proposal.group_id}` : (proposal.persona_id || 'core')))}
+                                                    value={proposal.is_core ? 'core' : (proposal.persona_id ? proposal.persona_id.toString() : (proposal.group_id ? `group-${proposal.group_id}` : (proposal.person_id ? `person-${proposal.person_id}` : 'core')))}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         const updated = proposals.map(p => {
@@ -677,6 +677,7 @@ const PracticeFramework: React.FC = () => {
                                                                 if (val === 'core') return { ...p, is_core: true, persona_id: undefined, person_id: undefined, group_id: undefined };
                                                                 if (val.startsWith('person-')) return { ...p, is_core: false, persona_id: undefined, person_id: parseInt(val.split('-')[1]), group_id: undefined };
                                                                 if (val.startsWith('group-')) return { ...p, is_core: false, persona_id: undefined, person_id: undefined, group_id: parseInt(val.split('-')[1]) };
+                                                                // Assume it's a raw persona ID
                                                                 return { ...p, is_core: false, persona_id: parseInt(val), person_id: undefined, group_id: undefined };
                                                             }
                                                             return p;
@@ -685,13 +686,27 @@ const PracticeFramework: React.FC = () => {
                                                     }}
                                                 >
                                                     <option value="core">Global Core</option>
-                                                    {personas.map(p => (
-                                                        <option key={p.id} value={p.id}>Persona: {p.name}</option>
-                                                    ))}
-                                                    <optgroup label="Source Entity Attachments">
-                                                        {proposal.person_id && <option value={`person-${proposal.person_id}`}>Client: (Source)</option>}
-                                                        {proposal.group_id && <option value={`group-${proposal.group_id}`}>Group: (Source)</option>}
-                                                    </optgroup>
+                                                    
+                                                    {proposal.persona_id && (
+                                                        <optgroup label="Persona Framework (Recommended)">
+                                                            <option value={proposal.persona_id}>Persona: {proposal.persona_name || `ID ${proposal.persona_id}`}</option>
+                                                        </optgroup>
+                                                    )}
+
+                                                    {(proposal.group_id || proposal.person_id) && (
+                                                        <optgroup label="Entity Frameworks (Overrides)">
+                                                            {proposal.group_id && <option value={`group-${proposal.group_id}`}>Group: {proposal.group_name || `ID ${proposal.group_id}`}</option>}
+                                                            {proposal.person_id && <option value={`person-${proposal.person_id}`}>Client: {proposal.person_name || `ID ${proposal.person_id}`}</option>}
+                                                        </optgroup>
+                                                    )}
+
+                                                    {!proposal.persona_id && personas.length > 0 && (
+                                                        <optgroup label="Global Personas">
+                                                            {personas.map(p => (
+                                                                <option key={p.id} value={p.id}>Persona: {p.name}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                    )}
                                                 </select>
                                             </div>
                                             <div style={{ display: 'flex', gap: '8px' }}>

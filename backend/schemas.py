@@ -267,6 +267,9 @@ class FrameworkProposalBase(BaseModel):
     persona_id: Optional[int] = None
     person_id: Optional[int] = None
     group_id: Optional[int] = None
+    persona_name: Optional[str] = None
+    person_name: Optional[str] = None
+    group_name: Optional[str] = None
     is_core: bool = False
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
 

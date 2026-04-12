@@ -99,14 +99,28 @@ async def wipe_framework_data(db: Session = Depends(get_db)):
     try:
         # 1. Delete all items
         item_count = db.query(models.PractiseFrameworkItem).delete(synchronize_session=False)
+        
         # 2. Delete all proposals
         prop_count = db.query(models.FrameworkProposal).delete(synchronize_session=False)
+
+        # 3. Find and delete custom framework containers (not core, not persona)
+        # We nullify links first to avoid foreign key issues
+        db.query(models.Person).update({models.Person.custom_framework_id: None}, synchronize_session=False)
+        db.query(models.Group).update({models.Group.custom_framework_id: None}, synchronize_session=False)
+        
+        # Now delete all frameworks that are NOT core and NOT used by a persona
+        persona_fw_ids = [p.framework_id for p in db.query(models.Persona).all() if p.framework_id]
+        fw_to_delete = db.query(models.PractiseFramework).filter(
+            models.PractiseFramework.is_core == False,
+            ~models.PractiseFramework.id.in_(persona_fw_ids)
+        ).delete(synchronize_session=False)
         
         db.commit()
         return {
             "status": "success", 
             "deleted_items": item_count, 
-            "deleted_proposals": prop_count
+            "deleted_proposals": prop_count,
+            "deleted_containers": fw_to_delete
         }
     except Exception as e:
         db.rollback()

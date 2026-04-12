@@ -248,6 +248,19 @@ def update_framework(framework_id: int, framework: schemas.PractiseFrameworkCrea
     if framework.name: db_framework.name = framework.name
     parse_and_sync_items(db, db_framework, framework)
     
+    # Check if this is a custom framework that is now empty
+    db.flush() # Ensure items are updated in relationship
+    if not db_framework.items and not db_framework.is_core:
+        # Check if any persona uses this (Personas frameworks stay even if empty)
+        persona_link = db.query(models.Persona).filter(models.Persona.framework_id == db_framework.id).first()
+        if not persona_link:
+            # It's a custom Person/Group framework. If empty, wipe the container.
+            db.query(models.Person).filter(models.Person.custom_framework_id == db_framework.id).update({"custom_framework_id": None})
+            db.query(models.Group).filter(models.Group.custom_framework_id == db_framework.id).update({"custom_framework_id": None})
+            db.delete(db_framework)
+            db.commit()
+            return {"id": framework_id, "is_core": False, "items": [], "name": "Deleted"} # Return a dummy for the response model then refresh
+
     db.commit()
     db.refresh(db_framework)
     return stitch_framework(db_framework)
@@ -352,6 +365,17 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
                 p.source_owner = f"Group: {source_note.group.name}"
             else:
                 p.source_owner = "Generic"
+        
+        # Hydrate target names
+        if p.persona_id:
+            persona = db.query(models.Persona).filter(models.Persona.id == p.persona_id).first()
+            if persona: p.persona_name = persona.name
+        if p.person_id:
+            person = db.query(models.Person).filter(models.Person.id == p.person_id).first()
+            if person: p.person_name = person.name
+        if p.group_id:
+            group = db.query(models.Group).filter(models.Group.id == p.group_id).first()
+            if group: p.group_name = group.name
             
     return proposals
 
@@ -382,6 +406,10 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
         target_framework = None
         if effective_is_core:
             target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
+        elif effective_persona_id:
+            persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
+            if persona:
+                target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == persona.framework_id).first()
         elif effective_person_id:
             person = db.query(models.Person).filter(models.Person.id == effective_person_id).first()
             if person:
@@ -396,10 +424,6 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
                     group.custom_framework = models.PractiseFramework(name=f"{group.name} Custom", is_core=False)
                     db.commit()
                 target_framework = group.custom_framework
-        elif effective_persona_id:
-            persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
-            if persona:
-                target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == persona.framework_id).first()
         
         if target_framework:
             # Aspect mapping is now handled by the item model's 'aspect' field directly.

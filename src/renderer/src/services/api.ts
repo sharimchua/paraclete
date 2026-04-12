@@ -89,6 +89,9 @@ export interface FrameworkProposal {
     persona_id?: number;
     person_id?: number;
     group_id?: number;
+    persona_name?: string;
+    person_name?: string;
+    group_name?: string;
     is_core: boolean;
     created_at: string;
 }
