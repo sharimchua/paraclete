@@ -98,6 +98,18 @@ const PracticeFramework: React.FC = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        const handleWsMessage = (e: any) => {
+            const { event } = e.detail;
+            if (event === 'framework_proposals_updated') {
+                fetchData();
+            }
+        };
+
+        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        return () => window.removeEventListener('global-ws-message' as any, handleWsMessage);
+    }, []);
+
 
     const resolveProposal = async (id: number, approved: boolean, targetPersonaId?: number, isCore?: boolean, personId?: number, groupId?: number) => {
         try {
@@ -572,19 +584,7 @@ const PracticeFramework: React.FC = () => {
                                     <button 
                                         className="btn-secondary" 
                                         style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', borderColor: '#ef4444' }}
-                                        onClick={async () => {
-                                            if (!window.confirm(`Are you sure you want to reject all ${proposals.length} pending proposals?`)) return;
-                                            setLoading(true);
-                                            try {
-                                                await api.post('/api/framework/proposals/reject-all', {});
-                                                await fetchData();
-                                            } catch (err) {
-                                                console.error('Failed to reject all proposals:', err);
-                                                alert('Failed to reject all.');
-                                            } finally {
-                                                setLoading(false);
-                                            }
-                                        }}
+                                        onClick={rejectAllProposals}
                                     >
                                         🗑️ Reject All
                                     </button>

@@ -37,6 +37,18 @@ const App: React.FC = () => {
     const [isLlmReady, setIsLlmReady] = useState(false);
     const [isWarming, setIsWarming] = useState(false);
 
+    const [isAnalysisRunning, setIsAnalysisRunning] = useState(false);
+    const [pendingProposalsCount, setPendingProposalsCount] = useState(0);
+
+    const fetchProposalsCount = async () => {
+        try {
+            const proposals = await api.get<any[]>('/api/framework/proposals?status=pending');
+            setPendingProposalsCount(proposals.length);
+        } catch (err) {
+            console.error('Failed to fetch proposals count:', err);
+        }
+    };
+
     useEffect(() => {
         // Query if setup is complete
         window.electron.ipcRenderer.invoke('check-setup-status').then((result: boolean) => {
@@ -88,9 +100,17 @@ const App: React.FC = () => {
                         }));
                     }
                 } else if (data.event === 'background_jobs') {
-                    const isAnyJobRunning = data.data.some((j: any) => j.status === 'running');
-                    // We don't force false here because other direct LLM tasks might be running
+                    const jobs = data.data || [];
+                    const isAnyJobRunning = jobs.some((j: any) => j.status === 'running');
+                    const isAnalysisActive = jobs.some((j: any) => 
+                        (j.status === 'running' || j.status === 'pending') && 
+                        (j.name.includes('Analyze') || j.name.includes('Synthesis'))
+                    );
+                    
+                    setIsAnalysisRunning(isAnalysisActive);
                     if (isAnyJobRunning) setIsThinking(true);
+                } else if (data.event === 'framework_proposals_updated') {
+                    fetchProposalsCount();
                 }
                 window.dispatchEvent(new CustomEvent('global-ws-message', { detail: data }));
             } catch (e) {
@@ -108,6 +128,7 @@ const App: React.FC = () => {
             } catch (e) {}
         };
         checkLLM();
+        fetchProposalsCount();
 
         return () => {
             window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
@@ -416,8 +437,29 @@ const App: React.FC = () => {
                     <div 
                         className={`nav-item ${currentView === 'framework' ? 'active' : ''}`}
                         onClick={() => { navigateTo('framework', null, null, null, null, true); }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                        Framework
+                        <span>Framework</span>
+                        {pendingProposalsCount > 0 && (
+                            <span style={{ 
+                                background: '#f59e0b', 
+                                color: '#0f172a', 
+                                fontSize: '0.7rem', 
+                                padding: '1px 6px', 
+                                borderRadius: '6px',
+                                fontWeight: 900,
+                                minWidth: '18px',
+                                textAlign: 'center',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }}>
+                                {pendingProposalsCount}
+                            </span>
+                        )}
+                        {isAnalysisRunning && (
+                            <div className="thinking-dots" style={{ scale: '0.5', marginRight: '-10px' }}>
+                                <span></span><span></span><span></span>
+                            </div>
+                        )}
                     </div>
                 </nav>
 

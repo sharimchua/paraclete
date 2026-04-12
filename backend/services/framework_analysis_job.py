@@ -316,6 +316,7 @@ async def run_item_analysis_task(
             db.query(models.Reference).filter(models.Reference.id == item_id).update({"analyzed_for_framework": True})
         
         db.commit()
+        await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"reason": "analysis_complete"}})
 
     except Exception as e:
         db.rollback()

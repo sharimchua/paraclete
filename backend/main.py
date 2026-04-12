@@ -963,7 +963,7 @@ def export_data(db: Session = Depends(get_db)):
     }
 
 @app.post("/import/")
-def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
+async def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
     # This acts as a single atomic SQL transaction
     try:
         # Clear all existing data
@@ -1033,6 +1033,8 @@ def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
             db.add(db_ref)
         
         db.commit()
+        # Broadcast that everything has changed
+        await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"context": "import"}})
         return {"status": "success", "message": "Atomic import completed with relationship reconstruction"}
     except Exception as e:
         db.rollback()

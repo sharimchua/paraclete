@@ -142,6 +142,8 @@ async def trigger_framework_analysis(
         jid = background_manager.add_job(f"Analyze Reference {rid}", worker_wrapper, item_type="reference", item_id=rid, interrupt_event=True)
         job_ids.append(jid)
 
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"reason": "analysis_started"}})
     return {"status": "started", "job_count": len(job_ids), "job_ids": job_ids}
 
 def stitch_framework(db_fw: models.PractiseFramework):
@@ -387,7 +389,7 @@ class ProposalResolution(BaseModel):
     override_is_core: Optional[bool] = None
 
 @router.post("/proposals/{proposal_id}/resolve")
-def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Session = Depends(get_db)):
+async def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Session = Depends(get_db)):
     approved = resolution.approved
     proposal = db.query(models.FrameworkProposal).filter(models.FrameworkProposal.id == proposal_id).first()
     if not proposal:
@@ -449,13 +451,17 @@ def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db: Sessi
         proposal.status = models.FrameworkProposalStatus.REJECTED
     
     db.commit()
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"reason": "proposal_resolved"}})
     return {"status": "success", "new_status": proposal.status}
 
 @router.post("/proposals/reject-all")
-def reject_all_pending_proposals(db: Session = Depends(get_db)):
+async def reject_all_pending_proposals(db: Session = Depends(get_db)):
     """Convenience method to clear the analysis queue."""
     db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING).update({models.FrameworkProposal.status: models.FrameworkProposalStatus.REJECTED})
     db.commit()
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"reason": "all_rejected"}})
     return {"status": "success"}
 
 @router.get("/custom")

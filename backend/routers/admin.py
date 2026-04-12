@@ -5,9 +5,11 @@ from typing import Optional, List, Dict
 try:
     from ..database import get_db
     from .. import models, schemas
+    from ..websockets_manager import ws_manager
 except ImportError:
     from database import get_db
     import models, schemas
+    from websockets_manager import ws_manager
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -85,6 +87,7 @@ async def reset_framework_analysis(
         db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == models.FrameworkProposalStatus.PENDING).delete(synchronize_session=False)
         
         db.commit()
+        await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"context": "admin_reset"}})
         return {"status": "success", "reset_count": count}
     except Exception as e:
         db.rollback()
@@ -116,6 +119,7 @@ async def wipe_framework_data(db: Session = Depends(get_db)):
         ).delete(synchronize_session=False)
         
         db.commit()
+        await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"context": "admin_wipe"}})
         return {
             "status": "success", 
             "deleted_items": item_count, 

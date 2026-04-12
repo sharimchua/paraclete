@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from './ToastProvider';
+import { api } from '../services/api';
 
 const AdminPanel: React.FC = () => {
     const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error' | 'idle', message: string }>({ type: 'idle', message: '' });
@@ -362,8 +363,7 @@ const AdminPanel: React.FC = () => {
                                     message: 'Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.',
                                     onConfirm: async () => {
                 try {
-                    const res = await fetch('http://127.0.0.1:8000/api/admin/reset-framework-analysis', { method: 'POST' });
-                    const data = await res.json();
+                    const data = await api.post<any>('/admin/reset-framework-analysis', {});
                     toast.success(`Reset flags for ${data.reset_count} items.`);
                 } catch (err) {
                     toast.error('Failed to reset analysis flags.');
@@ -391,8 +391,7 @@ const AdminPanel: React.FC = () => {
                                     variant: 'danger',
                                     onConfirm: async () => {
                 try {
-                    const res = await fetch('http://127.0.0.1:8000/api/admin/wipe-framework', { method: 'POST' });
-                    const data = await res.json();
+                    const data = await api.post<any>('/admin/wipe-framework', {});
                     toast.success(`Wiped ${data.deleted_items} rules.`);
                 } catch (err) {
                     toast.error('Failed to wipe framework.');

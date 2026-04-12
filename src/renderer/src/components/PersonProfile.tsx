@@ -46,8 +46,19 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
 
         fetchAll();
 
+        const handleWsMessage = (e: any) => {
+            const { event } = e.detail;
+            if (event === 'framework_proposals_updated') {
+                fetchAll();
+            }
+        };
+
         window.addEventListener('refresh-profile', fetchAll);
-        return () => window.removeEventListener('refresh-profile', fetchAll);
+        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        return () => {
+            window.removeEventListener('refresh-profile', fetchAll);
+            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+        };
     }, [personId]);
 
     const refreshPerson = () => {

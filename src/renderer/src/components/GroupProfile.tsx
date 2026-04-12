@@ -50,8 +50,18 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
 
     useEffect(() => {
         fetchData();
+        const handleWsMessage = (e: any) => {
+            const { event } = e.detail;
+            if (event === 'framework_proposals_updated') {
+                fetchData();
+            }
+        };
         window.addEventListener('refresh-profile', fetchData);
-        return () => window.removeEventListener('refresh-profile', fetchData);
+        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        return () => {
+            window.removeEventListener('refresh-profile', fetchData);
+            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+        };
     }, [groupId]);
 
     const handleUpdate = async (e: React.FormEvent) => {

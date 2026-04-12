@@ -7,12 +7,15 @@ interface Props {
     personaId?: number;
     title?: string;
     onStarted?: (jobId: string) => void;
+    disabled?: boolean;
 }
 
-const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, personaId, title, onStarted }) => {
+const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, personaId, title, onStarted, disabled }) => {
     const [counts, setCounts] = useState<{ notes: number, messages: number, references: number, total: number } | null>(null);
     const [loading, setLoading] = useState(false);
     const [busy, setBusy] = useState(false);
+    const [isGlobalBusy, setIsGlobalBusy] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(Date.now());
 
     const fetchCounts = async () => {
         setLoading(true);
@@ -37,10 +40,30 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
 
     useEffect(() => {
         fetchCounts();
-    }, [personId, groupId, personaId]);
+    }, [personId, groupId, personaId, lastUpdated]);
+
+    useEffect(() => {
+        const handleWsMessage = (e: any) => {
+            const { event, data } = e.detail;
+            if (event === 'background_jobs') {
+                const jobs = data || [];
+                const isAnyAnalysisRunning = jobs.some((j: any) => 
+                    (j.status === 'running' || j.status === 'pending') && 
+                    (j.name.includes('Analyze') || j.name.includes('Synthesis'))
+                );
+                setIsGlobalBusy(isAnyAnalysisRunning);
+            } else if (event === 'framework_proposals_updated') {
+                // If it was an analysis completion, we should refetch counts
+                setLastUpdated(Date.now());
+            }
+        };
+
+        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        return () => window.removeEventListener('global-ws-message' as any, handleWsMessage);
+    }, []);
 
     const handleAnalyze = async () => {
-        if (!counts || counts.total === 0) return;
+        if (!counts || counts.total === 0 || busy || isGlobalBusy || disabled) return;
         
         setBusy(true);
         try {
@@ -117,11 +140,11 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
 
             <button 
                 className="btn-primary" 
-                style={{ width: '100%', padding: '12px', background: 'var(--primary)', borderRadius: '10px' }}
+                style={{ width: '100%', padding: '12px', background: 'var(--primary)', borderRadius: '10px', opacity: (busy || isGlobalBusy || disabled) ? 0.6 : 1 }}
                 onClick={handleAnalyze}
-                disabled={busy}
+                disabled={busy || isGlobalBusy || disabled}
             >
-                {busy ? 'Starting Job...' : `Analyze ${counts.total} Artifacts`}
+                {busy ? 'Starting Job...' : (isGlobalBusy ? 'Analysis in Progress...' : `Analyze ${counts.total} Artifacts`)}
             </button>
             <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
                 Runs in background. Results appear in Proposals.
