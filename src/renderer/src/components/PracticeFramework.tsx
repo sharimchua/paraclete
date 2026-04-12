@@ -306,55 +306,55 @@ const PracticeFramework: React.FC = () => {
                                     key={p.id} 
                                     className="card" 
                                     onClick={() => setSelectedPersonaId(p.id)}
-                                    style={{ padding: '24px', cursor: 'pointer', border: '1px solid var(--border-color)', position: 'relative', height: '100%' }}
+                                    style={{ padding: '24px', cursor: 'pointer', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%' }}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
                                         <div style={{ 
-                                            width: '40px', 
-                                            height: '40px', 
-                                            background: '#e0f2fe', // Fallback light blue
-                                            borderRadius: '8px', 
+                                            width: '44px', 
+                                            height: '44px', 
+                                            background: 'var(--primary-faded)', 
+                                            borderRadius: '10px', 
                                             display: 'flex', 
                                             alignItems: 'center', 
                                             justifyContent: 'center', 
-                                            fontSize: '1.2rem', 
-                                            color: '#0369a1' 
+                                            fontSize: '1.25rem'
                                         }}>
                                             👤
                                         </div>
                                         <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{p.name}</h3>
-                                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Professional Persona</p>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{p.name}</h3>
+                                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Professional Persona</p>
                                         </div>
                                     </div>
-                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '2.4rem' }}>
-                                        {p.description || "No description provided."}
+
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '2.4rem', lineHeight: '1.4' }}>
+                                        {p.description || "Established professional context and baseline stylistic patterns."}
                                     </p>
                                     
-                                    <div style={{ background: 'rgba(56, 189, 248, 0.03)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase' }}>Active Patterns</div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    <div style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '20px' }}>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Baseline Patterns</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                             {(p.framework as any)?.items?.slice(0, 3).map((item: any) => (
-                                                <div key={item.id} style={{ background: 'white', border: '1px solid var(--border-color)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>
-                                                    {item.aspect}: {(item.value || '').slice(0, 20)}...
+                                                <div key={item.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                                                    <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{item.aspect}:</span> {(item.value || '').slice(0, 20)}...
                                                 </div>
                                             ))}
                                             {((p.framework as any)?.items?.length || 0) > 3 && (
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center', marginLeft: '4px' }}>
-                                                    +{((p.framework as any)?.items?.length || 0) - 3} more
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+                                                    +{((p.framework as any)?.items?.length || 0) - 3}
                                                 </div>
                                             )}
                                             {((p.framework as any)?.items?.length || 0) === 0 && (
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No baseline overrides</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Use core defaults</div>
                                             )}
                                         </div>
                                     </div>
 
                                     <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
-                                        <button className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem' }} onClick={(e) => { e.stopPropagation(); setSelectedPersonaId(p.id); }}>Manage</button>
+                                        <button className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '8px' }} onClick={(e) => { e.stopPropagation(); setSelectedPersonaId(p.id); }}>Manage</button>
                                         <button 
                                             className="btn-secondary" 
-                                            style={{ fontSize: '0.8rem' }} 
+                                            style={{ fontSize: '0.8rem', padding: '8px' }} 
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setConsolidatedView({ title: `${p.name} Consolidated`, text: "Loading..." });
@@ -365,7 +365,7 @@ const PracticeFramework: React.FC = () => {
                                         >
                                             👁️
                                         </button>
-                                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); handleDeletePersona(p.id); }}>🗑️</button>
+                                        <button className="btn-secondary" style={{ color: '#ef4444', padding: '8px' }} onClick={(e) => { e.stopPropagation(); handleDeletePersona(p.id); }}>🗑️</button>
                                     </div>
                                 </div>
                             ))}
@@ -395,52 +395,77 @@ const PracticeFramework: React.FC = () => {
                                     key={`${record.type}-${record.id}`} 
                                     className="card" 
                                     onClick={() => setSelectedCustomRecord(record)}
-                                    style={{ padding: '24px', cursor: 'pointer', border: '1px solid var(--border-color)', position: 'relative' }}
+                                    style={{ padding: '24px', cursor: 'pointer', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%' }}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                                        <div style={{ width: '40px', height: '40px', background: record.type === 'person' ? '#dcfce7' : '#fef9c3', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                                        <div style={{ 
+                                            width: '44px', 
+                                            height: '44px', 
+                                            background: record.type === 'person' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(129, 140, 248, 0.1)', 
+                                            borderRadius: '10px', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            fontSize: '1.25rem' 
+                                        }}>
                                             {record.type === 'person' ? '👤' : '👥'}
                                         </div>
                                         <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{record.name}</h3>
-                                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{record.type === 'person' ? 'Client' : 'Stakeholder Group'}</p>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{record.name}</h3>
+                                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{record.type === 'person' ? 'Client Override' : 'Group Override'}</p>
                                         </div>
                                     </div>
 
-                                    {/* Summary of Overrides */}
-                                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase' }}>Custom Overrides</div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '2.4rem', lineHeight: '1.4' }}>
+                                        Targeted stylistic patterns and principles unique to this {record.type}.
+                                    </p>
+
+                                    <div style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '20px' }}>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Custom Overrides</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                             {record.framework?.items?.slice(0, 3).map((item: any) => (
-                                                <div key={item.id} style={{ background: 'white', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>
-                                                    {item.aspect}: {item.value.slice(0, 20)}...
+                                                <div key={item.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                                                    <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{item.aspect}:</span> {item.value.slice(0, 20)}...
                                                 </div>
                                             ))}
                                             {(record.framework?.items?.length || 0) > 3 && (
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center', marginLeft: '4px' }}>
-                                                    +{(record.framework?.items?.length || 0) - 3} more
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+                                                    +{(record.framework?.items?.length || 0) - 3}
                                                 </div>
                                             )}
                                             {(record.framework?.items?.length || 0) === 0 && (
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No custom overrides</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No unique overrides</div>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                                        <button className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem' }} onClick={(e) => { e.stopPropagation(); setSelectedCustomRecord(record); }}>Manage</button>
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                                        <button className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '8px' }} onClick={(e) => { e.stopPropagation(); setSelectedCustomRecord(record); }}>Manage</button>
                                         <button 
                                             className="btn-secondary" 
-                                            style={{ fontSize: '0.8rem' }} 
+                                            style={{ fontSize: '0.8rem', padding: '8px' }} 
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setConsolidatedView({ title: `${record.name} Consolidated`, text: "Loading..." });
-                                                api.get<{consolidated_text: string}>(`/api/framework/consolidated/${record.type}/${record.id}`).then(res => {
-                                                    setConsolidatedView({ title: `${record.name} Practice Style`, text: res.consolidated_text });
+                                                setConsolidatedView({ title: `${record.name} View`, text: "Loading..." });
+                                                const path = record.type === 'person' ? `/api/framework/consolidated/person/${record.id}` : `/api/framework/consolidated/group/${record.id}`;
+                                                api.get<{consolidated_text: string}>(path).then(res => {
+                                                    setConsolidatedView({ title: `${record.name} Styles`, text: res.consolidated_text });
                                                 });
                                             }}
                                         >
-                                            👁️ Style View
+                                            👁️
+                                        </button>
+                                        <button 
+                                            className="btn-secondary" 
+                                            style={{ color: '#ef4444', padding: '8px' }} 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                if (window.confirm(`Wipe all custom rules for ${record.name}?`)) {
+                                                    api.delete(`/api/framework/${record.framework.id}`).then(() => fetchData());
+                                                }
+                                            }}
+                                        >
+                                            🗑️
                                         </button>
                                     </div>
                                 </div>
@@ -724,14 +749,29 @@ const PracticeFramework: React.FC = () => {
 
             {/* Consolidated View Modal */}
             {consolidatedView && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h2 style={{ margin: 0 }}>{consolidatedView.title}</h2>
-                            <button className="btn-secondary" onClick={() => setConsolidatedView(null)}>Close</button>
+                <div className="modal-overlay" onClick={() => setConsolidatedView(null)}>
+                    <div className="modal-content card" style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{consolidatedView.title}</h2>
+                            <button className="btn-secondary" style={{ padding: '6px 16px' }} onClick={() => setConsolidatedView(null)}>Close</button>
                         </div>
-                        <div style={{ background: 'var(--bg-deep)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                            {consolidatedView.text}
+                        <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+                            <div style={{ 
+                                background: 'var(--bg-deep)', 
+                                padding: '32px', 
+                                borderRadius: '12px', 
+                                border: '1px solid var(--border)', 
+                                whiteSpace: 'pre-wrap', 
+                                fontFamily: 'var(--font-mono)', 
+                                fontSize: '0.95rem', 
+                                lineHeight: '1.7',
+                                color: 'var(--text-primary)'
+                            }}>
+                                {consolidatedView.text}
+                            </div>
+                        </div>
+                        <div style={{ padding: '16px 32px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface-elevated)', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button className="btn-primary" onClick={() => setConsolidatedView(null)}>Got it</button>
                         </div>
                     </div>
                 </div>

@@ -496,6 +496,8 @@ async def get_consolidated_framework(entity_type: str, entity_id: int, db: Sessi
         group_id = entity_id
         group = db.query(models.Group).filter(models.Group.id == entity_id).first()
         if group: persona_id = group.persona_id
+    elif entity_type == "persona":
+        persona_id = entity_id
 
     # We want a structured response, not just text
     # But resolve_framework_items returns text. Let's see if we can get items.
