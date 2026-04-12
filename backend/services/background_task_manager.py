@@ -118,4 +118,11 @@ class BackgroundTaskManager:
             for tid, j in sorted_jobs
         ]
 
+    async def clear_completed_jobs(self):
+        """Removes all non-active jobs from history."""
+        to_delete = [jid for jid, job in self.jobs.items() if job["status"] in ["completed", "error", "cancelled"]]
+        for jid in to_delete:
+            del self.jobs[jid]
+        await self._broadcast_jobs()
+
 background_manager = BackgroundTaskManager()

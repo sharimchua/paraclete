@@ -130,3 +130,9 @@ async def wipe_framework_data(db: Session = Depends(get_db)):
 async def list_background_jobs():
     from ..services.background_task_manager import background_manager
     return background_manager.list_jobs()
+
+@router.post("/jobs/clear")
+async def clear_completed_jobs():
+    from ..services.background_task_manager import background_manager
+    await background_manager.clear_completed_jobs()
+    return {"status": "success"}

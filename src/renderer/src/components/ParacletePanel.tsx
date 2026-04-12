@@ -441,20 +441,39 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                             {isThinking ? 'NEURAL ENGINE ACTIVE' : !isLlmReady ? 'WARMING UP NEURAL ENGINE...' : 'PARACLETE CORE STABLE'}
                         </span>
                     </div>
-                    <button 
-                        onClick={() => setEvents([])}
-                        style={{ 
-                            background: 'rgba(255,255,255,0.05)', 
-                            border: '1px solid rgba(255,255,255,0.1)', 
-                            color: 'rgba(255,255,255,0.4)', 
-                            fontSize: '0.7rem', 
-                            cursor: 'pointer',
-                            padding: '6px 12px',
-                            borderRadius: '6px'
-                        }}
-                    >
-                        CLEAR LOGS
-                    </button>
+                    {(() => {
+                        const handleClear = async () => {
+                            if (activeTab === 'forensics') {
+                                setEvents([]);
+                            } else if (activeTab === 'jobs') {
+                                try {
+                                    await api.post('/api/admin/jobs/clear', {});
+                                } catch (err) {
+                                    console.error('Failed to clear jobs', err);
+                                }
+                            } else if (activeTab === 'chat') {
+                                setChatMessages([]);
+                            }
+                        };
+
+                        return (
+                            <button 
+                                onClick={handleClear}
+                                style={{ 
+                                    background: 'rgba(255,255,255,0.05)', 
+                                    border: '1px solid rgba(255,255,255,0.1)', 
+                                    color: 'rgba(255,255,255,0.4)', 
+                                    fontSize: '0.7rem', 
+                                    cursor: 'pointer',
+                                    padding: '6px 12px',
+                                    borderRadius: '6px'
+                                }}
+                            >
+                                {activeTab === 'jobs' ? 'CLEAR COMPLETED' : 
+                                 activeTab === 'forensics' ? 'CLEAR LOGS' : 'CLEAR CHAT'}
+                            </button>
+                        );
+                    })()}
                 </footer>
 
                 <style>{`
