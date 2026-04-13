@@ -50,9 +50,10 @@ export interface Reference {
     id: number;
     title: string;
     body: string;
-    source_link?: string;
-    type: 'Resource' | 'Protocol' | 'Insight' | 'Principle';
+    url?: string;
+    type: 'CONCEPT' | 'RESOURCE' | 'TECHNIQUE' | 'PATTERN' | 'TEMPLATE';
     tags: Tag[];
+    source_note_id?: number;
 }
 
 export interface PractiseFramework {

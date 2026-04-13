@@ -176,11 +176,11 @@ class Note(NoteBase):
     model_config = ConfigDict(from_attributes=True)
 
 class ReferenceType(str, Enum):
-    CONCEPT = "Concept"
-    RESOURCE = "Resource"
-    TECHNIQUE = "Technique"
-    PATTERN = "Pattern"
-    TEMPLATE = "Template"
+    CONCEPT = "CONCEPT"
+    RESOURCE = "RESOURCE"
+    TECHNIQUE = "TECHNIQUE"
+    PATTERN = "PATTERN"
+    TEMPLATE = "TEMPLATE"
 
 class ReferenceBase(BaseModel):
     title: str
@@ -249,10 +249,10 @@ class Persona(PersonaBase):
     model_config = ConfigDict(from_attributes=True)
 
 class FrameworkProposalStatus(str, Enum):
-    PENDING = "pending"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    SUPERSEDED = "superseded"
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    SUPERSEDED = "SUPERSEDED"
 
 class FrameworkProposalBase(BaseModel):
     source_type: str
@@ -274,6 +274,21 @@ class FrameworkProposalBase(BaseModel):
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
 
 class FrameworkProposal(FrameworkProposalBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ReferenceProposalBase(BaseModel):
+    title: str
+    type: ReferenceType
+    body: Optional[str] = None
+    source_note_id: int
+    status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
+
+class ReferenceProposalCreate(ReferenceProposalBase):
+    pass
+
+class ReferenceProposal(ReferenceProposalBase):
     id: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

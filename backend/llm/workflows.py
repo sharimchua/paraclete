@@ -158,3 +158,83 @@ async def run_reformat(selected_text: str, user_prompt: str, full_context: str, 
     )
 
 
+async def run_reference_extraction(text: str) -> list[dict]:
+    """Extract universal concepts/techniques from a note as potential references."""
+    import re
+    grammar = r'''
+    root   ::= "[" space ( object ( "," space object )* )? "]"
+    object ::= "{" space ( pair ( "," space pair )* )? "}"
+    pair   ::= string ":" space value
+    string ::= "\"" ( [^"] | "\\" ["\\/bfnrt] | "\\u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] )* "\""
+    value  ::= string | number | object | array | "true" | "false" | "null"
+    array  ::= "[" space ( value ( "," space value )* )? "]"
+    number ::= "-"? ([0-9]+ | [0-9]+ "." [0-9]+)
+    space  ::= [ \t\n\r]*
+    '''
+    
+    prompt = templates.extract_references(text)
+    
+    result = await asyncio.to_thread(
+        llm_manager.call,
+        prompt=prompt,
+        system="You are a data extraction engine. Your ONLY output is an array of JSON objects. DO NOT include ANY other text, conversational preamble, or markdown code blocks (```). Start directly with '['.",
+        grammar=grammar,
+        max_tokens=2000
+    )
+    
+    try:
+        # Robustly extract JSON if there's any wrapping text
+        json_str = result.strip()
+        print(f"FORENSIC: Extraction result length: {len(json_str)}")
+        
+        # 1. Try to find the JSON array directly
+        match = re.search(r'(\[[\s\S]*?\])', json_str, re.DOTALL)
+        if match:
+            print("FORENSIC: Found potential array via regex Match 1")
+            try:
+                data = json.loads(match.group(1))
+                if isinstance(data, list):
+                    print(f"FORENSIC: Successfully parsed array via Match 1. Count: {len(data)}")
+                    return data
+            except Exception as e:
+                print(f"FORENSIC: Match 1 parse failed: {e}")
+        
+        # 2. Try to find anything that looks like a JSON array by looking for balanced brackets
+        if "[" in json_str and "]" in json_str:
+            print("FORENSIC: Attempting bracket matching fallback")
+            try:
+                start = json_str.find("[")
+                end = json_str.rfind("]") + 1
+                data = json.loads(json_str[start:end])
+                if isinstance(data, list):
+                    print(f"FORENSIC: Successfully parsed array via bracket matching. Count: {len(data)}")
+                    return data
+            except Exception as e:
+                print(f"FORENSIC: Bracket matching parse failed: {e}")
+            
+        # 3. Fallback: try to find individual objects and build an array
+        print("FORENSIC: Attempting individual object extraction fallback")
+        obj_matches = re.findall(r'(\{\s*"title"\s*:[\s\S]*?\})', json_str)
+        if obj_matches:
+            print(f"FORENSIC: Found {len(obj_matches)} potential objects via regex")
+            found_objs = []
+            for om in obj_matches:
+                try:
+                    obj = json.loads(om)
+                    if "title" in obj:
+                        found_objs.append(obj)
+                except:
+                    continue
+            if found_objs:
+                print(f"FORENSIC: Successfully assembled {len(found_objs)} objects")
+                return found_objs
+
+        print(f"FORENSIC ERROR: No valid JSON structures found in model output.")
+        print(f"FORENSIC RAW: {json_str[:500]}...")
+        return []
+    except Exception as e:
+        print(f"DEBUG: Failed to parse reference extraction JSON: {e}")
+        print(f"DEBUG: Raw result was: {result[:2000]}")
+        return []
+
+

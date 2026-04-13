@@ -26,6 +26,44 @@ async def create_reference(reference: schemas.ReferenceCreate, db: Session = Dep
     
     return db_ref
 
+@router.get("/proposals", response_model=List[schemas.ReferenceProposal])
+async def get_reference_proposals(
+    note_id: Optional[int] = None,
+    status: str = "pending",
+    db: Session = Depends(get_db)
+):
+    # Convert string status to Enum for SQL query
+    try:
+        status_enum = models.FrameworkProposalStatus[status.upper()]
+    except:
+        status_enum = models.FrameworkProposalStatus.PENDING
+        
+    query = db.query(models.ReferenceProposal).filter(models.ReferenceProposal.status == status_enum)
+    if note_id:
+        query = query.filter(models.ReferenceProposal.source_note_id == note_id)
+    
+    proposals = query.all()
+    print(f"FORENSIC: Fetched {len(proposals)} proposals for note_id={note_id}, status={status}")
+    return proposals
+
+@router.get("/suggest", response_model=List[schemas.Reference])
+async def suggest_references_endpoint(
+    query: Optional[str] = None, 
+    note_id: Optional[int] = None, 
+    person_id: Optional[int] = None, 
+    group_id: Optional[int] = None,
+    limit: int = 5,
+    db: Session = Depends(get_db)
+):
+    return await suggest_references(
+        db=db,
+        query=query,
+        note_id=note_id,
+        person_id=person_id,
+        group_id=group_id,
+        limit=limit
+    )
+
 @router.get("/", response_model=List[schemas.Reference])
 def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.Reference).offset(skip).limit(limit).all()
@@ -70,23 +108,125 @@ def delete_reference(reference_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success"}
 
-@router.get("/suggest", response_model=List[schemas.Reference])
-async def suggest_references_endpoint(
-    query: Optional[str] = Query(None), 
-    note_id: Optional[int] = Query(None), 
-    person_id: Optional[int] = Query(None), 
-    group_id: Optional[int] = Query(None),
-    limit: int = 5,
-    db: Session = Depends(get_db)
-):
-    return await suggest_references(
-        db=db,
-        query=query,
-        note_id=note_id,
-        person_id=person_id,
-        group_id=group_id,
-        limit=limit
+async def extract_references_task(note_id: int):
+    """The actual background task for reference extraction."""
+    from ..database import SessionLocal
+    from ..websockets_manager import ws_manager
+    from ..services.background_task_manager import background_manager
+    
+    db = SessionLocal()
+    try:
+        db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+        if not db_note:
+            print(f"FORENSIC ERROR: Note #{note_id} not found in database.")
+            return
+            
+        text = f"{db_note.title}\n{db_note.cleaned_text or db_note.raw_capture or ''}"
+        
+        await ws_manager.broadcast({"event": "llm_start", "data": {"type": "reference_extraction", "prompt": "Extracting Professional Concepts"}})
+        
+        print(f"FORENSIC: Running extraction for Note #{note_id}...")
+        raw_proposals = await llm.workflows.run_reference_extraction(text)
+        print(f"FORENSIC: LLM returned {len(raw_proposals)} raw proposals.")
+        
+        # Deduplication logic
+        existing_refs = db.query(models.Reference).all()
+        existing_proposals = db.query(models.ReferenceProposal).filter(models.ReferenceProposal.source_note_id == note_id).all()
+        
+        batch_titles = set()
+        added_count = 0
+        for prop in raw_proposals:
+            title_lower = prop['title'].strip().lower()
+            
+            # Skip if we already added it in this specific batch
+            if title_lower in batch_titles:
+                continue
+            
+            if any(r.title.lower() == title_lower for r in existing_refs):
+                print(f"FORENSIC SKIP: '{prop['title']}' already exists in Reference Library.")
+                continue
+            if any(p.title.lower() == title_lower for p in existing_proposals):
+                print(f"FORENSIC SKIP: '{prop['title']}' already exists as a Proposal for this note.")
+                continue
+            
+            batch_titles.add(title_lower)
+            new_prop = models.ReferenceProposal(
+                title=prop['title'],
+                type=prop['type'].upper(), # Force UPPERCASE to match DB Enum
+                body=prop.get('body'),
+                source_note_id=note_id,
+                status=models.FrameworkProposalStatus.PENDING
+            )
+            db.add(new_prop)
+            added_count += 1
+            print(f"FORENSIC ADD: Added proposal '{prop['title']}' to session.")
+        
+        db.commit()
+        print(f"FORENSIC SUCCESS: Committed {added_count} new proposals.")
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_extraction", "count": added_count}})
+        
+    except Exception as e:
+        print(f"DEBUG: Extraction task error: {e}")
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
+    finally:
+        db.close()
+
+@router.post("/extract-from-note/{note_id}")
+async def extract_references_from_note(note_id: int, db: Session = Depends(get_db)):
+    from ..services.background_task_manager import background_manager
+    
+    # Check if a job for this note is already running
+    active_jobs = background_manager.list_jobs()
+    job_name = f"Extract Concepts: Note #{note_id}"
+    if any(j["name"] == job_name and j["status"] in ["pending", "running"] for j in active_jobs):
+        raise HTTPException(status_code=400, detail="Extraction already in progress for this note.")
+
+    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not db_note:
+        raise HTTPException(status_code=404, detail="Note not found")
+        
+    background_manager.add_job(job_name, extract_references_task, note_id)
+    return {"status": "queued", "job_name": job_name}
+
+@router.post("/proposals/{proposal_id}/accept")
+async def accept_reference_proposal(proposal_id: int, db: Session = Depends(get_db)):
+    proposal = db.query(models.ReferenceProposal).filter(models.ReferenceProposal.id == proposal_id).first()
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    # Create the actual reference
+    new_ref = models.Reference(
+        title=proposal.title,
+        type=proposal.type,
+        body=proposal.body,
+        source_note_id=proposal.source_note_id
     )
+    db.add(new_ref)
+    db.flush()
+    
+    # Link back to note
+    note_ref = models.note_references.insert().values(
+        note_id=proposal.source_note_id,
+        reference_id=new_ref.id
+    )
+    db.execute(note_ref)
+    
+    # Mark proposal as accepted
+    proposal.status = models.FrameworkProposalStatus.ACCEPTED
+    db.commit()
+    db.refresh(new_ref)
+    
+    return new_ref
+
+@router.post("/proposals/{proposal_id}/reject")
+async def reject_reference_proposal(proposal_id: int, db: Session = Depends(get_db)):
+    proposal = db.query(models.ReferenceProposal).filter(models.ReferenceProposal.id == proposal_id).first()
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    proposal.status = models.FrameworkProposalStatus.REJECTED
+    db.commit()
+    return {"status": "rejected"}
 
 async def suggest_references(
     db: Session,

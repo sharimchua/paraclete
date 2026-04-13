@@ -123,11 +123,11 @@ class Note(Base):
     embedding = relationship("NoteEmbedding", back_populates="note", cascade="all, delete-orphan", uselist=False)
 
 class ReferenceType(str, enum.Enum):
-    CONCEPT = "Concept"
-    RESOURCE = "Resource"
-    TECHNIQUE = "Technique"
-    PATTERN = "Pattern"
-    TEMPLATE = "Template"
+    CONCEPT = "CONCEPT"
+    RESOURCE = "RESOURCE"
+    TECHNIQUE = "TECHNIQUE"
+    PATTERN = "PATTERN"
+    TEMPLATE = "TEMPLATE"
 
 class Reference(Base):
     __tablename__ = "references"
@@ -237,10 +237,10 @@ class Persona(Base):
     framework = relationship("PractiseFramework")
 
 class FrameworkProposalStatus(str, enum.Enum):
-    PENDING = "pending"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    SUPERSEDED = "superseded"
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    SUPERSEDED = "SUPERSEDED"
 
 class FrameworkProposal(Base):
     __tablename__ = "framework_proposals"
@@ -262,6 +262,18 @@ class FrameworkProposal(Base):
     persona = relationship("Persona")
     person = relationship("Person")
     group = relationship("Group")
+
+class ReferenceProposal(Base):
+    __tablename__ = "reference_proposals"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    type = Column(Enum(ReferenceType))
+    body = Column(Text, nullable=True)
+    source_note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"))
+    status = Column(Enum(FrameworkProposalStatus), default=FrameworkProposalStatus.PENDING)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    source_note = relationship("Note", backref="reference_proposals")
 
 class Setting(Base):
     __tablename__ = "settings"

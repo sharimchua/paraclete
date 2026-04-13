@@ -293,3 +293,29 @@ The user wants to restructure a specific part of their text.
 
 ### RESTRUCTURED TEXT:"""
 
+def extract_references(text: str) -> str:
+    return f"""Analyze the provided session note to extract universal professional concepts, techniques, resources or patterns that could be added to a Reference Library.
+
+### INSTRUCTIONS:
+1. Identify high-level concepts, techniques, resources, or insights.
+2. For each item:
+   - TITLE: A short, scannable name for the concept.
+   - TYPE: One of [CONCEPT, RESOURCE, TECHNIQUE, PATTERN, TEMPLATE] (All uppercase).
+   - BODY: A concise (2-4 sentence) summary of the concept derived from the text.
+3. ADHERENCE: Do not extract specific session details (e.g. specific dates or names). Extract the *underlying professional knowledge*.
+4. Return VALID JSON array of objects.
+
+### SESSION NOTE:
+{text}
+
+### OUTPUT FORMAT:
+[
+  {{
+    "title": "Somatic Anchoring",
+    "type": "Technique",
+    "body": "A method of grounding the nervous system by focusing on physical sensations of contact with the chair or floor."
+  }}
+]
+
+JSON:"""
+
