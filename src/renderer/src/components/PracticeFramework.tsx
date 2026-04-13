@@ -699,11 +699,11 @@ const PracticeFramework: React.FC = () => {
                                                         const val = e.target.value;
                                                         const updated = proposals.map(p => {
                                                             if (p.id === proposal.id) {
-                                                                if (val === 'core') return { ...p, is_core: true, persona_id: undefined, person_id: undefined, group_id: undefined };
-                                                                if (val.startsWith('person-')) return { ...p, is_core: false, persona_id: undefined, person_id: parseInt(val.split('-')[1]), group_id: undefined };
-                                                                if (val.startsWith('group-')) return { ...p, is_core: false, persona_id: undefined, person_id: undefined, group_id: parseInt(val.split('-')[1]) };
+                                                                if (val === 'core') return { ...p, is_core: true, persona_id: null as any, person_id: null as any, group_id: null as any };
+                                                                if (val.startsWith('person-')) return { ...p, is_core: false, persona_id: null as any, person_id: parseInt(val.split('-')[1]), group_id: null as any };
+                                                                if (val.startsWith('group-')) return { ...p, is_core: false, persona_id: null as any, person_id: null as any, group_id: parseInt(val.split('-')[1]) };
                                                                 // Assume it's a raw persona ID
-                                                                return { ...p, is_core: false, persona_id: parseInt(val), person_id: undefined, group_id: undefined };
+                                                                return { ...p, is_core: false, persona_id: parseInt(val), person_id: null as any, group_id: null as any };
                                                             }
                                                             return p;
                                                         });

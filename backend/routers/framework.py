@@ -411,13 +411,7 @@ async def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db:
 
         # Determine which framework to update
         target_framework = None
-        if effective_is_core:
-            target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
-        elif effective_persona_id:
-            persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
-            if persona:
-                target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == persona.framework_id).first()
-        elif effective_person_id:
+        if effective_person_id:
             person = db.query(models.Person).filter(models.Person.id == effective_person_id).first()
             if person:
                 if not person.custom_framework_id:
@@ -431,6 +425,12 @@ async def resolve_proposal(proposal_id: int, resolution: ProposalResolution, db:
                     group.custom_framework = models.PractiseFramework(name=f"{group.name} Custom", is_core=False)
                     db.commit()
                 target_framework = group.custom_framework
+        elif effective_persona_id:
+            persona = db.query(models.Persona).filter(models.Persona.id == effective_persona_id).first()
+            if persona:
+                target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == persona.framework_id).first()
+        elif effective_is_core:
+            target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
         
         if target_framework:
             # Aspect mapping is now handled by the item model's 'aspect' field directly.
