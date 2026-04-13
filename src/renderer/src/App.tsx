@@ -410,20 +410,18 @@ const App: React.FC = () => {
                 <div 
                     className="logo-area" 
                     onClick={() => setIsParacletePanelOpen(true)}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
                 >
-                    <div onClick={(e) => { e.stopPropagation(); navigateTo('dashboard', null, null, null, null, true); }} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
-                        <h1 style={{ 
-                            margin: 0, 
-                            fontSize: '1.2rem', 
-                            letterSpacing: '2px',
-                            fontWeight: 800,
-                            background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                        }}>PARACLETE</h1>
-                    </div>
+                    <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
+                    <h1 style={{ 
+                        margin: 0, 
+                        fontSize: '1.2rem', 
+                        letterSpacing: '2px',
+                        fontWeight: 800,
+                        background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                    }}>PARACLETE</h1>
                 </div>
                 
                 <nav className="nav-section">
