@@ -382,6 +382,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             setCompanionImages([]);
             if (setIsDirty) setIsDirty(true);
             setInterstitial(null);
+            setIsCompanionModalOpen(false);
         } catch (err) {
             console.error('Companion OCR failed:', err);
             setInterstitial(null);
