@@ -291,8 +291,9 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 group_id: groupId || currentNote?.group_id || null
             };
 
-            if (noteId) {
-                note = await api.patch<Note>(`/notes/${noteId}`, noteData);
+            if (noteId || localNoteId) {
+                const nid = noteId || localNoteId;
+                note = await api.patch<Note>(`/notes/${nid}`, noteData);
             } else {
                 note = await api.post<Note>('/notes/', noteData);
             }
@@ -315,6 +316,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             }
 
             if (setIsDirty) setIsDirty(false);
+            setLoading(false);
             return note;
         } catch (err) {
             console.error('Save failed:', err);
@@ -631,8 +633,21 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button
+                                            className="btn-secondary"
+                                            onClick={async () => {
+                                                setLoading(true);
+                                                await handleSaveNote();
+                                                setLoading(false);
+                                                onComplete();
+                                            }}
+                                            style={{ padding: '8px 20px', borderRadius: '8px' }}
+                                        >
+                                            💾 Save Draft
+                                        </button>
+                                        <button
                                             className="btn-primary"
                                             onClick={async () => {
+                                                setLoading(true);
                                                 const savedNote = await handleSaveNote();
                                                 const nid = savedNote?.id || localNoteId || noteId;
                                                 if (nid) {

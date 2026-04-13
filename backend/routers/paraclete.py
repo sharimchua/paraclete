@@ -38,7 +38,7 @@ async def paraclete_chat(
     pending_proposals = db.query(models.FrameworkProposal).filter(models.FrameworkProposal.status == "PENDING").count()
     
     # Get active entities (last 3 accessed/created)
-    recent_notes = db.query(models.Note).order_by(models.Note.updated_at.desc()).limit(3).all()
+    recent_notes = db.query(models.Note).order_by(models.Note.created_at.desc()).limit(3).all()
     recent_context = "\n".join([f"- Note: {n.title} ({n.date})" for n in recent_notes])
 
     system_prompt = f"""You are Paraclete, an intelligent AI companion for professional practitioners.
