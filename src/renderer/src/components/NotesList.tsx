@@ -15,7 +15,16 @@ const NotesList: React.FC<Props> = ({ onSelectNote }) => {
         setLoading(true);
         try {
             const data = await api.get<Note[]>(`/notes/?limit=20&search=${encodeURIComponent(searchTerm)}`);
-            setNotes(data);
+            // Prioritize Draft (Clean/Capture/Prepare) over Published
+            const sorted = [...data].sort((a, b) => {
+                const aIsDraft = a.stage !== 'Published' && a.stage !== 'Archived';
+                const bIsDraft = b.stage !== 'Published' && b.stage !== 'Archived';
+                if (aIsDraft && !bIsDraft) return -1;
+                if (!aIsDraft && bIsDraft) return 1;
+                // If both same draft-status, sort by date descending
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+            });
+            setNotes(sorted);
         } catch (err) {
             console.error('Failed to fetch notes', err);
         } finally {
@@ -61,7 +70,10 @@ const NotesList: React.FC<Props> = ({ onSelectNote }) => {
                                     padding: '16px', 
                                     background: 'var(--bg-surface)', 
                                     borderRadius: '10px',
-                                    borderLeft: `4px solid ${note.stage === 'Clean' ? 'var(--primary)' : 'var(--secondary)'}`,
+                                    borderLeft: `4px solid ${
+                                        note.stage === 'Published' ? 'rgba(255,255,255,0.1)' : 
+                                        (note.stage === 'Clean' ? 'var(--primary)' : '#f59e0b')
+                                    }`,
                                     cursor: 'pointer',
                                     transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                                 }}

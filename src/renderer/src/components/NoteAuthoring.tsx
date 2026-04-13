@@ -39,7 +39,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     const [existingTaxonomy, setExistingTaxonomy] = useState<any[]>([]);
     const [sessionBrief, setSessionBrief] = useState<string>('');
     const [isBriefing, setIsBriefing] = useState(false);
-    const [isLlmReady, setIsLlmReady] = useState(true);
+    const [isLlmReady, setIsLlmReady] = useState(false);
+    const [localNoteId, setLocalNoteId] = useState<number | null>(null);
     const briefingFetchedFor = useRef<string | null>(null);
 
     // Companion State
@@ -270,10 +271,19 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 : new Date().toISOString().split('T')[0];
 
             let note: Note;
+            // Map the UI stage to the DB stage
+            // We now default to 'Clean' (Draft) instead of 'Published'
+            let dbStage = stage === 'Refine' ? 'Clean' : (stage === 'Capture' ? 'Capture' : 'Prepare');
+            
+            // If the note was already published, keep it published unless we explicitly change it
+            if (currentNote?.stage === 'Published') {
+                dbStage = 'Published';
+            }
+
             const noteData = {
                 title: title || `Session ${finalDate}`,
                 date: finalDate,
-                stage: stage === 'Refine' ? 'Published' : (stage === 'Capture' ? 'Capture' : 'Prepare'),
+                stage: dbStage,
                 raw_capture: rawText,
                 cleaned_text: currentNote?.cleaned_text || (rawText ? `Draft: ${rawText.substring(0, 100)}...` : ''),
                 session_brief: sessionBrief,
@@ -287,6 +297,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 note = await api.post<Note>('/notes/', noteData);
             }
 
+            setLocalNoteId(note.id);
             // 2. Link tags
             // First, clear old tags if updating? 
             // In a real app we'd need a way to clear them. For now, let's just add new ones.
@@ -303,15 +314,13 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 });
             }
 
-            // 3. Then publish (which triggers embedding)
-            await api.post(`/notes/${note.id}/publish`, {});
             if (setIsDirty) setIsDirty(false);
-            onComplete();
+            return note;
         } catch (err) {
             console.error('Save failed:', err);
             setIsRefining(false);
-        } finally {
-            setIsRefining(false);
+            setLoading(false);
+            return null;
         }
     };
 
@@ -620,14 +629,37 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Refinement & Structure</h2>
                                         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Verify metadata and polish the structured record.</p>
                                     </div>
-                                    <button 
-                                        className="btn-secondary" 
-                                        onClick={() => handleStartRefine(true)}
-                                        disabled={isRefining || !rawText.trim()}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}
-                                    >
-                                        <span>🔍</span> {isRefining ? 'Analysing...' : 'Re-Analyse Capture'}
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={async () => {
+                                                const savedNote = await handleSaveNote();
+                                                const nid = savedNote?.id || localNoteId || noteId;
+                                                if (nid) {
+                                                    await api.patch(`/notes/${nid}`, { stage: 'Published' });
+                                                    onComplete();
+                                                }
+                                            }}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                                border: 'none',
+                                                padding: '8px 20px',
+                                                borderRadius: '8px',
+                                                fontWeight: 700,
+                                                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+                                            }}
+                                        >
+                                            🚀 Finish & Publish
+                                        </button>
+                                        <button 
+                                            className="btn-secondary" 
+                                            onClick={() => handleStartRefine(true)}
+                                            disabled={isRefining || !rawText.trim()}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}
+                                        >
+                                            <span>🔍</span> {isRefining ? 'Analysing...' : 'Re-Analyse Capture'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', flexGrow: 1 }}>
@@ -680,8 +712,6 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                 }}
                                             />
                                         </div>
-
-                                        {/* Date moved to global header */}
 
                                         <div className="card" style={{ padding: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                             <div>
