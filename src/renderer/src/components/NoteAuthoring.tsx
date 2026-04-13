@@ -11,11 +11,12 @@ interface Props {
     initialDate?: string;
     noteId?: number; // Added for editing
     onComplete: () => void;
+    setIsDirty?: (dirty: boolean) => void;
 }
 
 type Stage = 'Prepare' | 'Capture' | 'Refine';
 
-const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId, onComplete }) => {
+const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId, onComplete, setIsDirty }) => {
     const [stage, setStage] = useState<Stage>('Prepare');
     const [person, setPerson] = useState<Person | null>(null);
     const [group, setGroup] = useState<any | null>(null);
@@ -198,6 +199,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 date: sessionDate,
                 tags: selectedTags
             } as any);
+            if (setIsDirty) setIsDirty(true);
 
             // Extract entities (Transient)
             const metadata = await api.post<any>('/analysis/extract', {
@@ -241,12 +243,14 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             console.error('Failed to suggest title:', err);
         } finally {
             setIsSuggestingTitle(false);
+            if (setIsDirty) setIsDirty(true);
         }
     };
 
     const handleUpdateNoteText = (val: string) => {
         if (currentNote) {
             setCurrentNote({ ...currentNote, cleaned_text: val });
+            if (setIsDirty) setIsDirty(true);
         }
     };
 
@@ -293,6 +297,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
             // 3. Then publish (which triggers embedding)
             await api.post(`/notes/${note.id}/publish`, {});
+            if (setIsDirty) setIsDirty(false);
             onComplete();
         } catch (err) {
             console.error('Save failed:', err);
@@ -310,6 +315,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     const executeDelete = async () => {
         try {
             await api.delete(`/notes/${noteId}`);
+            if (setIsDirty) setIsDirty(false);
             onComplete();
         } catch (err) {
             console.error('Delete failed:', err);
@@ -335,6 +341,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             const endpoint = type === 'ocr' ? '/process/ocr' : '/process/dictate';
             const data = await api.postForm<{ text: string }>(endpoint, formData);
             setRawText(prev => prev + (prev ? "\n\n" : "") + data.text);
+            if (setIsDirty) setIsDirty(true);
         } catch (err) {
             console.error(`${type.toUpperCase()} failed:`, err);
             alert(`${type.toUpperCase()} processing failed. Check Developer Logs.`);
@@ -364,6 +371,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             setIsCompanionModalOpen(false);
             setCompanionSessionId(null);
             setCompanionImages([]);
+            if (setIsDirty) setIsDirty(true);
         } catch (err) {
             console.error('Companion OCR failed:', err);
             alert('OCR processing failed. Check Developer Logs.');
@@ -570,7 +578,10 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                             autoFocus
                             placeholder="Start typing your session notes..."
                             value={rawText}
-                            onChange={(e) => setRawText(e.target.value)}
+                            onChange={(e) => {
+                                setRawText(e.target.value);
+                                if (setIsDirty) setIsDirty(true);
+                            }}
                             style={{
                                 flexGrow: 1,
                                 background: 'var(--bg-surface)',
@@ -646,7 +657,10 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                 type="text"
                                                 placeholder="Enter a title..."
                                                 value={title}
-                                                onChange={(e) => setTitle(e.target.value)}
+                                                onChange={(e) => {
+                                                    setTitle(e.target.value);
+                                                    if (setIsDirty) setIsDirty(true);
+                                                }}
                                                 style={{
                                                     width: '100%',
                                                     padding: '8px',
@@ -685,7 +699,10 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                                 <strong>{t.key}:</strong> {t.value}
                                                                 <span
                                                                     style={{ cursor: 'pointer', opacity: 0.8 }}
-                                                                    onClick={() => setSelectedTags(prev => prev.filter(v => v.value !== t.value || v.key !== t.key))}
+                                                                    onClick={() => {
+                                                                        setSelectedTags(prev => prev.filter(v => v.value !== t.value || v.key !== t.key));
+                                                                        if (setIsDirty) setIsDirty(true);
+                                                                    }}
                                                                 >
                                                                     &times;
                                                                 </span>
@@ -702,7 +719,10 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                     {suggestedTags.filter(st => !selectedTags.some(sel => sel.key === st.key && sel.value === st.value)).map((t, i) => (
                                                         <div
                                                             key={i}
-                                                            onClick={() => setSelectedTags(prev => [...prev, t])}
+                                                            onClick={() => {
+                                                                setSelectedTags(prev => [...prev, t]);
+                                                                if (setIsDirty) setIsDirty(true);
+                                                            }}
                                                             style={{
                                                                 background: 'var(--primary-faded)',
                                                                 color: 'var(--primary)',
@@ -731,10 +751,12 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                                 const [k, v] = val.split(':').map(s => s.trim());
                                                                 if (k && v) {
                                                                     setSelectedTags(prev => [...prev, { key: k, value: v }]);
+                                                                    if (setIsDirty) setIsDirty(true);
                                                                     (e.target as HTMLInputElement).value = '';
                                                                 }
                                                             } else if (val) {
                                                                 setSelectedTags(prev => [...prev, { key: 'General', value: val }]);
+                                                                if (setIsDirty) setIsDirty(true);
                                                                 (e.target as HTMLInputElement).value = '';
                                                             }
                                                         }

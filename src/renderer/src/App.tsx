@@ -19,6 +19,7 @@ import MessagesList from './components/MessagesList';
 import MessageAuthoring from './components/MessageAuthoring';
 import PersonaSelectionModal from './components/PersonaSelectionModal';
 import EntitySelectionModal from './components/EntitySelectionModal';
+import ConfirmationModal from './components/ConfirmationModal';
 import { api } from './services/api';
 
 const App: React.FC = () => {
@@ -39,6 +40,9 @@ const App: React.FC = () => {
 
     const [isAnalysisRunning, setIsAnalysisRunning] = useState(false);
     const [pendingProposalsCount, setPendingProposalsCount] = useState(0);
+    const [isDirty, setIsDirty] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+    const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
     const fetchProposalsCount = async () => {
         try {
@@ -146,52 +150,75 @@ const App: React.FC = () => {
         noteId: number | null = null, 
         date: string | null = null, 
         resetHistory: boolean = false,
-        messageId: number | null = null
+        messageId: number | null = null,
+        ignoreDirty: boolean = false
     ) => {
-        setCurrentView(view);
-        setSelectedPersonId(personId);
-        setSelectedGroupId(groupId);
-        setSelectedNoteId(noteId);
-        setSelectedMessageId(messageId);
-        setInitialNoteDate(date);
-        
-        if (resetHistory) {
-            setViewHistory([view]);
+        const performNavigation = () => {
+            setCurrentView(view);
+            setSelectedPersonId(personId);
+            setSelectedGroupId(groupId);
+            setSelectedNoteId(noteId);
+            setSelectedMessageId(messageId);
+            setInitialNoteDate(date);
+            setIsDirty(false);
+            setPendingNavigation(null);
+            setShowDiscardConfirm(false);
+            
+            if (resetHistory) {
+                setViewHistory([view]);
+            } else {
+                setViewHistory(prev => {
+                    if (prev[prev.length - 1] === view) return prev;
+                    return [...prev, view];
+                });
+            }
+        };
+
+        if (isDirty && !ignoreDirty && view !== currentView) {
+            setPendingNavigation(() => performNavigation);
+            setShowDiscardConfirm(true);
         } else {
-            // Only push to history if it's different (simple prevent duplicates)
-            setViewHistory(prev => {
-                if (prev[prev.length - 1] === view) return prev;
-                return [...prev, view];
-            });
+            performNavigation();
         }
     };
 
-    const goBack = () => {
-        if (viewHistory.length <= 1) {
-            // If we can't go back, at least return to dashboard
-            setCurrentView('dashboard');
-            setSelectedPersonId(null);
-            setSelectedGroupId(null);
-            setSelectedNoteId(null);
-            setViewHistory(['dashboard']);
-            return;
-        }
-        
-        const newHistory = [...viewHistory];
-        newHistory.pop(); // Remove current view
-        const previousView = newHistory[newHistory.length - 1];
-        
-        setViewHistory(newHistory);
-        setCurrentView(previousView);
-        
-        // Reset specific context if moving away from detail views
-        if (previousView === 'dashboard' || previousView === 'notes' || previousView === 'tags' || previousView === 'admin' || 
-           previousView === 'messages' || (previousView === 'persons' && !selectedPersonId) || (previousView === 'groups' && !selectedGroupId)) {
-            setSelectedPersonId(null);
-            setSelectedGroupId(null);
-            setSelectedNoteId(null);
-            setSelectedMessageId(null);
-            setInitialNoteDate(null);
+    const goBack = (ignoreDirty: boolean = false) => {
+        const performBack = () => {
+            setIsDirty(false);
+            setShowDiscardConfirm(false);
+            setPendingNavigation(null);
+
+            if (viewHistory.length <= 1) {
+                setCurrentView('dashboard');
+                setSelectedPersonId(null);
+                setSelectedGroupId(null);
+                setSelectedNoteId(null);
+                setViewHistory(['dashboard']);
+                return;
+            }
+            
+            const newHistory = [...viewHistory];
+            newHistory.pop();
+            const previousView = newHistory[newHistory.length - 1];
+            
+            setViewHistory(newHistory);
+            setCurrentView(previousView);
+            
+            if (previousView === 'dashboard' || previousView === 'notes' || previousView === 'tags' || previousView === 'admin' || 
+               previousView === 'messages' || (previousView === 'persons' && !selectedPersonId) || (previousView === 'groups' && !selectedGroupId)) {
+                setSelectedPersonId(null);
+                setSelectedGroupId(null);
+                setSelectedNoteId(null);
+                setSelectedMessageId(null);
+                setInitialNoteDate(null);
+            }
+        };
+
+        if (isDirty && !ignoreDirty) {
+            setPendingNavigation(() => performBack);
+            setShowDiscardConfirm(true);
+        } else {
+            performBack();
         }
     };
 
@@ -226,7 +253,8 @@ const App: React.FC = () => {
                     personId={selectedPersonId || undefined} 
                     groupId={selectedGroupId || undefined}
                     initialDate={initialNoteDate || undefined}
-                    onComplete={() => goBack()} 
+                    onComplete={() => goBack(true)} 
+                    setIsDirty={setIsDirty}
                 />
             );
         }
@@ -324,8 +352,9 @@ const App: React.FC = () => {
                     personId={selectedPersonId || undefined}
                     groupId={selectedGroupId || undefined}
                     initialDate={initialNoteDate || undefined}
-                    onComplete={() => goBack()}
+                    onComplete={() => goBack(true)}
                     onViewNote={(id) => navigateTo('note-detail', null, null, id)}
+                    setIsDirty={setIsDirty}
                 />
             );
         }
@@ -383,7 +412,7 @@ const App: React.FC = () => {
                     onClick={() => setIsParacletePanelOpen(true)}
                     style={{ cursor: 'pointer' }}
                 >
-                    <div onClick={() => setCurrentView('dashboard')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div onClick={(e) => { e.stopPropagation(); navigateTo('dashboard', null, null, null, null, true); }} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
                         <h1 style={{ 
                             margin: 0, 
@@ -528,6 +557,22 @@ const App: React.FC = () => {
                                 target.type === 'group' ? target.id : null
                             );
                             setShowContactSelection(false);
+                        }}
+                    />
+                )}
+                {showDiscardConfirm && (
+                    <ConfirmationModal 
+                        title="Unsaved Changes"
+                        message="You have unsaved work that will be lost if you navigate away. Do you wish to continue?"
+                        confirmLabel="Discard Changes"
+                        cancelLabel="Stay Here"
+                        variant="danger"
+                        onConfirm={() => {
+                            if (pendingNavigation) pendingNavigation();
+                        }}
+                        onCancel={() => {
+                            setShowDiscardConfirm(false);
+                            setPendingNavigation(null);
                         }}
                     />
                 )}

@@ -9,6 +9,7 @@ interface MessageAuthoringProps {
     initialDate?: string;
     onComplete: () => void;
     onViewNote?: (noteId: number) => void;
+    setIsDirty?: (dirty: boolean) => void;
 }
 
 const MessageAuthoring: React.FC<MessageAuthoringProps> = ({ 
@@ -18,7 +19,8 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     groupId, 
     initialDate,
     onComplete,
-    onViewNote
+    onViewNote,
+    setIsDirty
 }) => {
     const [message, setMessage] = useState<Partial<Message>>({
         status: 'draft',
@@ -87,6 +89,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         
         try {
             await api.delete(`/api/messages/${message.id}`);
+            if (setIsDirty) setIsDirty(false);
             onComplete();
         } catch (err) {
             console.error('Failed to delete message:', err);
@@ -110,6 +113,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                 const created = await api.post<Message>('/api/messages/', data);
                 setMessage(created);
             }
+            if (setIsDirty) setIsDirty(false);
             onComplete();
         } catch (err) {
             console.error('Failed to save message:', err);
@@ -148,6 +152,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                 feedback: "Draft a professional follow-up based on the available context.",
             });
             setMessage(prev => ({ ...prev, draft_text: res.draft_text }));
+            if (setIsDirty) setIsDirty(true);
         } catch (err) {
             console.error('Drafting failed:', err);
         } finally {
@@ -168,6 +173,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                 highlighted_text: highlightedText
             });
             setMessage(prev => ({ ...prev, draft_text: res.draft_text }));
+            if (setIsDirty) setIsDirty(true);
             setFeedback('');
             setHighlightedText('');
         } catch (err) {
@@ -279,7 +285,10 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                     <input
                         type="date"
                         value={message.date || ''}
-                        onChange={(e) => setMessage({ ...message, date: e.target.value })}
+                        onChange={(e) => {
+                            setMessage({ ...message, date: e.target.value });
+                            if (setIsDirty) setIsDirty(true);
+                        }}
                         className="input-field"
                         style={{ 
                             padding: '6px 10px', 
@@ -326,7 +335,10 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                             ref={textareaRef}
                             placeholder={message.is_inbound ? "Enter the message you received..." : "Draft your message here..."}
                             value={message.draft_text || ''}
-                            onChange={(e) => setMessage({ ...message, draft_text: e.target.value })}
+                            onChange={(e) => {
+                                setMessage({ ...message, draft_text: e.target.value });
+                                if (setIsDirty) setIsDirty(true);
+                            }}
                             onMouseUp={handleTextSelect}
                             style={{
                                 flexGrow: 1,
