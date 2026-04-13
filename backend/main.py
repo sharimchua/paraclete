@@ -506,10 +506,13 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
         "framework_expectations": framework_context
     }
 
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "note_refinement", "prompt": "Refining Session Note"}})
     try:
         cleaned_text = await llm.workflows.run_note_cleanse(req.raw_text, context)
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "note_refinement", "result": cleaned_text}})
         return {"result": cleaned_text}
     except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analysis/extract")
@@ -531,14 +534,17 @@ async def transient_extract(req: AnalysisRequest, db: Session = Depends(get_db))
     current_date = datetime.now()
     date_context = f"CURRENT DATE: {current_date.strftime('%Y-%m-%d')} (Year: {current_date.year})"
 
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "extract_entities", "prompt": "Extracting Entities"}})
     try:
         data = await llm.workflows.run_entity_extraction(
             text=f"EXISTING TAGS: {tag_context}\n\nRAW SESSION NOTE: {req.raw_text}", 
             context=date_context,
             grammar=grammar
         )
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "extract_entities", "result": data}})
         return data
     except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- Note CRUD ---
@@ -785,22 +791,31 @@ async def publish_note(note_id: int, db: Session = Depends(get_db)):
     # 1. Update Stage
     db_note.stage = "Published"
     
-    # 2. Generate/Update Embedding based on FINAL text
-    loop = asyncio.get_event_loop()
-    embed_text = llm.templates.embed_note(
-        title=db_note.title, 
-        text=db_note.cleaned_text or db_note.raw_capture
-    )
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "publish", "prompt": "Updating Search Index"}})
     
-    embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
-    if embed_response:
-        vector = embed_response["data"][0]["embedding"]
-        db_emb = db.query(models.NoteEmbedding).filter(models.NoteEmbedding.note_id == note_id).first()
-        if not db_emb:
-            db_emb = models.NoteEmbedding(note_id=note_id, vector=json.dumps(vector))
-            db.add(db_emb)
-        else:
-            db_emb.vector = json.dumps(vector)
+    try:
+        # 2. Generate/Update Embedding based on FINAL text
+        loop = asyncio.get_event_loop()
+        embed_text = llm.templates.embed_note(
+            title=db_note.title, 
+            text=db_note.cleaned_text or db_note.raw_capture
+        )
+        
+        embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+        if embed_response:
+            vector = embed_response["data"][0]["embedding"]
+            db_emb = db.query(models.NoteEmbedding).filter(models.NoteEmbedding.note_id == note_id).first()
+            if not db_emb:
+                db_emb = models.NoteEmbedding(note_id=note_id, vector=json.dumps(vector))
+                db.add(db_emb)
+            else:
+                db_emb.vector = json.dumps(vector)
+        
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "publish", "result": "Search Index Updated"}})
+    except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
+        # We don't necessarily want to fail the whole publish if embedding fails, but let's log it
+        print(f"Embedding failed: {e}")
             
     db.commit()
     db.refresh(db_note)
@@ -808,36 +823,40 @@ async def publish_note(note_id: int, db: Session = Depends(get_db)):
 
 @app.get("/search/semantic")
 async def semantic_search(query: str, db: Session = Depends(get_db)):
-    loop = asyncio.get_event_loop()
-    query_embedding = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
-    if not query_embedding:
-        raise HTTPException(status_code=500, detail="Could not generate query embedding")
-    
-    q_vec = np.array(query_embedding["data"][0]["embedding"])
-    
-    note_embeddings = db.query(models.NoteEmbedding).all()
-    results = []
-    
-    for ne in note_embeddings:
-        n_vec = np.array(json.loads(ne.vector))
-        # Cosine similarity
-        norm_q = np.linalg.norm(q_vec)
-        norm_n = np.linalg.norm(n_vec)
-        if norm_q > 0 and norm_n > 0:
-            score = np.dot(q_vec, n_vec) / (norm_q * norm_n)
-            # Higher threshold for better results
-            if score > 0.3: 
-                note = db.query(models.Note).filter(models.Note.id == ne.note_id).first()
-                if note:
-                    results.append({
-                        "id": note.id,
-                        "title": note.title,
-                        "score": float(score),
-                        "date": str(note.date)
-                    })
-    
-    results.sort(key=lambda x: x["score"], reverse=True)
-    return results[:10]
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "semantic_search", "prompt": "Searching through knowledge..."}})
+    try:
+        loop = asyncio.get_event_loop()
+        query_embedding = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+        if not query_embedding:
+            raise HTTPException(status_code=500, detail="Could not generate query embedding")
+        
+        q_vec = np.array(query_embedding["data"][0]["embedding"])
+        
+        note_embeddings = db.query(models.NoteEmbedding).all()
+        results = []
+        
+        for ne in note_embeddings:
+            n_vec = np.array(json.loads(ne.vector))
+            # Cosine similarity
+            norm_q = np.linalg.norm(q_vec)
+            norm_n = np.linalg.norm(n_vec)
+            if norm_q > 0 and norm_n > 0:
+                score = np.dot(q_vec, n_vec) / (norm_q * norm_n)
+                # Higher threshold for better results
+                if score > 0.3: 
+                    note = db.query(models.Note).filter(models.Note.id == ne.note_id).first()
+                    if note:
+                        results.append({
+                            "note": note,
+                            "score": float(score)
+                        })
+        
+        results.sort(key=lambda x: x["score"], reverse=True)
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "semantic_search", "count": len(results)}})
+        return results[:10]
+    except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/notes/{note_id}/extract")
 async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
@@ -857,6 +876,7 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
     space  ::= [ \t\n\r]*
     '''
     
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "extract_entities", "prompt": "Extracting Entities"}})
     try:
         # Fetch existing tags to help AI reuse them
         existing_tags = db.query(models.Tag).all()

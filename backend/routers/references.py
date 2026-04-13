@@ -122,45 +122,53 @@ async def suggest_references(
     if not effective_query:
         return []
 
-    loop = asyncio.get_event_loop()
-    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(effective_query))
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "reference_suggestion", "prompt": "Finding relevant references"}})
     
-    if not query_embedding_resp:
-        return []
+    try:
+        loop = asyncio.get_event_loop()
+        query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(effective_query))
         
-    q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
-    norm_q = np.linalg.norm(q_vec)
-    
-    if norm_q == 0:
-        return []
+        if not query_embedding_resp:
+            await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion"}})
+            return []
+            
+        q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
+        norm_q = np.linalg.norm(q_vec)
+        
+        if norm_q == 0:
+            await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion"}})
+            return []
 
-    all_refs = db.query(models.Reference).all()
-    scored_refs = []
-    
-    for ref in all_refs:
-        # 1. Semantic Score
-        sem_score = 0.0
-        if ref.embedding:
-            r_vec = np.array(json.loads(ref.embedding.vector))
-            norm_r = np.linalg.norm(r_vec)
-            if norm_r > 0:
-                sem_score = np.dot(q_vec, r_vec) / (norm_q * norm_r)
+        all_refs = db.query(models.Reference).all()
+        scored_refs = []
         
-        # 2. Tag Boost
-        tag_match_count = 0
-        if context_tag_ids:
-            ref_tag_ids = set([t.id for t in ref.tags])
-            tag_match_count = len(context_tag_ids.intersection(ref_tag_ids))
+        for ref in all_refs:
+            # 1. Semantic Score
+            sem_score = 0.0
+            if ref.embedding:
+                r_vec = np.array(json.loads(ref.embedding.vector))
+                norm_r = np.linalg.norm(r_vec)
+                if norm_r > 0:
+                    sem_score = np.dot(q_vec, r_vec) / (norm_q * norm_r)
+            
+            # 2. Tag Boost
+            tag_match_count = 0
+            if context_tag_ids:
+                ref_tag_ids = set([t.id for t in ref.tags])
+                tag_match_count = len(context_tag_ids.intersection(ref_tag_ids))
+            
+            # Boost formula: semantic_score * (1 + 0.2 * matches)
+            final_score = sem_score * (1.0 + (0.2 * tag_match_count))
+            scored_refs.append((final_score, ref))
         
-        # Boost formula: semantic_score * (1 + 0.2 * matches)
-        # Using a multiplier ensures that completely irrelevant (semantically) refs don't jump to the top
-        # but strong matches with shared tags get a significant bump.
-        final_score = sem_score * (1.0 + (0.2 * tag_match_count))
-        
-        scored_refs.append((final_score, ref))
-    
-    scored_refs.sort(key=lambda x: x[0], reverse=True)
-    return [r for score, r in scored_refs[:limit]]
+        scored_refs.sort(key=lambda x: x[0], reverse=True)
+        results = [r for score, r in scored_refs[:limit]]
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion", "count": len(results)}})
+        return results
+    except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
+        return []
 
 
 async def generate_reference_embedding(reference_id: int):

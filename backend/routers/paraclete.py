@@ -62,6 +62,9 @@ INSTRUCTIONS:
 
     messages = [{"role": "system", "content": system_prompt}] + user_messages
 
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "chat", "prompt": "Paraclete is thinking..."}})
+
     async def generate_chat():
         # Using a thread because llama-cpp-python's streaming in chat completion 
         # is synchronous iterative in the generator.
@@ -79,7 +82,10 @@ INSTRUCTIONS:
                 delta = chunk["choices"][0].get("delta", {})
                 if "content" in delta:
                     yield delta["content"]
+            
+            await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "chat"}})
         except Exception as e:
+            await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
             yield f"Error: {str(e)}"
 
     return StreamingResponse(generate_chat(), media_type="text/plain")

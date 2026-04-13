@@ -51,6 +51,9 @@ async def get_framework_audit(persona_id: Optional[int] = None, db: Session = De
     from ..llm import templates, llm_manager
     prompt = templates.audit_framework(core_text, persona_text)
     
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "framework_audit", "prompt": "Auditing Practice Framework"}})
+    
     try:
         resp = await asyncio.to_thread(
             llm_manager.call, 
@@ -65,8 +68,10 @@ async def get_framework_audit(persona_id: Optional[int] = None, db: Session = De
         elif "```" in clean_json:
             clean_json = clean_json.split("```")[1].split("```")[0].strip()
             
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "framework_audit"}})
         return json.loads(clean_json)
     except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         return {"conflicts": [], "error": str(e)}
 
 @router.post("/analyze")
@@ -546,6 +551,9 @@ async def synthesize_all_proposals(db: Session = Depends(get_db)):
     import asyncio
     import traceback
 
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "framework_synthesis", "prompt": f"Synthesizing {len(proposals)} proposals"}})
+    
     try:
         print(f"DEBUG: Starting synthesis of {len(proposals)} proposals...")
         
@@ -592,13 +600,16 @@ async def synthesize_all_proposals(db: Session = Depends(get_db)):
             db.add(db_prop)
         
         db.commit()
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "framework_synthesis", "result": "Synthesis Complete"}})
         return {"status": "success", "count": len(new_proposals)}
 
-    except HTTPException:
+    except HTTPException as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise
     except Exception as e:
         print(f"ERROR in synthesis: {e}")
         print(traceback.format_exc())
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/link")
@@ -702,6 +713,9 @@ async def draft_persona_message(
     
     # Run LLM
     from backend import llm
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "persona_draft", "prompt": f"Drafting message for {entity_name}"}})
+    
     try:
         draft = await llm.workflows.run_persona_draft(
             note_content=note.cleaned_text or note.raw_capture or "",
@@ -709,6 +723,7 @@ async def draft_persona_message(
             persona_bio=augmented_bio,
             references=refs_text
         )
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "persona_draft", "result": "Draft Complete"}})
         return {
             "draft": draft,
             "persona_id": persona.id,
@@ -716,4 +731,5 @@ async def draft_persona_message(
             "is_inherited": (persona_id is None and effective_persona_id != (note.person.persona_id if note.person else None))
         }
     except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))

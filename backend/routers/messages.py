@@ -162,6 +162,9 @@ async def iterate_message(
             framework_context=framework_context
         )
     
+    from ..websockets_manager import ws_manager
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "message_refinement", "prompt": f"Refining message for {person_name}"}})
+    
     try:
         # FIX: Must use asyncio.to_thread because llm_manager.call is synchronous
         new_draft = await asyncio.to_thread(
@@ -171,9 +174,11 @@ async def iterate_message(
         )
         db_msg.draft_text = new_draft
         db.commit()
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "message_refinement", "result": new_draft}})
         return {"draft_text": new_draft}
     except Exception as e:
         print(f"DEBUG: Message iteration failed: {e}")
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{message_id}")
