@@ -587,6 +587,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                         </div>
 
                         <textarea
+                            id="note-capture-textarea"
+                            data-paraclete-type="note"
                             autoFocus
                             placeholder="Start typing your session notes..."
                             value={rawText}
@@ -630,6 +632,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', flexGrow: 1 }}>
                                     <textarea
+                                        id="note-refine-textarea"
+                                        data-paraclete-type="note"
                                         value={currentNote?.cleaned_text || ''}
                                         onChange={(e) => handleUpdateNoteText(e.target.value)}
                                         style={{

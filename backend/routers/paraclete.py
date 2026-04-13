@@ -89,3 +89,39 @@ INSTRUCTIONS:
             yield f"Error: {str(e)}"
 
     return StreamingResponse(generate_chat(), media_type="text/plain")
+
+class ReformatRequest(BaseModel):
+    selected_text: str
+    full_context: str
+    prompt: str
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+
+@router.post("/reformat")
+async def paraclete_reformat(
+    request: ReformatRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Restructure a specific section of text using AI and framework context.
+    """
+    from ..services.framework_resolver import resolve_framework_items
+    from ..websockets_manager import ws_manager
+
+    # Resolve framework context
+    framework_context = resolve_framework_items(db, person_id=request.person_id, group_id=request.group_id)
+
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "reformat", "prompt": "Restructuring Text..."}})
+    try:
+        result = await llm.workflows.run_reformat(
+            selected_text=request.selected_text,
+            user_prompt=request.prompt,
+            full_context=request.full_context,
+            framework_context=framework_context
+        )
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reformat", "result": result}})
+        return {"result": result}
+    except Exception as e:
+        await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+

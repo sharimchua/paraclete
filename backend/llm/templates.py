@@ -266,3 +266,30 @@ Format:
 }}
 
 JSON:"""
+
+def reformat_text(selected_text: str, prompt: str, full_context: str, framework_context: str = "") -> str:
+    """Prompt for restructuring a specific section of text."""
+    framework_section = ""
+    if framework_context:
+        framework_section = f"### Practice Framework Constraints (STRICT ADHERENCE)\\n{framework_context}\\n\\n"
+        
+    return f"""{framework_section}### Instruction
+The user wants to restructure a specific part of their text.
+
+### FULL CONTEXT (The entire document/message):
+{full_context}
+
+### TARGET SELECTION (The specific part to be updated):
+{selected_text}
+
+### USER'S REFORMATTING COMMAND:
+"{prompt}"
+
+### INSTRUCTIONS:
+1. Provide ONLY the updated version of the TARGET SELECTION.
+2. Ensure the new version fits seamlessly into the FULL CONTEXT provided.
+3. ADHERE STRICTLY to any professional style and tone constraints from the Practice Framework.
+4. If the user asks for a specific format (e.g. bullets, professional tone), follow it precisely.
+
+### RESTRUCTURED TEXT:"""
+

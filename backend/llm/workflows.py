@@ -141,3 +141,20 @@ async def run_suggest_title(text: str) -> str:
         max_tokens=100
     )
 
+async def run_reformat(selected_text: str, user_prompt: str, full_context: str, framework_context: str = "") -> str:
+    """Restructure a specific part of text based on user command."""
+    prompt = templates.reformat_text(
+        selected_text=selected_text,
+        prompt=user_prompt,
+        full_context=full_context,
+        framework_context=framework_context
+    )
+    
+    return await asyncio.to_thread(
+        llm_manager.call,
+        prompt=prompt,
+        system="You are an expert professional editor. Restructure the provided text accurately as requested.",
+        max_tokens=1500
+    )
+
+

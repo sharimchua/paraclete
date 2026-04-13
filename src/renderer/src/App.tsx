@@ -20,6 +20,7 @@ import MessageAuthoring from './components/MessageAuthoring';
 import PersonaSelectionModal from './components/PersonaSelectionModal';
 import EntitySelectionModal from './components/EntitySelectionModal';
 import ConfirmationModal from './components/ConfirmationModal';
+import ReformatModal from './components/ReformatModal';
 import { api } from './services/api';
 
 const App: React.FC = () => {
@@ -43,6 +44,13 @@ const App: React.FC = () => {
     const [isDirty, setIsDirty] = useState(false);
     const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
     const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
+    const [selectionContext, setSelectionContext] = useState<{
+        selectedText: string;
+        fullContext: string;
+        elementId: string;
+    } | null>(null);
+    const [isReformatModalOpen, setIsReformatModalOpen] = useState(false);
 
     const fetchProposalsCount = async () => {
         try {
@@ -142,6 +150,42 @@ const App: React.FC = () => {
             socket.close();
         };
     }, []);
+
+    useEffect(() => {
+        const handleSelection = (e?: any) => {
+            // If the modal is already open, don't change the context
+            if (isReformatModalOpen) return;
+
+            // Ignore if clicking the trigger itself or its icons (only for MouseEvents)
+            if (e && e.type === 'mouseup' && (e.target as HTMLElement)?.closest('.rewrite-trigger')) {
+                return;
+            }
+
+            const selection = window.getSelection();
+            const text = selection?.toString() || '';
+            
+            if (text.trim().length > 50) {
+                const activeElement = document.activeElement as HTMLTextAreaElement;
+                if (activeElement && activeElement.tagName === 'TEXTAREA' && activeElement.dataset.paracleteType) {
+                    setSelectionContext({
+                        selectedText: text,
+                        fullContext: activeElement.value,
+                        elementId: activeElement.id
+                    });
+                    return;
+                }
+            }
+            setSelectionContext(null);
+        };
+
+        document.addEventListener('selectionchange', handleSelection);
+        document.addEventListener('mouseup', handleSelection);
+
+        return () => {
+            document.removeEventListener('selectionchange', handleSelection);
+            document.removeEventListener('mouseup', handleSelection);
+        };
+    }, [isReformatModalOpen]);
 
     const navigateTo = (
         view: string, 
@@ -410,9 +454,20 @@ const App: React.FC = () => {
                 <div 
                     className="logo-area" 
                     onClick={() => setIsParacletePanelOpen(true)}
-                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
+                    style={{ 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px',
+                        width: '100%',
+                        overflow: 'visible',
+                        minHeight: '48px',
+                        padding: '0 16px'
+                    }}
                 >
-                    <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
+                    <div style={{ flexShrink: 0, display: 'flex' }}>
+                        <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
+                    </div>
                     <h1 style={{ 
                         margin: 0, 
                         fontSize: '1.2rem', 
@@ -420,8 +475,45 @@ const App: React.FC = () => {
                         fontWeight: 800,
                         background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
                         WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent'
+                        WebkitTextFillColor: 'transparent',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap'
                     }}>PARACLETE</h1>
+                    
+                    {selectionContext && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsReformatModalOpen(true);
+                            }}
+                            className="btn-primary rewrite-trigger"
+                            style={{
+                                padding: 0,
+                                borderRadius: '8px',
+                                marginLeft: '6px',
+                                animation: 'slideFromLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '32px',
+                                height: '32px',
+                                minWidth: '32px',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: 'none',
+                                flexShrink: 0
+                            }}
+                            title="Rewrite highlighted text"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                    )}
                 </div>
                 
                 <nav className="nav-section">
@@ -574,7 +666,50 @@ const App: React.FC = () => {
                         }}
                     />
                 )}
+
+                {isReformatModalOpen && selectionContext && (
+                    <ReformatModal 
+                        selectedText={selectionContext.selectedText}
+                        fullContext={selectionContext.fullContext}
+                        personId={selectedPersonId || undefined}
+                        groupId={selectedGroupId || undefined}
+                        onClose={() => {
+                            setIsReformatModalOpen(false);
+                            setSelectionContext(null);
+                        }}
+                        onApply={(newText) => {
+                            // Find the element and replace the selection
+                            const el = document.getElementById(selectionContext.elementId) as HTMLTextAreaElement;
+                            if (el) {
+                                const start = el.selectionStart;
+                                const end = el.selectionEnd;
+                                const val = el.value;
+                                const newVal = val.substring(0, start) + newText + val.substring(end);
+                                
+                                // We need to trigger a change event for React to pick it up
+                                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+                                nativeInputValueSetter?.call(el, newVal);
+                                const event = new Event('input', { bubbles: true });
+                                el.dispatchEvent(event);
+                                
+                                setIsDirty(true);
+                            }
+                            setIsReformatModalOpen(false);
+                            setSelectionContext(null);
+                        }}
+                    />
+                )}
             </div>
+            <style>{`
+                @keyframes popIn {
+                    from { transform: scale(0); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                @keyframes slideFromLeft {
+                    from { transform: translateX(-15px); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };

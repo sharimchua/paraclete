@@ -334,6 +334,8 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                     <div style={{ position: 'relative', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                         <textarea
                             ref={textareaRef}
+                            id="message-textarea"
+                            data-paraclete-type="message"
                             placeholder={message.is_inbound ? "Enter the message you received..." : "Draft your message here..."}
                             value={message.draft_text || ''}
                             onChange={(e) => {
