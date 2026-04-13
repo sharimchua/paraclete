@@ -3,6 +3,7 @@ import { api, Person, Note, API_BASE } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from './ToastProvider';
+import InterstitialLoader from './InterstitialLoader';
 
 
 interface Props {
@@ -47,6 +48,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     const [companionImages, setCompanionImages] = useState<any[]>([]);
     const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [interstitial, setInterstitial] = useState<{ title: string, subtitle: string, tasks?: string[] } | null>(null);
 
     // Load existing note if noteId is provided
     useEffect(() => {
@@ -178,6 +180,10 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
         }
 
         setIsRefining(true);
+        setInterstitial({ 
+            title: "Neural Refinement", 
+            subtitle: "Paraclete is normalizing capture text and extracting entities." 
+        });
         setStage('Refine');
 
         try {
@@ -221,10 +227,12 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             }
 
             setIsRefining(false);
+            setInterstitial(null);
         } catch (err) {
             console.error('Failed to process note:', err);
             setStage('Capture');
             setIsRefining(false);
+            setInterstitial(null);
             alert('Failed to process with AI. Please try again.');
         }
     };
@@ -364,16 +372,19 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
     const handlePerformCompanionOCR = async () => {
         if (!companionSessionId || companionImages.length === 0) return;
-        setLoading(true);
+        setInterstitial({
+            title: "Vision Analysis",
+            subtitle: "Synthesizing captured handwriting into structured clinical records."
+        });
         try {
             const data = await api.post<{ text: string }>(`/process/ocr/companion?sid=${companionSessionId}`, {});
             setRawText(prev => prev + (prev ? "\n\n" : "") + data.text);
-            setIsCompanionModalOpen(false);
-            setCompanionSessionId(null);
             setCompanionImages([]);
             if (setIsDirty) setIsDirty(true);
+            setInterstitial(null);
         } catch (err) {
             console.error('Companion OCR failed:', err);
+            setInterstitial(null);
             alert('OCR processing failed. Check Developer Logs.');
         } finally {
             setLoading(false);
@@ -600,14 +611,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
                 {stage === 'Refine' && (
                     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '24px' }}>
-                        {isRefining ? (
-                            <div className="card" style={{ textAlign: 'center', padding: '64px', margin: 'auto' }}>
-                                <h3>AI Refinement in Progress...</h3>
-                                <p style={{ color: 'var(--text-secondary)', marginTop: '16px' }}>Extracting metadata and structuring your notes.</p>
-                                <div className="loader" style={{ margin: '32px auto' }} />
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '24px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '24px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Refinement & Structure</h2>
@@ -772,15 +776,13 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Use format 'Category: Value'</div>
                                             </div>
                                         </div>
-                                    </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Companion Modal */}
             {isCompanionModalOpen && (
                 <div style={{
                     position: 'fixed',
@@ -903,6 +905,14 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     </div>
                 </div>
             )}
+
+            <InterstitialLoader 
+                isOpen={!!interstitial}
+                title={interstitial?.title}
+                subtitle={interstitial?.subtitle}
+                tasks={interstitial?.tasks}
+            />
+
 
             {showDeleteConfirm && (
                 <ConfirmationModal 

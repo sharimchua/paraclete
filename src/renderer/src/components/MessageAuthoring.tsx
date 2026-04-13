@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api, Note, Person, Group, Message } from '../services/api';
+import InterstitialLoader from './InterstitialLoader';
 
 interface MessageAuthoringProps {
     messageId?: number;
@@ -356,21 +357,6 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                             }}
                         />
 
-                        {isIterating && (
-                            <div style={{
-                                position: 'absolute',
-                                inset: 0,
-                                background: 'rgba(2, 6, 23, 0.4)',
-                                backdropFilter: 'blur(2px)',
-                                borderRadius: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                zIndex: 10
-                            }}>
-                                <div className="loader" />
-                            </div>
-                        )}
                     </div>
 
                     {!message.is_inbound && (
@@ -538,6 +524,18 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                     </div>
                 </div>
             </div>
+            <InterstitialLoader 
+                isOpen={isIterating}
+                title="AI Synthesis"
+                subtitle="Paraclete is drafting a professionally structured response based on your session history."
+                tasks={[
+                    "Loading session context...",
+                    "Analyzing clinical themes...",
+                    "Applying professional persona...",
+                    "Normalizing semantics...",
+                    "Polishing response structure..."
+                ]}
+            />
         </div>
     );
 };
