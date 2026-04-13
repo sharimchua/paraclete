@@ -6,19 +6,25 @@ from . import templates
 
 
 async def run_ocr(image_paths: list[str]) -> str:
-    """Extract and compile text from one or more images."""
+    """Extract and compile text from one or more images sequentially to ensure full coverage."""
+    full_text = []
     try:
         # Use template for instructions
         prompt = templates.ocr_capture()
         
-        # Standardized call handles image base64, prompt ordering, stop tokens, and gemma cleanup
-        return await asyncio.to_thread(
-            llm_manager.call,
-            prompt=prompt,
-            system="You are an expert data entry assistant for transcribing hand-written notes. Extract the requested text and any drawings or diagrams accurately, using the context of the image when needed.",
-            image_paths=image_paths,
-            max_tokens=2048
-        )
+        for idx, path in enumerate(image_paths):
+            print(f"DEBUG: Processing OCR for image {idx+1}/{len(image_paths)}: {path}")
+            result = await asyncio.to_thread(
+                llm_manager.call,
+                prompt=prompt,
+                system="You are an expert data entry assistant for transcribing hand-written notes. Extract the requested text and any drawings or diagrams accurately, using the context of the image when needed.",
+                image_paths=[path], # Pass as single-item list
+                max_tokens=2048
+            )
+            if result and not result.startswith("OCR Extraction Error"):
+                full_text.append(result)
+        
+        return "\n\n".join(full_text)
 
     except Exception as e:
         print(f"DEBUG: OCR Workflow failed: {e}")
