@@ -289,19 +289,26 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                             className="btn-primary" 
                             onClick={handleOpenModal}
                             style={{ 
-                                width: '24px', 
-                                height: '24px', 
+                                width: '28px', 
+                                height: '28px', 
                                 padding: 0, 
                                 borderRadius: '50%', 
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 justifyContent: 'center',
-                                fontSize: '1.1rem',
-                                fontWeight: 400
+                                fontSize: '1rem',
+                                background: 'linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%)',
+                                border: 'none',
+                                boxShadow: '0 4px 10px rgba(79, 70, 229, 0.3)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
                             }}
                             title="Add note for this date"
                         >
-                            +
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
                         </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
