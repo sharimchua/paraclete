@@ -86,7 +86,10 @@ async def trigger_framework_analysis(
     from sqlalchemy import or_
 
     # 1. Fetch un-analyzed entries
-    note_query = db.query(models.Note.id).filter(or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None))
+    note_query = db.query(models.Note.id).filter(
+        or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None),
+        models.Note.stage == models.NoteStage.PUBLISHED
+    )
     msg_query = db.query(models.Message.id).filter(or_(models.Message.analyzed_for_framework == False, models.Message.analyzed_for_framework == None))
     ref_query = db.query(models.Reference.id).filter(or_(models.Reference.analyzed_for_framework == False, models.Reference.analyzed_for_framework == None))
 

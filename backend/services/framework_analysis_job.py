@@ -19,7 +19,8 @@ async def get_pending_analysis_count(
     """Returns counts of un-analyzed items within the given scope."""
     
     note_query = db.query(models.Note).filter(
-        or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None)
+        or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None),
+        models.Note.stage == models.NoteStage.PUBLISHED
     )
     msg_query = db.query(models.Message).filter(
         or_(models.Message.analyzed_for_framework == False, models.Message.analyzed_for_framework == None)
