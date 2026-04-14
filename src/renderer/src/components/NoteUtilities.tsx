@@ -39,12 +39,21 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
 
         fetchSuggestions();
         
-        // Interval for polling if extracting
-        const interval = setInterval(() => {
-            fetchProposals();
-        }, 5000);
+        const handleWebSocketMessage = (e: any) => {
+            const { event, data } = e.detail;
+            
+            // Check if this message relates to extraction for THIS specific note
+            if (event === 'llm_start' && data?.type === 'reference_extraction') {
+                setIsExtracting(true);
+            }
+            
+            if ((event === 'llm_finish' || event === 'llm_error') && data?.type === 'reference_extraction') {
+                fetchProposals();
+            }
+        };
 
-        return () => clearInterval(interval);
+        window.addEventListener('global-ws-message' as any, handleWebSocketMessage);
+        return () => window.removeEventListener('global-ws-message' as any, handleWebSocketMessage);
     }, [note.id]);
 
     const extractConcepts = async () => {
