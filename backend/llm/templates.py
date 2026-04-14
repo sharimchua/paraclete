@@ -48,31 +48,43 @@ Person: {person_name} ({person_tags})
 
 def extract_entities(text: str, context: str = "") -> str:
     """Entity and Metadata extraction prompt."""
-    return f"""Analyze the provided session notes to extract metadata.
+    return f"""You are an expert data analyst for professional practitioners.
+Your task is to analyze session notes and extract structured metadata, specifically focus on identifying a suggested date, relevant professional tags, and action items.
+
+### SYSTEM CONTEXT & TAXONOMY
 {context}
 
-1. Suggested Session Date: Identify any specific dates mentioned in the raw notes (e.g., "7th April", "yesterday", "next Tuesday"). 
-   If "today" is mentioned, use today's date context. 
-   Return ISO format YYYY-MM-DD.
-   
-2. Key-Value Tags: Extract categories and values. 
-   PRIORITIZE existing categories like "Instrument", "Modality", "Theme", "Focus".
-   Format as: "Category: Value".
+### EXTRACTION RULES:
+1. **DATE EXTRACTION**:
+   - Identify any specific dates mentioned (e.g., "Oct 12", "last Friday").
+   - If "today" is mentioned, refer to the current date context if provided.
+   - Output format MUST be YYYY-MM-DD.
 
-Return valid JSON in the format:
+2. **TAG EXTRACTION (STRICT ADHERENCE)**:
+   - **PRIORITIZE** existing categories and values from the EXISTING TAXONOMY above.
+   - If a concept matches an existing category but the value is new, use the existing category.
+   - Only create a NEW category if the information is fundamentally different from the established taxonomy.
+   - Tags should be professional, concise (1-3 words), and categorical.
+   - Format: "Category: Value" (e.g., "Instrument: Violin", "Focus: Technique").
+
+3. **ACTION ITEMS**:
+   - Extract specific tasks, follow-ups, or homework mentioned in the text.
+   - Keep them actionable and starting with a verb.
+
+### OUTPUT FORMAT:
+Return valid JSON only.
 {{
   "suggestedDate": "YYYY-MM-DD",
   "tags": [
-    {{"key": "Instrument", "value": "Guitar"}},
-    {{"key": "Theme", "value": "Aural Skills"}}
+    {{"key": "Category", "value": "Value"}}
   ],
-  "actions": ["task1"]
+  "actions": ["Do x", "Contact y"]
 }}
 
-SESSION CONTENT:
+### SESSION CONTENT:
 {text}
 
-JSON:"""
+### STRUCTURAL JSON:"""
 
 def professional_draft(person_name: str, summary: str, history: str, framework_context: str = "") -> str:
     """Consolidated professional message drafting template with granular framework adherence."""

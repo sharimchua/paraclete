@@ -41,6 +41,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     const [isBriefing, setIsBriefing] = useState(false);
     const [isLlmReady, setIsLlmReady] = useState(false);
     const [localNoteId, setLocalNoteId] = useState<number | null>(null);
+    const [tagInput, setTagInput] = useState('');
+    const [tagSuggestionIndex, setTagSuggestionIndex] = useState(-1);
     const briefingFetchedFor = useRef<string | null>(null);
 
     // Companion State
@@ -794,36 +796,112 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                                 </div>
                                             </div>
 
-                                            <div style={{ marginTop: 'auto' }}>
+                                            <div style={{ marginTop: 'auto', position: 'relative' }}>
                                                 <input
                                                     type="text"
                                                     placeholder="Add tag (Key: Value)..."
+                                                    value={tagInput}
+                                                    onChange={(e) => {
+                                                        setTagInput(e.target.value);
+                                                        setTagSuggestionIndex(-1);
+                                                    }}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            const val = (e.target as HTMLInputElement).value.trim();
-                                                            if (val.includes(':')) {
-                                                                const [k, v] = val.split(':').map(s => s.trim());
-                                                                if (k && v) {
-                                                                    setSelectedTags(prev => [...prev, { key: k, value: v }]);
+                                                        const filtered = existingTaxonomy.filter(et => 
+                                                            `${et.key}: ${et.value}`.toLowerCase().includes(tagInput.toLowerCase())
+                                                        );
+
+                                                        if (e.key === 'ArrowDown') {
+                                                            e.preventDefault();
+                                                            setTagSuggestionIndex(prev => Math.min(prev + 1, filtered.length - 1));
+                                                        } else if (e.key === 'ArrowUp') {
+                                                            e.preventDefault();
+                                                            setTagSuggestionIndex(prev => Math.max(prev - 1, -1));
+                                                        } else if (e.key === 'Enter') {
+                                                            if (tagSuggestionIndex >= 0 && tagSuggestionIndex < filtered.length) {
+                                                                e.preventDefault();
+                                                                const t = filtered[tagSuggestionIndex];
+                                                                if (!selectedTags.some(sel => sel.key === t.key && sel.value === t.value)) {
+                                                                    setSelectedTags(prev => [...prev, { key: t.key, value: t.value }]);
                                                                     if (setIsDirty) setIsDirty(true);
-                                                                    (e.target as HTMLInputElement).value = '';
                                                                 }
-                                                            } else if (val) {
-                                                                setSelectedTags(prev => [...prev, { key: 'General', value: val }]);
-                                                                if (setIsDirty) setIsDirty(true);
-                                                                (e.target as HTMLInputElement).value = '';
+                                                                setTagInput('');
+                                                                setTagSuggestionIndex(-1);
+                                                            } else {
+                                                                const val = tagInput.trim();
+                                                                if (val.includes(':')) {
+                                                                    const [k, v] = val.split(':').map(s => s.trim());
+                                                                    if (k && v) {
+                                                                        setSelectedTags(prev => [...prev, { key: k, value: v }]);
+                                                                        if (setIsDirty) setIsDirty(true);
+                                                                        setTagInput('');
+                                                                    }
+                                                                } else if (val) {
+                                                                    setSelectedTags(prev => [...prev, { key: 'General', value: val }]);
+                                                                    if (setIsDirty) setIsDirty(true);
+                                                                    setTagInput('');
+                                                                }
                                                             }
+                                                        } else if (e.key === 'Escape') {
+                                                            setTagSuggestionIndex(-1);
                                                         }
                                                     }}
                                                     style={{
                                                         width: '100%',
-                                                        padding: '8px',
-                                                        borderRadius: '6px',
+                                                        padding: '10px',
+                                                        borderRadius: '8px',
                                                         border: '1px solid var(--border)',
-                                                        fontSize: '0.9rem'
+                                                        background: 'var(--bg-deep)',
+                                                        fontSize: '0.9rem',
+                                                        color: 'var(--text-main)'
                                                     }}
                                                 />
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Use format 'Category: Value'</div>
+                                                {tagInput && (
+                                                    <div style={{ 
+                                                        position: 'absolute', 
+                                                        bottom: '100%', 
+                                                        left: 0, 
+                                                        right: 0, 
+                                                        marginBottom: '8px',
+                                                        background: 'var(--bg-surface-elevated)', 
+                                                        border: '1px solid var(--border)', 
+                                                        borderRadius: '8px',
+                                                        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                                                        maxHeight: '200px',
+                                                        overflowY: 'auto',
+                                                        zIndex: 100
+                                                    }}>
+                                                        {existingTaxonomy
+                                                            .filter(et => `${et.key}: ${et.value}`.toLowerCase().includes(tagInput.toLowerCase()))
+                                                            .map((t, i) => (
+                                                                <div 
+                                                                    key={i}
+                                                                    onClick={() => {
+                                                                        if (!selectedTags.some(sel => sel.key === t.key && sel.value === t.value)) {
+                                                                            setSelectedTags(prev => [...prev, { key: t.key, value: t.value }]);
+                                                                            if (setIsDirty) setIsDirty(true);
+                                                                        }
+                                                                        setTagInput('');
+                                                                        setTagSuggestionIndex(-1);
+                                                                    }}
+                                                                    style={{ 
+                                                                        padding: '8px 12px', 
+                                                                        fontSize: '0.85rem', 
+                                                                        cursor: 'pointer',
+                                                                        background: i === tagSuggestionIndex ? 'var(--primary-faded)' : 'transparent',
+                                                                        color: i === tagSuggestionIndex ? 'var(--primary)' : 'var(--text-main)',
+                                                                        borderBottom: '1px solid var(--border-faded)',
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between'
+                                                                    }}
+                                                                >
+                                                                    <span><strong>{t.key}:</strong> {t.value}</span>
+                                                                    {selectedTags.some(sel => sel.key === t.key && sel.value === t.value) && <span style={{ opacity: 0.5 }}>✓</span>}
+                                                                </div>
+                                                            ))
+                                                        }
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Use format 'Category: Value' or pick from list</div>
                                             </div>
                                         </div>
                                 </div>

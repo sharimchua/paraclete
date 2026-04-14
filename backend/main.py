@@ -529,16 +529,35 @@ async def transient_extract(req: AnalysisRequest, db: Session = Depends(get_db))
     '''
     
     existing_tags = db.query(models.Tag).all()
-    tag_context = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "No tags."
     
-    current_date = datetime.now()
-    date_context = f"CURRENT DATE: {current_date.strftime('%Y-%m-%d')} (Year: {current_date.year})"
-
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "extract_entities", "prompt": "Extracting Entities"}})
     try:
+        # Fetch existing tags to help AI reuse them
+        existing_tags = db.query(models.Tag).all()
+        # Group existing tags by key for better context
+        grouped_tags = {}
+        for t in existing_tags:
+            if t.key not in grouped_tags:
+                grouped_tags[t.key] = []
+            grouped_tags[t.key].append(t.value)
+        
+        tag_context = "EXISTING TAXONOMY:\n"
+        for key, values in grouped_tags.items():
+            tag_context += f"- {key}: {', '.join(values)}\n"
+        
+        entity_name = "General"
+        if req.person_id:
+            p = db.query(models.Person).filter(models.Person.id == req.person_id).first()
+            if p: entity_name = p.name
+        elif req.group_id:
+            g = db.query(models.Group).filter(models.Group.id == req.group_id).first()
+            if g: entity_name = g.name
+
+        context = f"{tag_context}\nSUBJECT: {entity_name}"
+        
         data = await llm.workflows.run_entity_extraction(
-            text=f"EXISTING TAGS: {tag_context}\n\nRAW SESSION NOTE: {req.raw_text}", 
-            context=date_context,
+            text=req.raw_text, 
+            context=context,
             grammar=grammar
         )
         await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "extract_entities", "result": data}})
@@ -880,13 +899,28 @@ async def extract_note_entities(note_id: int, db: Session = Depends(get_db)):
     try:
         # Fetch existing tags to help AI reuse them
         existing_tags = db.query(models.Tag).all()
-        tag_context = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "No existing tags."
+        # Group existing tags by key for better context
+        grouped_tags = {}
+        for t in existing_tags:
+            if t.key not in grouped_tags:
+                grouped_tags[t.key] = []
+            grouped_tags[t.key].append(t.value)
         
-        # We can append this context to the note text or handle it in templates
-        # For now, let's just use the current workflow but we might need a custom template call
-        # Let's update templates.extract_entities to accept existing_tags
+        tag_context = "EXISTING TAXONOMY:\n"
+        for key, values in grouped_tags.items():
+            tag_context += f"- {key}: {', '.join(values)}\n"
+        
+        entity_name = "General"
+        if db_note.person:
+            entity_name = db_note.person.name
+        elif db_note.group:
+            entity_name = db_note.group.name
+
+        context = f"{tag_context}\nSUBJECT: {entity_name}"
+
         data = await llm.workflows.run_entity_extraction(
-            text=f"EXISTING TAGS: {tag_context}\n\nRAW SESSION NOTE: {db_note.raw_capture}", 
+            text=db_note.raw_capture, 
+            context=context,
             grammar=grammar
         )
         await ws_manager.broadcast({
