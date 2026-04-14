@@ -146,6 +146,7 @@ class Reference(Base):
     tags = relationship("Tag", secondary=reference_tags, backref="references")
     linked_notes = relationship("Note", secondary=note_references, back_populates="references")
     persons = relationship("Person", secondary=person_references, back_populates="references")
+    embedding = relationship("ReferenceEmbedding", back_populates="reference", cascade="all, delete-orphan", uselist=False)
 
 class Action(Base):
     __tablename__ = "actions"
@@ -204,7 +205,7 @@ class ReferenceEmbedding(Base):
     reference_id = Column(Integer, ForeignKey("references.id"), primary_key=True)
     vector = Column(Text) # JSON string of float list
     
-    reference = relationship("Reference", backref="embedding")
+    reference = relationship("Reference", back_populates="embedding")
 
 # Phase 6: Practise Framework & Persona Models
 
