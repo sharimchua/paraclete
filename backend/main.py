@@ -226,6 +226,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Context-Usage"],
 )
 
 # Mount static files for companion app and uploads

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import Logo from './Logo';
 
@@ -28,6 +29,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [contextUsage, setContextUsage] = useState(0);
+    const CONTEXT_LIMIT = 8192;
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -62,18 +65,26 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         if (!chatInput.trim() || isSending) return;
 
         const newMsg = { role: 'user', content: chatInput };
+        const updatedMessages = [...chatMessages, newMsg];
         setChatMessages(prev => [...prev, newMsg]);
         setChatInput('');
         setIsSending(true);
+        setIsThinking(true);
 
         try {
             const response = await fetch('http://127.0.0.1:8000/api/paraclete/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: [...chatMessages, newMsg] })
+                body: JSON.stringify({ messages: updatedMessages })
             });
 
             if (!response.body) throw new Error('No body');
+
+            // Get usage from headers if provided
+            const usageHeader = response.headers.get('X-Context-Usage');
+            if (usageHeader) {
+                setContextUsage(parseInt(usageHeader, 10));
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -99,13 +110,37 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         }
     };
 
-    const renderChat = () => (
+    const renderChat = () => {
+        const usagePercent = Math.min((contextUsage / CONTEXT_LIMIT) * 100, 100);
+        return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Context Usage Bar */}
+            <div style={{ 
+                marginBottom: '16px', 
+                background: 'rgba(255,255,255,0.03)', 
+                padding: '8px 12px', 
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.05)'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.65rem', opacity: 0.6 }}>
+                    <span>NEURAL CONTEXT WINDOW</span>
+                    <span>{contextUsage} / {CONTEXT_LIMIT} TOKENS</span>
+                </div>
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ 
+                        height: '100%', 
+                        width: `${usagePercent}%`, 
+                        background: usagePercent > 90 ? '#ef4444' : usagePercent > 70 ? '#f59e0b' : 'var(--primary)',
+                        transition: 'width 0.5s ease'
+                    }} />
+                </div>
+            </div>
+
             <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {chatMessages.length === 0 && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3, gap: '16px' }}>
                         <div style={{ width: '48px', opacity: 0.5 }}>
-                            <Logo />
+                            <Logo isThinking={isThinking} isLlmReady={isLlmReady} isWarming={isWarming} />
                         </div>
                         <span style={{ fontSize: '0.8rem' }}>How can I help with your practice today?</span>
                     </div>
@@ -122,7 +157,28 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                         lineHeight: 1.5,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                     }}>
-                        {msg.content}
+                        {msg.content === '' && msg.role === 'assistant' ? (
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '20px' }}>
+                                <div className="typing-dot" style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'currentColor', animation: 'typing 1.4s infinite' }} />
+                                <div className="typing-dot" style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'currentColor', animation: 'typing 1.4s infinite 0.2s' }} />
+                                <div className="typing-dot" style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'currentColor', animation: 'typing 1.4s infinite 0.4s' }} />
+                            </div>
+                        ) : (
+                            <ReactMarkdown 
+                                components={{
+                                    p: ({node, ...props}) => <p style={{ margin: 0, marginBottom: '8px' }} {...props} />,
+                                    h1: ({node, ...props}) => <h1 style={{ fontSize: '1.2rem', margin: '8px 0' }} {...props} />,
+                                    h2: ({node, ...props}) => <h2 style={{ fontSize: '1.1rem', margin: '8px 0' }} {...props} />,
+                                    h3: ({node, ...props}) => <h3 style={{ fontSize: '1rem', margin: '8px 0' }} {...props} />,
+                                    ul: ({node, ...props}) => <ul style={{ paddingLeft: '20px', margin: '8px 0' }} {...props} />,
+                                    ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '8px 0' }} {...props} />,
+                                    li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
+                                    code: ({node, ...props}) => <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px' }} {...props} />,
+                                }}
+                            >
+                                {msg.content}
+                            </ReactMarkdown>
+                        )}
                     </div>
                 ))}
                 <div ref={chatEndRef} />
@@ -162,19 +218,21 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                 </button>
             </div>
         </div>
-    );
+        );
+    };
 
     useEffect(() => {
+        let timer: NodeJS.Timeout;
         if (isOpen) {
             setShouldRender(true);
             setIsClosing(false);
         } else {
             setIsClosing(true);
-            const timer = setTimeout(() => {
+            timer = setTimeout(() => {
                 setShouldRender(false);
             }, 400); // Match animation duration
-            return () => clearTimeout(timer);
         }
+        return () => { if (timer) clearTimeout(timer); };
     }, [isOpen]);
 
     const handleClose = () => {
@@ -339,12 +397,12 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
             />
             <div style={{
                 position: 'fixed',
-                top: '10vh',
+                top: '5vh',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: '800px',
-                maxWidth: '90vw',
-                height: '75vh',
+                width: '1100px',
+                maxWidth: '96vw',
+                height: '90vh',
                 background: 'rgba(15, 23, 42, 0.98)',
                 backdropFilter: 'blur(30px)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -492,6 +550,10 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                     @keyframes fadeOut {
                         from { opacity: 1; }
                         to { opacity: 0; }
+                    }
+                    @keyframes typing {
+                        0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+                        30% { transform: translateY(-4px); opacity: 1; }
                     }
                 `}</style>
             </div>

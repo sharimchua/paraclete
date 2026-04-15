@@ -42,6 +42,7 @@ Person: {person_name} ({person_tags})
 3. START your response directly with the session's focal points or primary themes.
 4. APPLY the established Practice Framework style (tone, idioms, formatting) perfectly.
 5. If the framework suggests specific sections (e.g. "Focus Areas", "Next Steps"), use them.
+6. Write the note as an internal reminder for the practitioner to summarise the session and capture observations
 
 ### High-Fidelity Draft:
 """
