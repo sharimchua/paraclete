@@ -4,11 +4,11 @@ from sqlalchemy import or_
 from typing import Optional, List, Dict
 try:
     from ..database import get_db
-    from .. import models, schemas
+    from .. import models, schemas, llm
     from ..websockets_manager import ws_manager
 except ImportError:
     from database import get_db
-    import models, schemas
+    import models, schemas, llm
     from websockets_manager import ws_manager
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -24,9 +24,14 @@ async def update_setting(key: str, value: str, db: Session = Depends(get_db)):
     if not setting:
         setting = models.Setting(key=key, value=value)
         db.add(setting)
-    else:
-        setting.value = value
+    setting.value = value
     db.commit()
+
+    # Sync with LLM Manager
+    all_settings = db.query(models.Setting).all()
+    settings_dict = {s.key: s.value for s in all_settings}
+    llm.llm_manager.update_config(settings_dict)
+
     return {"status": "success", "key": key, "value": value}
 
 @router.post("/reset-framework-analysis")

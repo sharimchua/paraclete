@@ -23,20 +23,76 @@ from fastapi.staticfiles import StaticFiles
 # In production, Alembic handles this.
 models.Base.metadata.create_all(bind=database.engine)
 
+from .llm.downloader import model_downloader
+import sys
+
 async def load_llm_with_broadcast():
     # Wait a moment to ensure the server is ready to accept socket connections
     await asyncio.sleep(2)
-    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "warmup", "prompt": "Warming up Gemma 4 MoE..."}})
+    
+    # Fetch settings from DB to initialize LLM Manager
     try:
-        await asyncio.to_thread(llm.llm_manager.load_model)
-        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "warmup", "result": "Gemma 4 MoE Ready"}})
+        db = next(database.get_db())
+        settings_rows = db.query(models.Setting).all()
+        settings = {s.key: s.value for s in settings_rows}
+        llm.llm_manager.update_config(settings)
+        db.close()
+    except Exception as se:
+        print(f"DEBUG: Failed to sync settings on startup: {se}")
+
+    # Check for required models and download if missing
+    executable_dir = os.path.dirname(sys.executable)
+    models_dir = os.path.join(executable_dir, "models")
+    
+    required_models = [
+        ("gemma-4-moe.gguf", "Analysis Engine"),
+        ("gemma-e4b.gguf", "Chat Specialist")
+    ]
+
+    async def report_progress(name, progress):
+        await ws_manager.broadcast({
+            "event": "llm_start", 
+            "data": {"type": "download", "prompt": f"Downloading {name}: {progress}%"}
+        })
+
+    loop = asyncio.get_event_loop()
+    def sync_report(name, progress):
+        asyncio.run_coroutine_threadsafe(report_progress(name, progress), loop)
+
+    async def broadcast_llm_status():
+        await ws_manager.broadcast({
+            "event": "llm_status",
+            "data": llm.llm_manager.get_status()
+        })
+
+    def sync_status_broadcast():
+        asyncio.run_coroutine_threadsafe(broadcast_llm_status(), loop)
+
+    llm.llm_manager.on_status_change = sync_status_broadcast
+
+    for filename, label in required_models:
+        path = os.path.join(models_dir, filename)
+        if not os.path.exists(path):
+            sync_report(label, 0)
+            success = await model_downloader.download_if_missing(filename, path, sync_report)
+            if not success:
+                await ws_manager.broadcast({
+                    "event": "llm_error", 
+                    "data": f"Failed to download {label}. Please check your connection."
+                })
+
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "warmup", "prompt": "Warming up Analysis Engine..."}})
+    try:
+        # Default to analysis model on startup
+        await asyncio.to_thread(llm.llm_manager.ensure_model, "analysis")
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "warmup", "result": "Analysis Engine Ready"}})
     except Exception as e:
         await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pre-load the 20GB MoE model into VRAM on startup
-    print(">>> Pre-loading Gemma 4 26B MoE into VRAM...")
+    # Pre-load intelligence on startup
+    print(">>> Initializing Paraclete Intelligence...")
     asyncio.create_task(load_llm_with_broadcast())
     yield
 
@@ -62,6 +118,11 @@ from .websockets_manager import ws_manager
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await ws_manager.connect(websocket)
+    # Send initial LLM status
+    await websocket.send_json({
+        "event": "llm_status",
+        "data": llm.llm_manager.get_status()
+    })
     try:
         while True:
             await websocket.receive_text()
@@ -243,10 +304,7 @@ def get_db():
 
 @app.get("/llm/status")
 async def get_llm_status():
-    return {
-        "is_ready": llm.llm_manager.is_loaded(),
-        "model_path": llm.llm_manager.model_path or "default (Gemma-4-MoE)"
-    }
+    return llm.llm_manager.get_status()
 
 # --- Health & Base ---
 @app.get("/")

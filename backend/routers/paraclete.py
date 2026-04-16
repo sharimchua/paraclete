@@ -154,13 +154,42 @@ tool_registry = ToolRegistry()
 
 @tool_registry.register(
     "search_people",
-    "Search for people in the practice by name.",
-    {"query": "string"}
+    "Search for people by name, group, persona, or tags. Supports ID filtering.",
+    {"query": "string (optional)", "group_id": "integer (optional)", "persona_id": "integer (optional)"}
 )
-async def search_people(db: Session, query: str):
-    people = db.query(models.Person).filter(models.Person.name.ilike(f"%{query}%")).limit(10).all()
-    if not people: return "No people found."
-    return "\n".join([f"ID: {p.id}, Name: {p.name}, Contact: {p.contact_method}" for p in people])
+async def search_people(db: Session, query: str = None, group_id: int = None, persona_id: int = None):
+    # Search across name, groups, persona name, and tags
+    q = db.query(models.Person)\
+        .join(models.Person.groups, isouter=True)\
+        .join(models.Person.persona, isouter=True)\
+        .join(models.Person.tags, isouter=True)
+    
+    if group_id:
+        q = q.filter(models.Group.id == group_id)
+    if persona_id:
+        q = q.filter(models.Person.persona_id == persona_id)
+    
+    if query:
+        q = q.filter(
+            or_(
+                models.Person.name.ilike(f"%{query}%"),
+                models.Group.name.ilike(f"%{query}%"),
+                models.Persona.name.ilike(f"%{query}%"),
+                models.Tag.value.ilike(f"%{query}%")
+            )
+        )
+        
+    people = q.distinct().limit(15).all()
+        
+    if not people: return f"No people found matching criteria."
+    
+    results = []
+    for p in people:
+        group_names = ", ".join([g.name for g in p.groups])
+        persona_name = p.persona.name if p.persona else "None"
+        results.append(f"ID: {p.id}, Name: {p.name}, Persona: {persona_name}, Groups: [{group_names}], Contact: {p.contact_method}")
+        
+    return "\n".join(results)
 
 @tool_registry.register(
     "get_person_details",
@@ -173,32 +202,61 @@ async def get_person_details(db: Session, person_id: int):
     notes = db.query(models.Note).filter(models.Note.person_id == person.id).order_by(models.Note.date.desc()).limit(5).all()
     note_summary = "\n".join([f"- {n.date}: {n.title}" for n in notes])
     tags = ", ".join([f"{t.key}: {t.value}" for t in person.tags])
-    return f"Name: {person.name}\nContact: {person.contact_method}\nTags: {tags}\nRecent Sessions:\n{note_summary}\n\nTo see note content, ask for a specific note by title or ID."
+    groups = ", ".join([g.name for g in person.groups])
+    return f"Name: {person.name}\nPersona: {person.persona.name if person.persona else 'None'}\nGroups: {groups or 'None'}\nContact: {person.contact_method}\nTags: {tags}\nRecent Sessions:\n{note_summary}\n\nTo see note content, ask for a specific note by title or ID."
 
 @tool_registry.register(
     "search_groups",
-    "Search for groups in the practice.",
-    {"query": "string"}
+    "Search for groups by name. Supports persona_id filtering.",
+    {"query": "string (optional)", "persona_id": "integer (optional)"}
 )
-async def search_groups(db: Session, query: str):
-    groups = db.query(models.Group).filter(models.Group.name.ilike(f"%{query}%")).limit(10).all()
-    if not groups: return "No groups found."
-    return "\n".join([f"ID: {g.id}, Name: {g.name}, Description: {g.description}" for g in groups])
+async def search_groups(db: Session, query: str = None, persona_id: int = None):
+    q = db.query(models.Group)
+    if persona_id:
+        q = q.filter(models.Group.persona_id == persona_id)
+    if query:
+        q = q.filter(models.Group.name.ilike(f"%{query}%"))
+    
+    groups = q.limit(15).all()
+    if not groups: return "No groups found matching criteria."
+    return "\n".join([f"ID: {g.id}, Name: {g.name}, Info: {g.description or 'No description'}" for g in groups])
 
 @tool_registry.register(
     "search_notes",
-    "Search for session notes by keyword or title.",
-    {"query": "string"}
+    "Search for session notes. Supports person_id or group_id filtering.",
+    {"query": "string (optional)", "person_id": "integer (optional)", "group_id": "integer (optional)"}
 )
-async def search_notes(db: Session, query: str):
-    notes = db.query(models.Note).filter(
-        or_(
-            models.Note.title.ilike(f"%{query}%"),
-            models.Note.cleaned_text.ilike(f"%{query}%")
+async def search_notes(db: Session, query: str = None, person_id: int = None, group_id: int = None):
+    q = db.query(models.Note)\
+        .join(models.Note.person, isouter=True)\
+        .join(models.Note.group, isouter=True)
+    
+    if person_id:
+        q = q.filter(models.Note.person_id == person_id)
+    if group_id:
+        q = q.filter(models.Note.group_id == group_id)
+        
+    if query:
+        q = q.filter(
+            or_(
+                models.Note.title.ilike(f"%{query}%"),
+                models.Note.cleaned_text.ilike(f"%{query}%"),
+                models.Person.name.ilike(f"%{query}%"),
+                models.Group.name.ilike(f"%{query}%")
+            )
         )
-    ).order_by(models.Note.date.desc()).limit(5).all()
-    if not notes: return "No notes matching that query found."
-    return "\n".join([f"ID: {n.id}, Date: {n.date}, Title: {n.title}" for n in notes])
+        
+    notes = q.order_by(models.Note.date.desc()).limit(15).all()
+        
+    if not notes: return f"No notes found matching criteria."
+    
+    results = []
+    for n in notes:
+        person_name = n.person.name if n.person else "None"
+        group_name = n.group.name if n.group else "None"
+        results.append(f"ID: {n.id}, Date: {n.date}, Title: {n.title}, Person: {person_name}, Group: {group_name}")
+        
+    return "\n".join(results)
 
 @tool_registry.register(
     "get_note_content",
@@ -233,6 +291,7 @@ async def paraclete_chat(
     Paraclete Interactive Chat with Tool Calling and Context Awareness.
     """
     user_messages = request.get("messages", [])
+    print(f"DEBUG: PARACLETE CHAT - Processing {len(user_messages)} history turns.")
     
     # Base Workspace Context
     person_count = db.query(models.Person).count()
@@ -249,10 +308,12 @@ WORKSPACE SUMMARY:
 
 INSTRUCTIONS:
 - You are professional, insightful, and concise.
-- ALWAYS use the tools provided to retrieve information about specific people, groups, or notes. Do not guess.
-- Format tool calls as: [TOOL: tool_name(arg="value")] on a single line.
-- You can call multiple tools if needed.
+- ALWAYS use the tools provided to retrieve information. Do not guess names, IDs, or facts.
+- **MULTI-STEP REASONING**: If you need an ID (person_id, note_id, etc.) that you do not currently have, you MUST call a search tool (e.g., `search_people`, `search_notes`) FIRST and wait for the results. 
+- **DO NOT** guess IDs or leave them blank in a tool call (e.g., `person_id=`).
+- Format tool calls EXACTLY as: [TOOL: tool_name(arg="value")] on a single line.
 - When you have enough information, reply to the user directly.
+- Use the Practice Framework context whenever drafting messages or summarizing notes.
 - Avoid conversational fluff.
 
 AVAILABLE TOOLS:
@@ -264,9 +325,10 @@ AVAILABLE TOOLS:
     # Calculate current context size
     full_prompt_text = "\n".join([m["content"] for m in messages])
     try:
-        tokens = llm.llm_manager.model.tokenize(full_prompt_text.encode("utf-8"))
+        tokens = llm.llm_manager.tokenize(full_prompt_text.encode("utf-8"), use_case="chat")
         token_count = len(tokens)
-    except:
+    except Exception as e:
+        print(f"ERROR: Tokenization failed: {e}")
         token_count = len(full_prompt_text) // 4
     
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "chat", "prompt": "Paraclete is thinking..."}})
@@ -280,10 +342,11 @@ AVAILABLE TOOLS:
         for i in range(5):
             # Generate response (non-streaming for tool discovery)
             response = await asyncio.to_thread(
-                llm.llm_manager.model.create_chat_completion,
+                llm.llm_manager.chat,
                 messages=current_messages,
                 max_tokens=1024,
-                stop=["<turn|>", "<|channel|>", "<eos>"]
+                stop=["<turn|>", "<|channel|>", "<eos>"],
+                use_case="chat"
             )
             
             content = response["choices"][0]["message"]["content"]
@@ -325,11 +388,12 @@ AVAILABLE TOOLS:
             else:
                 # Final Pass: Stream the completion
                 response_iter = await asyncio.to_thread(
-                    llm.llm_manager.model.create_chat_completion,
+                    llm.llm_manager.chat,
                     messages=current_messages,
                     stream=True,
-                    max_tokens=1024,
-                    stop=["<turn|>", "<eos>"]
+                    max_tokens=2048,
+                    stop=["<turn|>", "<eos>"],
+                    use_case="chat"
                 )
                 
                 stream_filter = ChatStreamFilter()

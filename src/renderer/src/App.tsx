@@ -130,16 +130,7 @@ const App: React.FC = () => {
             }
         };
 
-        const checkLLM = async () => {
-            try {
-                const res = await fetch('http://127.0.0.1:8000/llm/status');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.is_ready) setIsLlmReady(true);
-                }
-            } catch (e) {}
-        };
-        checkLLM();
+        // Initial data fetch
         fetchProposalsCount();
 
         return () => {

@@ -196,7 +196,78 @@ const AdminPanel: React.FC = () => {
 
                 <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
                     <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ opacity: 0.7 }}>🧠</span> Intelligence Configuration
+                        <span style={{ opacity: 0.7 }}>🤖</span> Model Governance
+                    </h4>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        {/* Analysis Config */}
+                        <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <h5 style={{ fontWeight: 600, marginBottom: '16px', color: 'var(--primary)' }}>Analysis Engine</h5>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                Powers background extractions, framework analysis, and message drafting.
+                            </p>
+                            
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Model Path</label>
+                                <input 
+                                    type="text"
+                                    value={settings['llm_analysis_model'] || 'gemma-4-moe.gguf'}
+                                    onChange={(e) => updateSetting('llm_analysis_model', e.target.value)}
+                                    placeholder="e.g. gemma-4-moe.gguf"
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Context window (Tokens)</label>
+                                <select 
+                                    value={settings['llm_analysis_ctx'] || '8192'}
+                                    onChange={(e) => updateSetting('llm_analysis_ctx', e.target.value)}
+                                >
+                                    <option value="4096">4,096</option>
+                                    <option value="8192">8,192 (Default)</option>
+                                    <option value="16384">16,384</option>
+                                    <option value="32768">32,768</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Chat Config */}
+                        <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <h5 style={{ fontWeight: 600, marginBottom: '16px', color: 'var(--primary)' }}>Chat Specialist</h5>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                Powers the real-time Paraclete Chat agent in the focus panel.
+                            </p>
+                            
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Model Path</label>
+                                <input 
+                                    type="text"
+                                    value={settings['llm_chat_model'] || 'gemma-e4b.gguf'}
+                                    onChange={(e) => updateSetting('llm_chat_model', e.target.value)}
+                                    placeholder="e.g. gemma-e4b.gguf"
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Context window (Tokens)</label>
+                                <select 
+                                    value={settings['llm_chat_ctx'] || '32768'}
+                                    onChange={(e) => updateSetting('llm_chat_ctx', e.target.value)}
+                                >
+                                    <option value="8192">8,192</option>
+                                    <option value="16384">16,384</option>
+                                    <option value="32768">32,768 (Default)</option>
+                                    <option value="65536">65,536</option>
+                                    <option value="131072">131,072 (Ultra)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ opacity: 0.7 }}>🧠</span> Framework Intelligence
                     </h4>
                     <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

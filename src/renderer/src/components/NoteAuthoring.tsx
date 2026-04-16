@@ -81,9 +81,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
         const identifier = `${personId}-${groupId}-${noteId}`;
         if ((personId || groupId || noteId) && briefingFetchedFor.current !== identifier) {
             // Check LLM status first to provide better feedback
-            api.get<{ is_ready: boolean }>('/llm/status')
-                .then(res => setIsLlmReady(res.is_ready))
-                .catch(() => setIsLlmReady(true)); // Fallback if endpoint fails
+            // LLM status is now managed globally via WebSockets in App.tsx
+            // and broadcast via global-ws-message
 
             briefingFetchedFor.current = identifier;
             setIsBriefing(true);

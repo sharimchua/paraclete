@@ -29,8 +29,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [llmStatus, setLlmStatus] = useState<any>(null);
     const [contextUsage, setContextUsage] = useState(0);
-    const CONTEXT_LIMIT = 8192;
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -40,25 +40,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     }, [chatMessages]);
 
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        const checkLLM = async () => {
-            try {
-                const res = await fetch('http://127.0.0.1:8000/llm/status');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.is_ready) {
-                        setIsLlmReady(true);
-                        clearInterval(interval);
-                    }
-                }
-            } catch (e) {
-                // backend might still be down
-            }
-        };
-
-        checkLLM();
-        interval = setInterval(checkLLM, 2000);
-        return () => clearInterval(interval);
+        // Initial state will be provided via WebSocket status event on connect (managed in App.tsx)
+        // Polling and one-off fetch removed in favor of WebSockets
     }, []);
 
     const handleSendChat = async () => {
@@ -70,6 +53,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         setChatInput('');
         setIsSending(true);
         setIsThinking(true);
+
+        console.log(`Sending ${updatedMessages.length} messages to Paraclete:`, updatedMessages);
 
         try {
             const response = await fetch('http://127.0.0.1:8000/api/paraclete/chat', {
@@ -111,32 +96,16 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     };
 
     const renderChat = () => {
-        const usagePercent = Math.min((contextUsage / CONTEXT_LIMIT) * 100, 100);
         return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Context Usage Bar */}
-            <div style={{ 
-                marginBottom: '16px', 
-                background: 'rgba(255,255,255,0.03)', 
-                padding: '8px 12px', 
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.05)'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.65rem', opacity: 0.6 }}>
-                    <span>NEURAL CONTEXT WINDOW</span>
-                    <span>{contextUsage} / {CONTEXT_LIMIT} TOKENS</span>
-                </div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ 
-                        height: '100%', 
-                        width: `${usagePercent}%`, 
-                        background: usagePercent > 90 ? '#ef4444' : usagePercent > 70 ? '#f59e0b' : 'var(--primary)',
-                        transition: 'width 0.5s ease'
-                    }} />
-                </div>
-            </div>
 
             <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <style>{`
+                    @keyframes typing {
+                        0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+                        30% { transform: translateY(-4px); opacity: 1; }
+                    }
+                `}</style>
                 {chatMessages.length === 0 && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3, gap: '16px' }}>
                         <div style={{ width: '48px', opacity: 0.5 }}>
@@ -256,6 +225,12 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                 
                 if (data.event?.startsWith('llm_')) {
                     setEvents(prev => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }]);
+                    
+                    if (data.event === 'llm_status') {
+                        setLlmStatus(data.data);
+                        setIsLlmReady(data.data.is_ready);
+                    }
+                    
                     if (data.event === 'llm_start') {
                         if (data.data?.type === 'warmup') setIsWarming(true);
                         else setIsThinking(true);
@@ -286,10 +261,10 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     }, []);
 
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (scrollRef.current && (activeTab === 'jobs' || activeTab === 'forensics')) {
+            scrollRef.current.scrollTop = 0;
         }
-    }, [events, jobs]);
+    }, [events, jobs, activeTab]);
 
     const renderJobs = () => {
         const pendingCount = jobs.filter(j => j.status === 'pending' || j.status === 'running').length;
@@ -307,7 +282,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                         No background activity.
                     </div>
                 )}
-                {jobs.map((job) => (
+                {jobs.length > 0 && [...jobs].reverse().map((job) => (
                     <div key={job.id} style={{
                         background: 'rgba(255,255,255,0.03)',
                         padding: '10px',
@@ -351,7 +326,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                     Waiting for LLM trace...
                 </div>
             )}
-            {events.map((ev, i) => (
+            {[...events].reverse().map((ev, i) => (
                 <div key={i} style={{
                     background: 'rgba(255,255,255,0.02)',
                     padding: '10px',
@@ -368,9 +343,16 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                         <span>{ev.timestamp}</span>
                     </div>
                     <div style={{ fontSize: '0.7rem', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                        {ev.event === 'llm_start' ? ev.data.prompt : 
-                         ev.event === 'llm_finish' ? (typeof ev.data.result === 'string' ? ev.data.result : 'Result Object') : 
-                         ev.data}
+                        {(() => {
+                            if (ev.event === 'llm_start') return ev.data.prompt || 'Thinking...';
+                            if (ev.event === 'llm_finish') return (typeof ev.data.result === 'string' ? ev.data.result : (ev.data.type ? `Finished ${ev.data.type}` : 'Process Complete'));
+                            
+                            const displayData = ev.data;
+                            if (typeof displayData === 'object' && displayData !== null) {
+                                return JSON.stringify(displayData, null, 2);
+                            }
+                            return String(displayData);
+                        })()}
                     </div>
                 </div>
             ))}
@@ -499,8 +481,55 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                             {isThinking ? 'NEURAL ENGINE ACTIVE' : !isLlmReady ? 'WARMING UP NEURAL ENGINE...' : 'PARACLETE CORE STABLE'}
                         </span>
                     </div>
-                    {(() => {
-                        const handleClear = async () => {
+
+                    {activeTab === 'chat' && (
+                        <div style={{ 
+                            flex: 1, 
+                            maxWidth: '400px', 
+                            margin: '0 32px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px'
+                        }}>
+                            {(() => {
+                                const CURRENT_CTX_LIMIT = llmStatus?.n_ctx || 32768;
+                                const usagePercent = Math.min((contextUsage / CURRENT_CTX_LIMIT) * 100, 100);
+                                const isActiveChatModel = llmStatus?.active_use_case === 'chat';
+                                return (
+                                    <>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 600, opacity: 0.6 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span>NEURAL CONTEXT</span>
+                                                <span style={{ 
+                                                    fontSize: '0.55rem', 
+                                                    padding: '1px 4px', 
+                                                    background: isActiveChatModel ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                                    color: isActiveChatModel ? '#4ade80' : '#fbbf24',
+                                                    borderRadius: '3px',
+                                                    border: `1px solid ${isActiveChatModel ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                                                }}>
+                                                    {isActiveChatModel ? 'CHAT SPECIALIST' : 'ANALYSIS ENGINE'}
+                                                </span>
+                                            </div>
+                                            <span>{contextUsage.toLocaleString()} / {CURRENT_CTX_LIMIT.toLocaleString()}</span>
+                                        </div>
+                                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                                            <div style={{ 
+                                                height: '100%', 
+                                                width: `${usagePercent}%`, 
+                                                background: usagePercent > 90 ? '#ef4444' : usagePercent > 70 ? '#f59e0b' : 'var(--primary)',
+                                                transition: 'width 0.5s ease'
+                                            }} />
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {(() => {
+                            const handleClear = async () => {
                             if (activeTab === 'forensics') {
                                 setEvents([]);
                             } else if (activeTab === 'jobs') {
@@ -532,7 +561,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
                             </button>
                         );
                     })()}
-                </footer>
+                </div>
+            </footer>
 
                 <style>{`
                     @keyframes paracleteExpand {
