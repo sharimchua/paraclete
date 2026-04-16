@@ -34,12 +34,6 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [chatMessages]);
-
-    useEffect(() => {
         // Initial state will be provided via WebSocket status event on connect (managed in App.tsx)
         // Polling and one-off fetch removed in favor of WebSockets
     }, []);
@@ -260,11 +254,22 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         };
     }, []);
 
+    // Effect to scroll chat to bottom
+    useEffect(() => {
+        if (activeTab === 'chat' && chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [chatMessages, activeTab, isOpen]);
+
+    // Effect for Background Jobs / Forensics - only snap to top when NEW data arrives, not on tab switch
     useEffect(() => {
         if (scrollRef.current && (activeTab === 'jobs' || activeTab === 'forensics')) {
-            scrollRef.current.scrollTop = 0;
+            // Only snap to top if we were already near the top (manual scroll preservation)
+            if (scrollRef.current.scrollTop < 100) {
+                scrollRef.current.scrollTop = 0;
+            }
         }
-    }, [events, jobs, activeTab]);
+    }, [events, jobs]);
 
     const renderJobs = () => {
         const pendingCount = jobs.filter(j => j.status === 'pending' || j.status === 'running').length;
