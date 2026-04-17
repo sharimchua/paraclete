@@ -128,17 +128,76 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                             {person && (
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>With</span>
-                                    <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{person.name}</span>
+                                    <span 
+                                        onClick={() => {
+                                            window.dispatchEvent(new CustomEvent('navigate', { 
+                                                detail: { view: 'persons', personId: person.id } 
+                                            }));
+                                        }}
+                                        style={{ 
+                                            fontWeight: 600, 
+                                            color: 'var(--primary)', 
+                                            cursor: 'pointer',
+                                            textDecoration: 'none',
+                                            transition: 'opacity 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                    >
+                                        {person.name}
+                                    </span>
                                 </div>
                             )}
                             {group && (
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>Group</span>
-                                    <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>{group.name}</span>
+                                    <span 
+                                        onClick={() => {
+                                            window.dispatchEvent(new CustomEvent('navigate', { 
+                                                detail: { view: 'groups', groupId: group.id } 
+                                            }));
+                                        }}
+                                        style={{ 
+                                            fontWeight: 600, 
+                                            color: 'var(--secondary)', 
+                                            cursor: 'pointer',
+                                            textDecoration: 'none',
+                                            transition: 'opacity 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                    >
+                                        {group.name}
+                                    </span>
                                 </div>
                             )}
                         </div>
                     </div>
+
+                    {note.tags && note.tags.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '32px' }}>
+                            {note.tags.map((tag, i) => (
+                                <span 
+                                    key={i}
+                                    style={{
+                                        background: 'rgba(157, 129, 255, 0.1)',
+                                        color: 'var(--primary)',
+                                        border: '1px solid rgba(157, 129, 255, 0.2)',
+                                        padding: '4px 12px',
+                                        borderRadius: '16px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}
+                                >
+                                    {tag.key && <span style={{ opacity: 0.7, fontWeight: 400 }}>{tag.key}:</span>}
+                                    {tag.value}
+                                </span>
+                            ))}
+                        </div>
+                    )}
 
                     {note.session_brief && (
                         <div style={{ 
