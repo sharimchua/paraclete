@@ -102,6 +102,7 @@ export interface CustomFrameworkRecord {
     id: number;
     name: string;
     framework: PractiseFramework;
+    persona_id?: number;
 }
 
 export interface Persona {

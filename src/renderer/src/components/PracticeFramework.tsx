@@ -1,54 +1,97 @@
 import React, { useState, useEffect } from 'react';
-import { api, PractiseFramework, Persona, FrameworkProposal } from '../services/api';
+import { api, PractiseFramework, Persona, FrameworkProposal, PractiseFrameworkItem } from '../services/api';
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
+import ConfirmationModal from './ConfirmationModal';
+import { toast } from './ToastProvider';
 
-const FrameworkSection: React.FC<{
+const FrameworkAspectList: React.FC<{
     title: string;
-    value: string;
+    aspect: string;
     description: string;
-    onSave: (newValue: string) => Promise<void>;
-}> = ({ title, value, description, onSave }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editValue, setEditValue] = useState(value);
+    framework: PractiseFramework;
+    items: PractiseFrameworkItem[];
+    onAdd: (aspect: string, value: string) => void;
+    onUpdate: (id: number, value: string) => void;
+    onDelete: (id: number) => void;
+    onMove: (item: PractiseFrameworkItem) => void;
+    hierarchyContext: { type: 'core' | 'persona' | 'custom', name: string, personaId?: number };
+}> = ({ title, aspect, description, framework, items, onAdd, onUpdate, onDelete, onMove, hierarchyContext }) => {
+    const [isAdding, setIsAdding] = useState(false);
+    const [newValue, setNewValue] = useState('');
+    const [editingId, setEditingId] = useState<number|null>(null);
+    const [editValue, setEditValue] = useState('');
+
+    const filteredItems = items.filter(i => i.aspect === aspect);
 
     return (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ color: 'var(--primary)', margin: 0 }}>{title}</h3>
-                {!isEditing ? (
-                    <button className="btn-secondary" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setEditValue(value); setIsEditing(true); }}>Edit</button>
-                ) : (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="btn-secondary" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => setIsEditing(false)}>Cancel</button>
-                        <button className="btn-primary" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={async () => {
-                            await onSave(editValue);
-                            setIsEditing(false);
-                        }}>Save</button>
+        <div className="card" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>{title}</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: '4px 0' }}>{description}</p>
+                </div>
+                {!isAdding && (
+                    <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => setIsAdding(true)}>+ Add Rule</button>
+                )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {filteredItems.map(item => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-deep)', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                        {editingId === item.id ? (
+                            <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
+                                <input 
+                                    className="input-field" 
+                                    value={editValue} 
+                                    onChange={e => setEditValue(e.target.value)} 
+                                    autoFocus
+                                    onKeyDown={e => e.key === 'Enter' && (onUpdate(item.id, editValue), setEditingId(null))}
+                                />
+                                <button className="btn-primary" style={{ padding: '4px 12px' }} onClick={() => { onUpdate(item.id, editValue); setEditingId(null); }}>Save</button>
+                                <button className="btn-secondary" style={{ padding: '4px 12px' }} onClick={() => setEditingId(null)}>Cancel</button>
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{ fontSize: '0.95rem', flex: 1, cursor: 'pointer' }} onClick={() => { setEditingId(item.id); setEditValue(item.value); }}>
+                                    {item.value}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                    <button 
+                                        className="btn-secondary" 
+                                        style={{ padding: '4px 8px', fontSize: '0.7rem' }} 
+                                        title="Move to different level"
+                                        onClick={() => onMove(item)}
+                                    >
+                                        ⇄ Move
+                                    </button>
+                                    <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: '0.7rem', color: '#ff5f5f' }} onClick={() => onDelete(item.id)}>Delete</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                ))}
+
+                {isAdding && (
+                    <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-surface-elevated)', padding: '12px', borderRadius: '10px', border: '1px dashed var(--primary)' }}>
+                        <input 
+                            className="input-field" 
+                            placeholder="Type new stylistic rule..." 
+                            value={newValue} 
+                            onChange={e => setNewValue(e.target.value)}
+                            autoFocus
+                            onKeyDown={e => e.key === 'Enter' && newValue && (onAdd(aspect, newValue), setNewValue(''), setIsAdding(false))}
+                        />
+                        <button className="btn-primary" onClick={() => { if (newValue) { onAdd(aspect, newValue); setNewValue(''); setIsAdding(false); } }}>Add</button>
+                        <button className="btn-secondary" onClick={() => setIsAdding(false)}>Cancel</button>
+                    </div>
+                )}
+
+                {filteredItems.length === 0 && !isAdding && (
+                    <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        No specific rules defined for this aspect.
                     </div>
                 )}
             </div>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{description}</p>
-            {isEditing ? (
-                <textarea 
-                    className="input-field" 
-                    value={editValue} 
-                    onChange={(e) => setEditValue(e.target.value)}
-                    style={{ minHeight: '150px', fontSize: '0.9rem', lineHeight: '1.5' }}
-                />
-            ) : (
-                <div style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    color: 'var(--text-secondary)', 
-                    lineHeight: '1.6', 
-                    background: 'var(--bg-deep)', 
-                    padding: '12px', 
-                    borderRadius: '8px',
-                    fontSize: '0.9rem',
-                    minHeight: '40px'
-                }}>
-                    {value || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Not defined yet.</span>}
-                </div>
-            )}
         </div>
     );
 };
@@ -63,11 +106,19 @@ const PracticeFramework: React.FC = () => {
     const [selectedCustomRecord, setSelectedCustomRecord] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const [showCreatePersona, setShowCreatePersona] = useState(false);
-    const [consolidatedView, setConsolidatedView] = useState<{title: string, text: string} | null>(null);
+    const [consolidatedView, setConsolidatedView] = useState<{title: string, text: string, structuredData?: any} | null>(null);
+    const [movingItem, setMovingItem] = useState<PractiseFrameworkItem | null>(null);
+    const [confirmation, setConfirmation] = useState<{ title: string, message: string, variant?: 'danger' | 'primary', onConfirm: () => void } | null>(null);
     
     // New Persona State
     const [newPersonaName, setNewPersonaName] = useState('');
     const [newPersonaDesc, setNewPersonaDesc] = useState('');
+
+    const allItems = [
+        ...(core?.items || []),
+        ...personas.flatMap(p => p.framework?.items || []),
+        ...customRecords.flatMap(r => r.framework?.items || [])
+    ];
 
     const fetchData = async () => {
         setLoading(true);
@@ -82,10 +133,17 @@ const PracticeFramework: React.FC = () => {
 
             if (coreRes.status === 'fulfilled') setCore(coreRes.value);
             if (personaRes.status === 'fulfilled') setPersonas(personaRes.value);
-            if (customRes.status === 'fulfilled') setCustomRecords(customRes.value);
+            if (customRes.status === 'fulfilled') {
+                setCustomRecords(customRes.value);
+                // Update selected custom record if active to ensure UI refreshes (e.g. after move)
+                if (selectedCustomRecord) {
+                    const updated = customRes.value.find(r => r.id === selectedCustomRecord.id && r.type === selectedCustomRecord.type);
+                    setSelectedCustomRecord(updated || null);
+                }
+            }
             if (proposalRes.status === 'fulfilled') setProposals(proposalRes.value);
 
-            if (personaRes.status === 'rejected') console.error('Failed to fetch personas:', personaRes.reason);
+            setLoading(false);
             if (customRes.status === 'rejected') console.error('Failed to fetch custom frameworks:', customRes.reason);
         } catch (err) {
             console.error('Failed to fetch framework data:', err);
@@ -111,6 +169,17 @@ const PracticeFramework: React.FC = () => {
     }, []);
 
 
+    const moveFrameworkItem = async (itemId: number, targetType: string, targetId?: number) => {
+        try {
+            await api.post(`/api/framework/items/${itemId}/move`, { target_type: targetType, target_id: targetId });
+            setMovingItem(null);
+            fetchData();
+        } catch (err: any) {
+            console.error('Failed to move item:', err);
+            toast.error(`Failed to move item: ${err.message || 'Unknown error'}`);
+        }
+    };
+
     const resolveProposal = async (id: number, approved: boolean, targetPersonaId?: number, isCore?: boolean, personId?: number, groupId?: number) => {
         try {
             await api.post(`/api/framework/proposals/${id}/resolve`, { 
@@ -128,38 +197,61 @@ const PracticeFramework: React.FC = () => {
     };
 
     const rejectAllProposals = async () => {
-        if (!window.confirm(`Are you sure you want to reject all ${proposals.length} pending proposals?`)) return;
+        setConfirmation({
+            title: 'Reject All Proposals?',
+            message: `Are you sure you want to reject all ${proposals.length} pending proposals?`,
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await api.post('/api/framework/proposals/reject-all', {});
+                    setProposals([]);
+                    toast.success('All proposals rejected.');
+                } catch (err) {
+                    console.error('Failed to reject all proposals:', err);
+                    toast.error('Failed to reject all proposals.');
+                }
+                setConfirmation(null);
+            }
+        });
+    };
+
+    const createFrameworkItem = async (frameworkId: number, aspect: string, value: string) => {
         try {
-            await api.post('/api/framework/proposals/reject-all', {});
-            setProposals([]);
-            alert('All proposals rejected.');
+            await api.post(`/api/framework/frameworks/${frameworkId}/items`, { aspect, value });
+            fetchData();
         } catch (err) {
-            console.error('Failed to reject all proposals:', err);
-            alert('Failed to reject all proposals.');
+            console.error('Failed to create item:', err);
         }
     };
 
-    const saveCoreSection = async (field: keyof PractiseFramework, value: string) => {
-        if (!core) return;
+    const updateFrameworkItem = async (itemId: number, value: string) => {
         try {
-            await api.patch('/api/framework/core', { ...core, [field]: value });
+            const item = allItems.find(i => i.id === itemId);
+            if (!item) return;
+            await api.patch(`/api/framework/items/${itemId}`, { aspect: item.aspect, value });
             fetchData();
         } catch (err) {
-            console.error('Failed to save core section:', err);
-            alert('Failed to save.');
+            console.error('Failed to update item:', err);
         }
     };
 
-    const savePersonaFrameworkSection = async (personaId: number, field: keyof PractiseFramework, value: string) => {
-        const persona = personas.find(p => p.id === personaId);
-        if (!persona || !persona.framework) return;
-        try {
-            await api.patch(`/api/framework/frameworks/${persona.framework.id}`, { ...persona.framework, [field]: value });
-            fetchData();
-        } catch (err) {
-            console.error('Failed to save persona framework:', err);
-            alert('Failed to save.');
-        }
+    const deleteFrameworkItem = async (itemId: number) => {
+        setConfirmation({
+            title: 'Delete Rule',
+            message: 'Are you sure you want to delete this rule?',
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/api/framework/items/${itemId}`);
+                    fetchData();
+                    toast.success('Rule deleted.');
+                } catch (err) {
+                    console.error('Failed to delete item:', err);
+                    toast.error('Failed to delete rule.');
+                }
+                setConfirmation(null);
+            }
+        });
     };
 
     const handleCreatePersona = async (e: React.FormEvent) => {
@@ -173,21 +265,31 @@ const PracticeFramework: React.FC = () => {
             setNewPersonaDesc('');
             setShowCreatePersona(false);
             fetchData();
+            toast.success('Persona created.');
         } catch (err) {
             console.error('Failed to create persona:', err);
-            alert('Failed to create persona.');
+            toast.error('Failed to create persona.');
         }
     };
 
     const handleDeletePersona = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this persona?')) return;
-        try {
-            await api.delete(`/api/framework/personas/${id}`);
-            if (selectedPersonaId === id) setSelectedPersonaId(null);
-            fetchData();
-        } catch (err) {
-            console.error('Failed to delete persona:', err);
-        }
+        setConfirmation({
+            title: 'Delete Persona',
+            message: 'Are you sure you want to delete this persona? All associated core rules will be unlinked (but remain in global core).',
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/api/framework/personas/${id}`);
+                    if (selectedPersonaId === id) setSelectedPersonaId(null);
+                    fetchData();
+                    toast.success('Persona deleted.');
+                } catch (err) {
+                    console.error('Failed to delete persona:', err);
+                    toast.error('Failed to delete persona.');
+                }
+                setConfirmation(null);
+            }
+        });
     };
 
     if (loading) return <div className="loader" />;
@@ -203,8 +305,19 @@ const PracticeFramework: React.FC = () => {
                         Manage your professional professional style and AI-driven growth.
                     </p>
                 </div>
-                <div style={{ width: '400px' }}>
-                    <FrameworkAnalysisControls title="Full Practice Analysis" />
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {((activeTab === 'personas' && selectedPersonaId) || (activeTab === 'custom' && selectedCustomRecord) || activeTab === 'core') && (
+                        <FrameworkAnalysisControls 
+                            personaId={selectedPersonaId || (activeTab === 'core' ? undefined : undefined)} 
+                            personId={selectedCustomRecord?.type === 'person' ? selectedCustomRecord.id : undefined}
+                            groupId={selectedCustomRecord?.type === 'group' ? selectedCustomRecord.id : undefined}
+                        />
+                    )}
+                    {!(activeTab === 'core' || (activeTab === 'personas' && selectedPersonaId) || (activeTab === 'custom' && selectedCustomRecord)) && (
+                        <div style={{ width: '400px' }}>
+                            <FrameworkAnalysisControls title="Full Practice Analysis" />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -247,30 +360,26 @@ const PracticeFramework: React.FC = () => {
                                 <strong>Global Core:</strong> These settings apply to all sessions unless overridden by a specific persona.
                             </p>
                         </div>
-                        <FrameworkSection 
-                            title="Tone & Idioms" 
-                            description="Define your preferred professional tone and specific idioms you use."
-                            value={core.tone_idioms || ''} 
-                            onSave={(val) => saveCoreSection('tone_idioms', val)}
-                        />
-                        <FrameworkSection 
-                            title="Formatting Preferences" 
-                            description="Set how you like your notes, summaries, and messages to be formatted."
-                            value={core.formatting_preferences || ''} 
-                            onSave={(val) => saveCoreSection('formatting_preferences', val)}
-                        />
-                        <FrameworkSection 
-                            title="Principles & Tenets" 
-                            description="The core professional values and rules that guide your practice."
-                            value={core.principles_tenets || ''} 
-                            onSave={(val) => saveCoreSection('principles_tenets', val)}
-                        />
-                        <FrameworkSection 
-                            title="Common Phrasing" 
-                            description="Specific words, signatures, or phrases you frequently use."
-                            value={core.common_phrasing || ''} 
-                            onSave={(val) => saveCoreSection('common_phrasing', val)}
-                        />
+                        {[
+                            { id: 'Tone', title: 'Tone & Idioms', desc: 'Typical vocabulary, regionalisms, and emotional tenor.' },
+                            { id: 'Formatting', title: 'Formatting & Structure', desc: 'Bullet points usage, greeting styles, and brevity.' },
+                            { id: 'Principles', title: 'Principles & Tenets', desc: 'Core philosophical anchors for communication.' },
+                            { id: 'Phrasing', title: 'Common Phrasing', desc: 'Specific phrases or sentence starters to use or avoid.' }
+                        ].map(section => (
+                            <FrameworkAspectList 
+                                key={section.id}
+                                aspect={section.id}
+                                title={section.title}
+                                description={section.desc}
+                                framework={core}
+                                items={core.items || []}
+                                onAdd={(asp, val) => createFrameworkItem(core.id, asp, val)}
+                                onUpdate={updateFrameworkItem}
+                                onDelete={deleteFrameworkItem}
+                                onMove={setMovingItem}
+                                hierarchyContext={{ type: 'core', name: 'Global' }}
+                            />
+                        ))}
                     </div>
                 )}
 
@@ -358,8 +467,8 @@ const PracticeFramework: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setConsolidatedView({ title: `${p.name} Consolidated`, text: "Loading..." });
-                                                api.get<{consolidated_text: string}>(`/api/framework/consolidated/persona/${p.id}`).then(res => {
-                                                    setConsolidatedView({ title: `${p.name} Practice Style`, text: res.consolidated_text });
+                                                api.get<{consolidated_text: string, structured_data: any}>(`/api/framework/consolidated/persona/${p.id}`).then(res => {
+                                                    setConsolidatedView({ title: `${p.name} Practice Style`, text: res.consolidated_text, structuredData: res.structured_data });
                                                 });
                                             }}
                                         >
@@ -448,8 +557,8 @@ const PracticeFramework: React.FC = () => {
                                                 e.stopPropagation();
                                                 setConsolidatedView({ title: `${record.name} View`, text: "Loading..." });
                                                 const path = record.type === 'person' ? `/api/framework/consolidated/person/${record.id}` : `/api/framework/consolidated/group/${record.id}`;
-                                                api.get<{consolidated_text: string}>(path).then(res => {
-                                                    setConsolidatedView({ title: `${record.name} Styles`, text: res.consolidated_text });
+                                                api.get<{consolidated_text: string, structured_data: any}>(path).then(res => {
+                                                    setConsolidatedView({ title: `${record.name} Styles`, text: res.consolidated_text, structuredData: res.structured_data });
                                                 });
                                             }}
                                         >
@@ -460,9 +569,23 @@ const PracticeFramework: React.FC = () => {
                                             style={{ color: '#ef4444', padding: '8px' }} 
                                             onClick={(e) => { 
                                                 e.stopPropagation(); 
-                                                if (window.confirm(`Wipe all custom rules for ${record.name}?`)) {
-                                                    api.delete(`/api/framework/${record.framework.id}`).then(() => fetchData());
-                                                }
+                                                setConfirmation({
+                                                    title: 'Wipe Custom Rules',
+                                                    message: `Are you sure you want to wipe all custom rules for ${record.name}? This action cannot be undone.`,
+                                                    variant: 'danger',
+                                                    onConfirm: async () => {
+                                                        try {
+                                                            await api.delete(`/api/framework/frameworks/${record.framework.id}`);
+                                                            setSelectedCustomRecord(null);
+                                                            fetchData();
+                                                            toast.success('Custom framework wiped.');
+                                                        } catch (err) {
+                                                            console.error('Failed to delete framework:', err);
+                                                            toast.error('Failed to wipe framework.');
+                                                        }
+                                                        setConfirmation(null);
+                                                    }
+                                                });
                                             }}
                                         >
                                             🗑️
@@ -494,42 +617,30 @@ const PracticeFramework: React.FC = () => {
 
                         {selectedCustomRecord.framework ? (
                             <>
-                                <FrameworkSection 
-                                    title="Tone & Idioms" 
-                                    description={`Stylistic markers unique to ${selectedCustomRecord.name}.`}
-                                    value={selectedCustomRecord.framework.tone_idioms || ''} 
-                                    onSave={async (val) => {
-                                        await api.patch(`/api/framework/frameworks/${selectedCustomRecord.framework.id}`, { ...selectedCustomRecord.framework, tone_idioms: val });
-                                        fetchData();
-                                    }}
-                                />
-                                <FrameworkSection 
-                                    title="Formatting Preferences" 
-                                    description={`How ${selectedCustomRecord.name} expects information to be presented.`}
-                                    value={selectedCustomRecord.framework.formatting_preferences || ''} 
-                                    onSave={async (val) => {
-                                        await api.patch(`/api/framework/frameworks/${selectedCustomRecord.framework.id}`, { ...selectedCustomRecord.framework, formatting_preferences: val });
-                                        fetchData();
-                                    }}
-                                />
-                                <FrameworkSection 
-                                    title="Principles & Tenets" 
-                                    description={`The ground rules for this specific stakeholder relationship.`}
-                                    value={selectedCustomRecord.framework.principles_tenets || ''} 
-                                    onSave={async (val) => {
-                                        await api.patch(`/api/framework/frameworks/${selectedCustomRecord.framework.id}`, { ...selectedCustomRecord.framework, principles_tenets: val });
-                                        fetchData();
-                                    }}
-                                />
-                                <FrameworkSection 
-                                    title="Common Phrasing" 
-                                    description={`Vocabulary or signatures specific to ${selectedCustomRecord.name}.`}
-                                    value={selectedCustomRecord.framework.common_phrasing || ''} 
-                                    onSave={async (val) => {
-                                        await api.patch(`/api/framework/frameworks/${selectedCustomRecord.framework.id}`, { ...selectedCustomRecord.framework, common_phrasing: val });
-                                        fetchData();
-                                    }}
-                                />
+                                {[
+                                    { id: 'Tone', title: 'Tone & Idioms', desc: 'Stakeholder vocabulary.' },
+                                    { id: 'Formatting', title: 'Formatting', desc: 'Rules for this entity.' },
+                                    { id: 'Principles', title: 'Principles', desc: 'Specific tenets.' },
+                                    { id: 'Phrasing', title: 'Phrasing', desc: 'Targeted phrasings.' }
+                                ].map(section => (
+                                    <FrameworkAspectList 
+                                        key={section.id}
+                                        aspect={section.id}
+                                        title={section.title}
+                                        description={section.desc}
+                                        framework={selectedCustomRecord.framework}
+                                        items={selectedCustomRecord.framework.items || []}
+                                        onAdd={(asp, val) => createFrameworkItem(selectedCustomRecord.framework.id, asp, val)}
+                                        onUpdate={updateFrameworkItem}
+                                        onDelete={deleteFrameworkItem}
+                                        onMove={setMovingItem}
+                                        hierarchyContext={{ 
+                                            type: 'custom', 
+                                            name: selectedCustomRecord.name,
+                                            personaId: selectedCustomRecord.persona_id 
+                                        }}
+                                    />
+                                ))}
                             </>
                         ) : (
                             <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
@@ -554,30 +665,26 @@ const PracticeFramework: React.FC = () => {
 
                         {selectedPersona.framework ? (
                             <>
-                                <FrameworkSection 
-                                    title="Tone & Idioms" 
-                                    description={`Stylistic overrides for ${selectedPersona.name}.`}
-                                    value={selectedPersona.framework.tone_idioms || ''} 
-                                    onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'tone_idioms', val)}
-                                />
-                                <FrameworkSection 
-                                    title="Formatting Preferences" 
-                                    description={`How ${selectedPersona.name} prefers to structure information.`}
-                                    value={selectedPersona.framework.formatting_preferences || ''} 
-                                    onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'formatting_preferences', val)}
-                                />
-                                <FrameworkSection 
-                                    title="Principles & Tenets" 
-                                    description={`Specific professional values for the ${selectedPersona.name} context.`}
-                                    value={selectedPersona.framework.principles_tenets || ''} 
-                                    onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'principles_tenets', val)}
-                                />
-                                <FrameworkSection 
-                                    title="Common Phrasing" 
-                                    description={`Preferred vocabulary or stylistic markers for ${selectedPersona.name}.`}
-                                    value={selectedPersona.framework.common_phrasing || ''} 
-                                    onSave={(val) => savePersonaFrameworkSection(selectedPersona.id, 'common_phrasing', val)}
-                                />
+                                {[
+                                    { id: 'Tone', title: 'Tone & Idioms', desc: `Stylistic overrides for ${selectedPersona.name}.` },
+                                    { id: 'Formatting', title: 'Formatting', desc: `How ${selectedPersona.name} prefers to structure information.` },
+                                    { id: 'Principles', title: 'Principles', desc: `Specific professional values for the ${selectedPersona.name} context.` },
+                                    { id: 'Phrasing', title: 'Phrasing', desc: `Preferred vocabulary or stylistic markers for ${selectedPersona.name}.` }
+                                ].map(section => (
+                                    <FrameworkAspectList 
+                                        key={section.id}
+                                        aspect={section.id}
+                                        title={section.title}
+                                        description={section.desc}
+                                        framework={selectedPersona.framework!}
+                                        items={selectedPersona.framework?.items || []}
+                                        onAdd={(asp, val) => createFrameworkItem(selectedPersona.framework!.id, asp, val)}
+                                        onUpdate={updateFrameworkItem}
+                                        onDelete={deleteFrameworkItem}
+                                        onMove={setMovingItem}
+                                        hierarchyContext={{ type: 'persona', name: selectedPersona.name }}
+                                    />
+                                ))}
 
                                 <div style={{ marginTop: '24px' }}>
                                     <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px' }}>Targeted Evolution</h3>
@@ -700,10 +807,20 @@ const PracticeFramework: React.FC = () => {
                                                         const updated = proposals.map(p => {
                                                             if (p.id === proposal.id) {
                                                                 if (val === 'core') return { ...p, is_core: true, persona_id: null as any, person_id: null as any, group_id: null as any };
-                                                                if (val.startsWith('person-')) return { ...p, is_core: false, persona_id: null as any, person_id: parseInt(val.split('-')[1]), group_id: null as any };
-                                                                if (val.startsWith('group-')) return { ...p, is_core: false, persona_id: null as any, person_id: null as any, group_id: parseInt(val.split('-')[1]) };
+                                                                if (val.startsWith('person-')) {
+                                                                    const id = parseInt(val.split('-')[1]);
+                                                                    return { ...p, is_core: false, persona_id: null as any, person_id: id, group_id: null as any };
+                                                                }
+                                                                if (val.startsWith('group-')) {
+                                                                    const id = parseInt(val.split('-')[1]);
+                                                                    // Try to find group name from possibilities or personas
+                                                                    const gName = p.possible_groups?.find(g => g.id === id)?.name;
+                                                                    return { ...p, is_core: false, persona_id: null as any, person_id: null as any, group_id: id, group_name: gName || p.group_name };
+                                                                }
                                                                 // Assume it's a raw persona ID
-                                                                return { ...p, is_core: false, persona_id: parseInt(val), person_id: null as any, group_id: null as any };
+                                                                const pid = parseInt(val);
+                                                                const persName = personas.find(pers => pers.id === pid)?.name;
+                                                                return { ...p, is_core: false, persona_id: pid, persona_name: persName || p.persona_name, person_id: null as any, group_id: null as any };
                                                             }
                                                             return p;
                                                         });
@@ -732,6 +849,14 @@ const PracticeFramework: React.FC = () => {
                                                             ))}
                                                         </optgroup>
                                                     )}
+
+                                                    {proposal.possible_groups && proposal.possible_groups.length > 0 && (
+                                                        <optgroup label="Member of Groups (Retarget to Group Base)">
+                                                            {proposal.possible_groups.map(g => (
+                                                                <option key={g.id} value={`group-${g.id}`}>Move to Group: {g.name}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                    )}
                                                 </select>
                                             </div>
                                             <div style={{ display: 'flex', gap: '8px' }}>
@@ -750,31 +875,131 @@ const PracticeFramework: React.FC = () => {
             {/* Consolidated View Modal */}
             {consolidatedView && (
                 <div className="modal-overlay" onClick={() => setConsolidatedView(null)}>
-                    <div className="modal-content card" style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }} onClick={e => e.stopPropagation()}>
+                    <div className="modal-content card" style={{ width: '90%', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }} onClick={e => e.stopPropagation()}>
                         <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{consolidatedView.title}</h2>
                             <button className="btn-secondary" style={{ padding: '6px 16px' }} onClick={() => setConsolidatedView(null)}>Close</button>
                         </div>
-                        <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
-                            <div style={{ 
-                                background: 'var(--bg-deep)', 
-                                padding: '32px', 
-                                borderRadius: '12px', 
-                                border: '1px solid var(--border)', 
-                                whiteSpace: 'pre-wrap', 
-                                fontFamily: 'var(--font-mono)', 
-                                fontSize: '0.95rem', 
-                                lineHeight: '1.7',
-                                color: 'var(--text-primary)'
-                            }}>
-                                {consolidatedView.text}
-                            </div>
+                        <div style={{ padding: '32px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', minHeight: '300px' }}>
+                            {consolidatedView.structuredData ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                                    {(() => {
+                                        const levels = [
+                                            { label: 'Global Core', items: consolidatedView.structuredData.core || [] },
+                                            { label: `Persona: ${consolidatedView.structuredData.persona?.name}`, items: consolidatedView.structuredData.persona?.items || [] },
+                                            ...(consolidatedView.structuredData.groups || []).map((g: any) => ({ label: `Group: ${g.name}`, items: g.items || [] })),
+                                            { label: `Individual: ${consolidatedView.structuredData.person?.name}`, items: consolidatedView.structuredData.person?.items || [] }
+                                        ].filter(l => l.items && l.items.length > 0);
+
+                                        if (levels.length === 0) return <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No rules defined for this context.</div>;
+
+                                        return levels.map((level, idx) => (
+                                            <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-surface)' }}>
+                                                <div style={{ background: 'var(--bg-surface-elevated)', padding: '12px 20px', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                    {level.label}
+                                                </div>
+                                                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                    {level.items.map((item: any) => (
+                                                        <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                                                            <div style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                                                <span style={{ fontWeight: 700, color: 'var(--primary)', marginRight: '8px' }}>{item.aspect}:</span>
+                                                                {item.value}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
+                                </div>
+                            ) : (
+                                <div style={{ 
+                                    background: 'var(--bg-deep)', 
+                                    padding: '32px', 
+                                    borderRadius: '12px', 
+                                    border: '1px solid var(--border)', 
+                                    whiteSpace: 'pre-wrap', 
+                                    fontFamily: 'var(--font-mono)', 
+                                    fontSize: '0.95rem', 
+                                    lineHeight: '1.7',
+                                    color: 'var(--text-primary)'
+                                }}>
+                                    {consolidatedView.text}
+                                </div>
+                            )}
                         </div>
                         <div style={{ padding: '16px 32px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface-elevated)', display: 'flex', justifyContent: 'flex-end' }}>
                             <button className="btn-primary" onClick={() => setConsolidatedView(null)}>Got it</button>
                         </div>
                     </div>
                 </div>
+            )}
+            {/* Move Item Modal */}
+            {movingItem && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, backdropFilter: 'blur(10px)' }}>
+                    <div className="card" style={{ width: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '0 8px' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>Move Rule</h2>
+                            <button className="btn-secondary" style={{ padding: '6px 16px' }} onClick={() => setMovingItem(null)}>Cancel</button>
+                        </div>
+                        
+                        <div style={{ background: 'var(--bg-deep)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '24px' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Moving Item</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 500 }}>{movingItem.value}</div>
+                        </div>
+
+                        <div style={{ overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>Target Level:</div>
+                                
+                                {core && (
+                                    <button 
+                                        className="btn-secondary" 
+                                        style={{ textAlign: 'left', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                        onClick={() => moveFrameworkItem(movingItem.id, 'core')}
+                                    >
+                                        <span>🌍 <strong>Global Core</strong></span>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Baseline for all context</span>
+                                    </button>
+                                )}
+
+                                {personas.map(p => (
+                                    <button 
+                                        key={p.id}
+                                        className="btn-secondary" 
+                                        style={{ textAlign: 'left', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                        onClick={() => moveFrameworkItem(movingItem.id, 'persona', p.id)}
+                                    >
+                                        <span>👤 <strong>{p.name}</strong></span>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Persona Level</span>
+                                    </button>
+                                ))}
+
+                                {customRecords.map(r => (
+                                    <button 
+                                        key={`${r.type}-${r.id}`}
+                                        className="btn-secondary" 
+                                        style={{ textAlign: 'left', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                        onClick={() => moveFrameworkItem(movingItem.id, r.type, r.id)}
+                                    >
+                                        <span>{r.type === 'person' ? '👤' : '👥'} <strong>{r.name}</strong></span>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{r.type === 'person' ? 'Individual' : 'Group'} Custom</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Confirmation Modal */}
+            {confirmation && (
+                <ConfirmationModal 
+                    title={confirmation.title}
+                    message={confirmation.message}
+                    variant={confirmation.variant || 'primary'}
+                    onConfirm={confirmation.onConfirm}
+                    onCancel={() => setConfirmation(null)}
+                />
             )}
         </div>
     );

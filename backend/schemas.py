@@ -279,6 +279,7 @@ class FrameworkProposalBase(BaseModel):
     group_name: Optional[str] = None
     is_core: bool = False
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
+    possible_groups: List[GroupBadge] = []
 
 class FrameworkProposal(FrameworkProposalBase):
     id: int

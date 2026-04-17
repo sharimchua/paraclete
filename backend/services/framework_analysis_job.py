@@ -79,7 +79,10 @@ async def run_item_analysis_task(
     db: Session,
     item_type: str,
     item_id: int,
-    interrupt_event: threading.Event = None
+    interrupt_event: threading.Event = None,
+    force_persona_id: Optional[int] = None,
+    force_person_id: Optional[int] = None,
+    force_group_id: Optional[int] = None
 ):
     """
     Analyzes a SINGLE item in the background. 
@@ -102,43 +105,51 @@ async def run_item_analysis_task(
     if not item:
         return
 
-    # 1. Resolve Persona context
-    target_persona = None
-    content = ""
+    if force_persona_id:
+        target_persona = db.query(models.Persona).filter(models.Persona.id == force_persona_id).first()
     
-    if item_type == "note":
-        content = f"Title: {item.title}\n{item.cleaned_text or item.raw_capture}"
-        if item.person:
-            if item.person.persona: target_persona = item.person.persona
-            elif item.person.groups:
-                for g in item.person.groups:
-                    if g.persona: target_persona = g.persona; break
-        if not target_persona and item.group:
-            if item.group.persona: target_persona = item.group.persona
-            
-    elif item_type == "reference":
-        content = f"Title: {item.title}\n{item.body}"
-        if item.source_note:
-            n = item.source_note
-            if n.person:
-                if n.person.persona: target_persona = n.person.persona
-                elif n.person.groups:
-                    for g in n.person.groups:
+    if not target_persona:
+        if item_type == "note":
+            content = f"Title: {item.title}\n{item.cleaned_text or item.raw_capture}"
+            if item.person:
+                if item.person.persona: target_persona = item.person.persona
+                elif item.person.groups:
+                    for g in item.person.groups:
                         if g.persona: target_persona = g.persona; break
-            if not target_persona and n.group:
-                if n.group.persona: target_persona = n.group.persona
+            if not target_persona and item.group:
+                if item.group.persona: target_persona = item.group.persona
+                
+        elif item_type == "reference":
+            content = f"Title: {item.title}\n{item.body}"
+            if item.source_note:
+                n = item.source_note
+                if n.person:
+                    if n.person.persona: target_persona = n.person.persona
+                    elif n.person.groups:
+                        for g in n.person.groups:
+                            if g.persona: target_persona = g.persona; break
+                if not target_persona and n.group:
+                    if n.group.persona: target_persona = n.group.persona
 
-    elif item_type == "message":
-        content = item.draft_text or ""
-        if item.note:
-            n = item.note
-            if n.person:
-                if n.person.persona: target_persona = n.person.persona
-                elif n.person.groups:
-                    for g in n.person.groups:
-                        if g.persona: target_persona = g.persona; break
-            if not target_persona and n.group:
-                if n.group.persona: target_persona = n.group.persona
+        elif item_type == "message":
+            content = item.draft_text or ""
+            if item.note:
+                n = item.note
+                if n.person:
+                    if n.person.persona: target_persona = n.person.persona
+                    elif n.person.groups:
+                        for g in n.person.groups:
+                            if g.persona: target_persona = g.persona; break
+                if not target_persona and n.group:
+                    if n.group.persona: target_persona = n.group.persona
+    else:
+        # We have a forced persona, but still need to extract content if we skipped above
+        if item_type == "note":
+            content = f"Title: {item.title}\n{item.cleaned_text or item.raw_capture}"
+        elif item_type == "reference":
+            content = f"Title: {item.title}\n{item.body}"
+        elif item_type == "message":
+            content = item.draft_text or ""
 
     if not content.strip():
         item.analyzed_for_framework = True
@@ -149,18 +160,20 @@ async def run_item_analysis_task(
     target_persona_id = target_persona.id if target_persona else None
     
     # Capture specific entity attribution
-    item_person_id = None
-    item_group_id = None
-    if item_type == "note":
-        item_person_id = item.person_id
-        item_group_id = item.group_id
-    elif item_type == "message":
-        item_person_id = item.person_id
-        item_group_id = item.group_id
-    elif item_type == "reference":
-        if item.source_note:
-            item_person_id = item.source_note.person_id
-            item_group_id = item.source_note.group_id
+    item_person_id = force_person_id
+    item_group_id = force_group_id
+
+    if not item_person_id and not item_group_id:
+        if item_type == "note":
+            item_person_id = item.person_id
+            item_group_id = item.group_id
+        elif item_type == "message":
+            item_person_id = item.person_id
+            item_group_id = item.group_id
+        elif item_type == "reference":
+            if item.source_note:
+                item_person_id = item.source_note.person_id
+                item_group_id = item.source_note.group_id
 
     # 2. Build Context String (For Phase 1, we still use the old text columns if they exist, but will migrate later)
     # Actually, we already dropped them in models.py, so we should fetch items instead.

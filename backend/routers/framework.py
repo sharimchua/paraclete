@@ -128,7 +128,13 @@ async def trigger_framework_analysis(
         # We need a fresh session for each job because they run in the background worker loop
         local_db = SessionLocal()
         try:
-             await run_item_analysis_task(local_db, item_type, item_id, interrupt_event=interrupt_event)
+             await run_item_analysis_task(
+                 local_db, item_type, item_id, 
+                 interrupt_event=interrupt_event,
+                 force_person_id=person_id,
+                 force_group_id=group_id,
+                 force_persona_id=persona_id
+             )
         finally:
             local_db.close()
 
@@ -275,6 +281,25 @@ def update_framework(framework_id: int, framework: schemas.PractiseFrameworkCrea
     db.refresh(db_framework)
     return stitch_framework(db_framework)
 
+@router.delete("/frameworks/{framework_id}")
+def delete_framework(framework_id: int, db: Session = Depends(get_db)):
+    """Deletes a framework and unlinks it from any owners."""
+    db_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.id == framework_id).first()
+    if not db_framework:
+        raise HTTPException(status_code=404, detail="Framework not found")
+    
+    if db_framework.is_core:
+        raise HTTPException(status_code=403, detail="Cannot delete core framework")
+
+    # Unlink from entities
+    db.query(models.Person).filter(models.Person.custom_framework_id == framework_id).update({"custom_framework_id": None})
+    db.query(models.Group).filter(models.Group.custom_framework_id == framework_id).update({"custom_framework_id": None})
+    db.query(models.Persona).filter(models.Persona.framework_id == framework_id).update({"framework_id": None})
+    
+    db.delete(db_framework)
+    db.commit()
+    return {"status": "success"}
+
 # --- Personas ---
 @router.post("/personas", response_model=schemas.Persona)
 def create_persona(persona: schemas.PersonaCreate, db: Session = Depends(get_db)):
@@ -346,48 +371,88 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
     proposals = query.all()
     
     # Hydrate on the fly
+    # Convert to Pydantic objects for hydration
+    output = []
     for p in proposals:
+        p_out = schemas.FrameworkProposal.model_validate(p)
         source_note = None
         if p.source_type == "Note":
             source_note = db.query(models.Note).filter(models.Note.id == p.source_id).first()
             if source_note:
-                p.source_context = f"Note: {source_note.title}"
+                p_out.source_context = f"Note: {source_note.title}"
         elif p.source_type == "Message":
             msg = db.query(models.Message).filter(models.Message.id == p.source_id).first()
             if msg and msg.note:
                 source_note = msg.note
-                p.source_context = f"Message for: {source_note.title}"
+                p_out.source_context = f"Message for: {source_note.title}"
             else:
-                p.source_context = "Draft Message"
+                p_out.source_context = "Draft Message"
         elif p.source_type == "Reference":
             ref = db.query(models.Reference).filter(models.Reference.id == p.source_id).first()
             if ref:
-                p.source_context = f"Reference: {ref.title}"
+                p_out.source_context = f"Reference: {ref.title}"
                 source_note = ref.source_note
         elif p.source_type == "Synthesis":
-            p.source_context = "AI Synthesis Job"
+            p_out.source_context = "AI Synthesis Job"
         
+        # 2. Trace Hierarchy for Dynamic Target Inference
         if source_note:
-            p.source_date = source_note.date.strftime("%Y-%m-%d") if source_note.date else "Unknown"
-            if source_note.person:
-                p.source_owner = f"Person: {source_note.person.name}"
-            elif source_note.group:
-                p.source_owner = f"Group: {source_note.group.name}"
-            else:
-                p.source_owner = "Generic"
-        
-        # Hydrate target names
-        if p.persona_id:
-            persona = db.query(models.Persona).filter(models.Persona.id == p.persona_id).first()
-            if persona: p.persona_name = persona.name
-        if p.person_id:
-            person = db.query(models.Person).filter(models.Person.id == p.person_id).first()
-            if person: p.person_name = person.name
-        if p.group_id:
-            group = db.query(models.Group).filter(models.Group.id == p.group_id).first()
-            if group: p.group_name = group.name
+            p_out.source_date = source_note.date.strftime("%Y-%m-%d") if source_note.date else "Unknown"
             
-    return proposals
+            # Potential target: The Person
+            if source_note.person:
+                p_out.source_owner = f"Person: {source_note.person.name}"
+                p_out.person_id = source_note.person.id
+                p_out.person_name = source_note.person.name
+                
+                # Potential targets: All Groups the person currently belongs to
+                if source_note.person.groups:
+                    p_out.possible_groups = [schemas.GroupBadge.model_validate(g) for g in source_note.person.groups]
+                
+                # Potential target: The Persona currently linked to this person
+                if source_note.person.persona_id and not p_out.persona_id:
+                     p_out.persona_id = source_note.person.persona_id
+                     p_out.persona_name = source_note.person.persona.name if source_note.person.persona else f"Persona {p_out.persona_id}"
+
+            # Potential target: The Group (if note is directly against a group)
+            elif source_note.group:
+                p_out.source_owner = f"Group: {source_note.group.name}"
+                p_out.group_id = source_note.group.id
+                p_out.group_name = source_note.group.name
+                
+                # Potential target: The Persona currently linked to this group
+                if source_note.group.persona_id and not p_out.persona_id:
+                     p_out.persona_id = source_note.group.persona_id
+                     p_out.persona_name = source_note.group.persona.name if source_note.group.persona else f"Persona {p_out.persona_id}"
+            else:
+                p_out.source_owner = "Generic"
+        
+        # Hydrate names for all potential targets
+        if p.persona and not p_out.persona_name:
+            p_out.persona_name = p.persona.name
+        if p.person and not p_out.person_name:
+            p_out.person_name = p.person.name
+        if p.group and not p_out.group_name:
+            p_out.group_name = p.group.name
+            
+        # Fallback hydration just in case relationships aren't loaded or IDs were manually set
+        if p_out.persona_id and not p_out.persona_name:
+            persona = db.query(models.Persona).filter(models.Persona.id == p_out.persona_id).first()
+            if persona: p_out.persona_name = persona.name
+        if p_out.group_id and not p_out.group_name:
+            group = db.query(models.Group).filter(models.Group.id == p_out.group_id).first()
+            if group: p_out.group_name = group.name
+        if p_out.person_id and not p_out.person_name:
+            person = db.query(models.Person).filter(models.Person.id == p_out.person_id).first()
+            if person: p_out.person_name = person.name
+
+        output.append(p_out)
+            
+    return output
+
+class MoveItemRequest(BaseModel):
+    target_type: str
+    target_id: Optional[int] = None
 
 class ProposalResolution(BaseModel):
     approved: bool
@@ -481,10 +546,22 @@ def read_custom_frameworks(db: Session = Depends(get_db)):
     result = []
     for p in persons:
         stitch_framework(p.custom_framework)
-        result.append({"type": "person", "id": p.id, "name": p.name, "framework": p.custom_framework})
+        result.append({
+            "type": "person", 
+            "id": p.id, 
+            "name": p.name, 
+            "framework": p.custom_framework,
+            "persona_id": p.persona_id
+        })
     for g in groups:
         stitch_framework(g.custom_framework)
-        result.append({"type": "group", "id": g.id, "name": g.name, "framework": g.custom_framework})
+        result.append({
+            "type": "group", 
+            "id": g.id, 
+            "name": g.name, 
+            "framework": g.custom_framework,
+            "persona_id": g.persona_id
+        })
     return result
 
 @router.get("/consolidated/{entity_type}/{entity_id}")
@@ -510,9 +587,15 @@ async def get_consolidated_framework(entity_type: str, entity_id: int, db: Sessi
     # We want a structured response, not just text
     # But resolve_framework_items returns text. Let's see if we can get items.
     # For now, we'll return the text but wrapped.
-    from ..services.framework_resolver import resolve_framework_items
+    # We want a structured response, not just text
+    from ..services.framework_resolver import resolve_framework_items, get_resolved_framework_data
     text = resolve_framework_items(db, persona_id=persona_id, person_id=person_id, group_id=group_id)
-    return {"consolidated_text": text}
+    structured_data = get_resolved_framework_data(db, persona_id=persona_id, person_id=person_id, group_id=group_id)
+    
+    return {
+        "consolidated_text": text,
+        "structured_data": structured_data
+    }
 
 @router.post("/proposals/reject-all")
 def reject_all_proposals(db: Session = Depends(get_db)):
@@ -736,3 +819,87 @@ async def draft_persona_message(
     except Exception as e:
         await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
+@router.post("/items/{item_id}/move")
+async def move_framework_item(
+    item_id: int, 
+    request: MoveItemRequest, 
+    db: Session = Depends(get_db)
+):
+    target_type = request.target_type
+    target_id = request.target_id
+    item = db.query(models.PractiseFrameworkItem).filter(models.PractiseFrameworkItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    target_framework = None
+    if target_type == "core":
+        target_framework = db.query(models.PractiseFramework).filter(models.PractiseFramework.is_core == True).first()
+    elif target_type == "persona":
+        persona = db.query(models.Persona).filter(models.Persona.id == target_id).first()
+        if persona: target_framework = persona.framework
+    elif target_type == "person":
+        person = db.query(models.Person).filter(models.Person.id == target_id).first()
+        if person:
+            if not person.custom_framework_id:
+                person.custom_framework = models.PractiseFramework(name=f"{person.name} Custom", is_core=False)
+                db.commit()
+            target_framework = person.custom_framework
+    elif target_type == "group":
+        group = db.query(models.Group).filter(models.Group.id == target_id).first()
+        if group:
+            if not group.custom_framework_id:
+                group.custom_framework = models.PractiseFramework(name=f"{group.name} Custom", is_core=False)
+                db.commit()
+            target_framework = group.custom_framework
+
+    if not target_framework:
+        raise HTTPException(status_code=404, detail="Target framework not found")
+
+    # Check for duplicates in target
+    existing = db.query(models.PractiseFrameworkItem).filter(
+        models.PractiseFrameworkItem.framework_id == target_framework.id,
+        models.PractiseFrameworkItem.aspect == item.aspect,
+        models.PractiseFrameworkItem.value == item.value
+    ).first()
+
+    if existing:
+        db.delete(item)
+    else:
+        item.framework_id = target_framework.id
+    
+    db.commit()
+    return {"status": "success"}
+
+@router.post("/frameworks/{framework_id}/items")
+def create_framework_item(framework_id: int, item: schemas.PractiseFrameworkItemBase, db: Session = Depends(get_db)):
+    new_item = models.PractiseFrameworkItem(
+        framework_id=framework_id,
+        aspect=item.aspect,
+        value=item.value
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    return new_item
+
+@router.patch("/items/{item_id}")
+def update_framework_item(item_id: int, item_update: schemas.PractiseFrameworkItemBase, db: Session = Depends(get_db)):
+    item = db.query(models.PractiseFrameworkItem).filter(models.PractiseFrameworkItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    item.aspect = item_update.aspect
+    item.value = item_update.value
+    db.commit()
+    db.refresh(item)
+    return item
+
+@router.delete("/items/{item_id}")
+def delete_framework_item(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(models.PractiseFrameworkItem).filter(models.PractiseFrameworkItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    db.delete(item)
+    db.commit()
+    return {"status": "success"}
