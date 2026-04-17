@@ -397,9 +397,50 @@ def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 @app.get("/groups/{group_id}", response_model=schemas.Group)
 def read_group(group_id: int, db: Session = Depends(get_db)):
-    db_group = db.query(models.Group).options(joinedload(models.Group.persona)).filter(models.Group.id == group_id).first()
+    db_group = db.query(models.Group).options(
+        joinedload(models.Group.persona),
+        joinedload(models.Group.members).joinedload(models.Person.notes),
+        joinedload(models.Group.members).joinedload(models.Person.messages)
+    ).filter(models.Group.id == group_id).first()
+    
     if db_group is None:
         raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Member Stats
+    all_member_note_dates = []
+    total_member_messages = 0
+    total_member_notes = 0
+    
+    for m in db_group.members:
+        m.note_count = len(m.notes)
+        m.message_count = len(m.messages)
+        total_member_notes += m.note_count
+        total_member_messages += m.message_count
+        
+        note_dates = [n.date for n in m.notes if n.date]
+        if note_dates:
+            m.latest_note_date = max(note_dates)
+            all_member_note_dates.extend(note_dates)
+        else:
+            m.latest_note_date = None
+
+    # explicit group activity
+    group_notes = db.query(models.Note).filter(models.Note.group_id == group_id).all()
+    group_messages = db.query(models.Message).filter(models.Message.group_id == group_id).all()
+    
+    group_note_dates = [n.date for n in group_notes if n.date]
+    
+    db_group.aggregated_note_count = len(group_notes) + total_member_notes
+    db_group.aggregated_message_count = len(group_messages) + total_member_messages
+    
+    all_dates = all_member_note_dates + group_note_dates
+    if all_dates:
+        db_group.earliest_note_date = min(all_dates)
+        db_group.latest_note_date = max(all_dates)
+    else:
+        db_group.earliest_note_date = None
+        db_group.latest_note_date = None
+        
     return db_group
 
 @app.patch("/groups/{group_id}", response_model=schemas.Group)

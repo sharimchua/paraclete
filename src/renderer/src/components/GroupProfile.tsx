@@ -132,9 +132,9 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     const availablePersons = allPersons.filter(p => !group.members.some(m => m.id === p.id));
     
     const noteStats = {
-        total: groupNotes.length,
-        earliest: groupNotes.length > 0 ? [...groupNotes].sort((a, b) => a.date.localeCompare(b.date))[0].date : null,
-        latest: groupNotes.length > 0 ? [...groupNotes].sort((a, b) => b.date.localeCompare(a.date))[0].date : null
+        total: group.aggregated_note_count || 0,
+        earliest: group.earliest_note_date ? String(group.earliest_note_date) : null,
+        latest: group.latest_note_date ? String(group.latest_note_date) : null
     };
 
     const calculateTenure = () => {
@@ -200,11 +200,11 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                     <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{calculateTenure()}</div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Outreach</div>
-                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fbbf24' }}>{groupMessages.length}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Outreach</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fbbf24' }}>{group.aggregated_message_count || 0}</div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Notes</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Aggregated Notes</div>
                                     <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>{noteStats.total}</div>
                                 </div>
                                 {pendingCount > 0 && (
@@ -274,14 +274,34 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                             <p style={{ color: 'var(--text-muted)' }}>No members in this group yet.</p>
                         ) : (
                             group.members.map(member => (
-                                <div key={member.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
-                                    <div style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(member.id)}>
-                                        <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{member.name}</h4>
+                                <div key={member.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', position: 'relative', overflow: 'hidden' }}>
+                                    <div style={{ cursor: 'pointer', flexGrow: 1 }} onClick={() => onSelectPerson(member.id)}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{member.name}</h4>
+                                            {member.latest_note_date && (new Date().getTime() - new Date(member.latest_note_date).getTime()) <= (7 * 24 * 60 * 60 * 1000) && (
+                                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80' }} title="Active this week" />
+                                            )}
+                                        </div>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{member.contact_method || 'No contact'}</p>
+                                        
+                                        <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Notes</span>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>{member.note_count || 0}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Messages</span>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24' }}>{member.message_count || 0}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Latest</span>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{member.latest_note_date ? String(member.latest_note_date) : 'Never'}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <button 
                                         onClick={() => handleRemoveMember(member.id)}
-                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem', padding: '4px' }}
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem', padding: '4px', alignSelf: 'flex-start' }}
                                         title="Remove from group"
                                     >
                                         &times;

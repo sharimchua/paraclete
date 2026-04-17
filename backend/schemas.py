@@ -54,6 +54,9 @@ class Person(PersonBase):
     persona_id: Optional[int] = None
     inherited_persona: Optional["Persona"] = None
     custom_framework_id: Optional[int] = None
+    note_count: Optional[int] = 0
+    message_count: Optional[int] = 0
+    latest_note_date: Optional[dt_date] = None
     model_config = ConfigDict(from_attributes=True)
 
 class GroupCreate(GroupBase):
@@ -72,6 +75,10 @@ class Group(GroupBase):
     persona: Optional["Persona"] = None
     persona_id: Optional[int] = None
     custom_framework_id: Optional[int] = None
+    aggregated_note_count: Optional[int] = 0
+    aggregated_message_count: Optional[int] = 0
+    earliest_note_date: Optional[dt_date] = None
+    latest_note_date: Optional[dt_date] = None
     model_config = ConfigDict(from_attributes=True)
 
 class NoteStage(str, Enum):
