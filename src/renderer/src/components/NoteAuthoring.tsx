@@ -419,17 +419,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     type="date" 
                     value={sessionDate} 
                     onChange={e => setSessionDate(e.target.value)} 
-                    style={{ 
-                        background: 'var(--bg-deep)', 
-                        border: '1px solid var(--border)', 
-                        borderRadius: '6px', 
-                        padding: '4px 8px', 
-                        color: 'white', 
-                        fontSize: '0.8rem', 
-                        outline: 'none',
-                        cursor: 'pointer',
-                        colorScheme: 'dark'
-                    }}
+                    onClick={e => e.currentTarget.showPicker?.()}
+                    className="navbar-date-picker"
                 />
                 
                 <div style={{ width: '1px', height: '20px', background: 'var(--border)', opacity: 0.5 }} />
@@ -437,7 +428,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button 
                         className="btn-secondary" 
-                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ padding: '0', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         disabled={stage === 'Prepare'}
                         onClick={() => {
                             if (stage === 'Capture') setStage('Prepare');
@@ -447,7 +438,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                         &lsaquo;
                     </button>
                     
-                    <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '3px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
+                    <div className="pill-container">
                         {(['Prepare', 'Capture', 'Refine'] as Stage[]).map(sid => {
                             const isActive = stage === sid;
                             const isDisabled = sid === 'Refine' && !rawText.trim();
@@ -456,19 +447,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                                 <div 
                                     key={sid}
                                     onClick={() => !isDisabled ? (sid === 'Refine' ? handleStartRefine() : setStage(sid)) : null}
-                                    style={{
-                                        padding: '4px 10px',
-                                        borderRadius: '100px',
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.02em',
-                                        cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                        background: isActive ? 'var(--primary)' : 'transparent',
-                                        color: isActive ? 'var(--bg-deep)' : (isDisabled ? 'var(--text-muted)' : 'var(--text-secondary)'),
-                                        transition: 'all 0.2s ease',
-                                        opacity: isDisabled ? 0.4 : 1
-                                    }}
+                                    className={`pill-item ${isActive ? 'active' : ''}`}
+                                    style={{ opacity: isDisabled ? 0.4 : 1 }}
                                 >
                                     {isActive && isRefining && sid === 'Refine' ? '...' : labels[sid]}
                                 </div>
@@ -478,7 +458,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     
                     <button 
                         className="btn-secondary" 
-                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ padding: '0', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         disabled={stage === 'Refine' || (stage === 'Capture' && !rawText.trim())}
                         onClick={() => {
                             if (stage === 'Prepare') setStage('Capture');

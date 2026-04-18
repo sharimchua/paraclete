@@ -44,9 +44,17 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
             borderBottom: '1px solid var(--border)',
             background: 'var(--bg-surface)',
             zIndex: 100,
-            flexShrink: 0
+            flexShrink: 0,
+            overflow: 'hidden'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '200px' }}>
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '16px', 
+                flex: '1 1 auto', 
+                minWidth: 0,
+                overflow: 'hidden' 
+            }}>
                 {showBack && (
                     <button 
                         onClick={onBack} 
@@ -58,7 +66,8 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
                             alignItems: 'center', 
                             gap: '4px',
                             height: '32px',
-                            background: 'rgba(255,255,255,0.03)'
+                            background: 'rgba(255,255,255,0.03)',
+                            flexShrink: 0
                         }}
                     >
                         <span style={{ fontSize: '1.2rem', marginTop: '-2px' }}>&lsaquo;</span> Back
@@ -70,17 +79,44 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
                     margin: 0, 
                     letterSpacing: '0.05em',
                     textTransform: 'uppercase',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
                 }}>
                     {displayTitle}
                 </h2>
             </div>
-
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', overflow: 'hidden' }}>
+ 
+            <div style={{ 
+                flex: '0 0 auto', 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                alignItems: 'center', 
+                height: '100%', 
+                padding: '0 10px 0 20px'
+            }}>
                 {activeCustomContent}
+                
+                {activeCustomContent && (allActions.length > 0) && (
+                    <div style={{ 
+                        width: '1px', 
+                        height: '24px', 
+                        background: 'var(--border)', 
+                        margin: '0 10px 0 24px',
+                        opacity: 0.5,
+                        flexShrink: 0 
+                    }} />
+                )}
             </div>
             
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: '200px', justifyContent: 'flex-end' }}>
+            <div style={{ 
+                display: 'flex', 
+                gap: '10px', 
+                alignItems: 'center', 
+                flex: '0 0 auto', 
+                justifyContent: 'flex-end' 
+            }}>
                 {allActions.map((action, i) => {
                     if (action.isSeparator) {
                         return (

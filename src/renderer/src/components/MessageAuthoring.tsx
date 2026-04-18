@@ -258,25 +258,16 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                         setMessage({ ...message, date: e.target.value });
                         if (setIsDirty) setIsDirty(true);
                     }} 
-                    style={{ 
-                        background: 'var(--bg-deep)', 
-                        border: '1px solid var(--border)', 
-                        borderRadius: '6px', 
-                        padding: '4px 8px', 
-                        color: 'white', 
-                        fontSize: '0.8rem', 
-                        outline: 'none',
-                        cursor: 'pointer',
-                        colorScheme: 'dark'
-                    }}
+                    onClick={e => e.currentTarget.showPicker?.()}
+                    className="navbar-date-picker"
                 />
                 
                 <div style={{ width: '1px', height: '20px', background: 'var(--border)', opacity: 0.5 }} />
 
-                <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '3px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
+                <div className="pill-container">
                     {[
-                        { id: false, label: 'Outbound', color: 'var(--primary)' },
-                        { id: true, label: 'Inbound', color: 'var(--secondary)' }
+                        { id: false, label: 'Outbound', activeLabel: '📤 Outbound', color: 'primary' },
+                        { id: true, label: 'Inbound', activeLabel: '📥 Inbound', color: 'secondary' }
                     ].map(type => {
                         const isActive = message.is_inbound === type.id;
                         return (
@@ -286,19 +277,9 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                                     setMessage({ ...message, is_inbound: type.id });
                                     if (setIsDirty) setIsDirty(true);
                                 }}
-                                style={{
-                                    padding: '4px 12px',
-                                    borderRadius: '100px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    cursor: 'pointer',
-                                    background: isActive ? type.color : 'transparent',
-                                    color: isActive ? 'var(--bg-deep)' : 'var(--text-secondary)',
-                                    transition: 'all 0.2s ease'
-                                }}
+                                className={`pill-item ${isActive ? `active ${type.color}` : ''}`}
                             >
-                                {isActive ? (type.id ? '📥 Inbound' : '📤 Outbound') : type.label}
+                                {isActive ? type.activeLabel : type.label}
                             </div>
                         );
                     })}
