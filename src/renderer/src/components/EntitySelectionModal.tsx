@@ -7,6 +7,7 @@ interface EntitySelectionModalProps {
   onSelect: (target: { type: 'person' | 'group' | 'none'; id?: number }) => void;
   onClose: () => void;
   allowGeneral?: boolean;
+  exclude?: Array<{ type: 'person' | 'group'; id: number }>;
 }
 
 const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({ 
@@ -14,7 +15,8 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
   subtitle, 
   onSelect, 
   onClose,
-  allowGeneral = true
+  allowGeneral = true,
+  exclude = []
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [people, setPeople] = useState<Person[]>([]);
@@ -43,7 +45,11 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
   const filteredTargets = [
     ...people.map(p => ({ ...p, type: 'person' as const })),
     ...groups.map(g => ({ ...g, type: 'group' as const }))
-  ].filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  ].filter(t => {
+    const isExcluded = exclude.some(e => e.id === t.id && e.type === t.type);
+    const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return !isExcluded && matchesSearch;
+  });
 
   return (
     <div className="modal-overlay">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { api, PractiseFramework, Persona, FrameworkProposal, PractiseFrameworkItem } from '../services/api';
+import { api, PractiseFramework, Persona, FrameworkProposal, PractiseFrameworkItem, CustomFrameworkRecord } from '../services/api';
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
 import ConfirmationModal from './ConfirmationModal';
+import EntitySelectionModal from './EntitySelectionModal';
 import { toast } from './ToastProvider';
 
 const FrameworkAspectList: React.FC<{
@@ -102,13 +103,14 @@ const PracticeFramework: React.FC = () => {
     const [proposals, setProposals] = useState<FrameworkProposal[]>([]);
     const [activeTab, setActiveTab] = useState<'core' | 'personas' | 'custom' | 'proposals'>('core');
     const [selectedPersonaId, setSelectedPersonaId] = useState<number | null>(null);
-    const [customRecords, setCustomRecords] = useState<any[]>([]);
-    const [selectedCustomRecord, setSelectedCustomRecord] = useState<any | null>(null);
+    const [customRecords, setCustomRecords] = useState<CustomFrameworkRecord[]>([]);
+    const [selectedCustomRecord, setSelectedCustomRecord] = useState<CustomFrameworkRecord | null>(null);
     const [loading, setLoading] = useState(true);
     const [showCreatePersona, setShowCreatePersona] = useState(false);
     const [consolidatedView, setConsolidatedView] = useState<{title: string, text: string, structuredData?: any} | null>(null);
     const [movingItem, setMovingItem] = useState<PractiseFrameworkItem | null>(null);
     const [confirmation, setConfirmation] = useState<{ title: string, message: string, variant?: 'danger' | 'primary', onConfirm: () => void } | null>(null);
+    const [showAddCustom, setShowAddCustom] = useState(false);
     
     // New Persona State
     const [newPersonaName, setNewPersonaName] = useState('');
@@ -177,6 +179,28 @@ const PracticeFramework: React.FC = () => {
         } catch (err: any) {
             console.error('Failed to move item:', err);
             toast.error(`Failed to move item: ${err.message || 'Unknown error'}`);
+        }
+    };
+
+    const handleAddCustomOverride = async (target: { type: 'person' | 'group' | 'none'; id?: number }) => {
+        if (target.type === 'none' || !target.id) {
+            setShowAddCustom(false);
+            return;
+        }
+
+        try {
+            const res = await api.post<{status: string, id: number}>(`/api/framework/custom/${target.type}/${target.id}`, {});
+            setShowAddCustom(false);
+            await fetchData();
+            
+            // Auto-select the newly created record
+            // We need to wait for fetchData to complete so customRecords is updated
+            // But we can find it in the response if we really wanted to.
+            // For now, let's just let the user find it or we can try to find it in the refreshed list.
+            toast.success('Custom override created.');
+        } catch (err) {
+            console.error('Failed to create custom override:', err);
+            toast.error('Failed to create custom override.');
         }
     };
 
@@ -496,6 +520,10 @@ const PracticeFramework: React.FC = () => {
                             <p style={{ margin: 0, fontSize: '0.9rem' }}>
                                 <strong>Stakeholder Frameworks:</strong> Unique professional styles automatically extracted for specific clients or groups.
                             </p>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button className="btn-primary" onClick={() => setShowAddCustom(true)}>+ Add Stakeholder Override</button>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
@@ -999,6 +1027,16 @@ const PracticeFramework: React.FC = () => {
                     variant={confirmation.variant || 'primary'}
                     onConfirm={confirmation.onConfirm}
                     onCancel={() => setConfirmation(null)}
+                />
+            )}
+            {showAddCustom && (
+                <EntitySelectionModal 
+                    title="Add Custom Override" 
+                    subtitle="Select a person or group to define specific style rules for."
+                    onSelect={handleAddCustomOverride}
+                    onClose={() => setShowAddCustom(false)}
+                    allowGeneral={false}
+                    exclude={customRecords.map(r => ({ type: r.type, id: r.id }))}
                 />
             )}
         </div>

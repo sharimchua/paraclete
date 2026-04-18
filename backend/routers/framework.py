@@ -564,6 +564,32 @@ def read_custom_frameworks(db: Session = Depends(get_db)):
         })
     return result
 
+@router.post("/custom/{entity_type}/{entity_id}")
+async def create_custom_framework(entity_type: str, entity_id: int, db: Session = Depends(get_db)):
+    """Manually creates a custom framework for a person or group."""
+    if entity_type == "person":
+        entity = db.query(models.Person).filter(models.Person.id == entity_id).first()
+    elif entity_type == "group":
+        entity = db.query(models.Group).filter(models.Group.id == entity_id).first()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid entity type")
+    
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
+        
+    if entity.custom_framework_id:
+        return {"status": "exists", "id": entity.custom_framework_id}
+        
+    fw = models.PractiseFramework(name=f"{entity.name} Overrides", is_core=False)
+    db.add(fw)
+    db.flush() # Get ID before commit if needed, though commit handles it
+    
+    entity.custom_framework_id = fw.id
+    db.commit()
+    db.refresh(fw)
+    
+    return {"status": "created", "id": fw.id}
+
 @router.get("/consolidated/{entity_type}/{entity_id}")
 async def get_consolidated_framework(entity_type: str, entity_id: int, db: Session = Depends(get_db)):
     """Merges Core + Persona + Custom items into a single view."""
