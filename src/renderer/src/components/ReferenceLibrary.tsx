@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api, Reference, Tag } from '../services/api';
+import { useNavbar } from './NavbarContext';
 
 const ReferenceLibrary: React.FC = () => {
+    const { setNavActions } = useNavbar();
     const [references, setReferences] = useState<Reference[]>([]);
     const [proposals, setProposals] = useState<any[]>([]);
     const [view, setView] = useState<'library' | 'proposals'>('library');
@@ -47,11 +49,23 @@ const ReferenceLibrary: React.FC = () => {
             const delaySearch = setTimeout(() => {
                 fetchReferences();
             }, 300);
-            return () => clearTimeout(delaySearch);
+
+            setNavActions([
+                {
+                    label: '+ Add Reference',
+                    onClick: () => setIsAdding(true)
+                }
+            ]);
+
+            return () => {
+                clearTimeout(delaySearch);
+                setNavActions([]);
+            };
         } else {
             fetchProposals();
+            setNavActions([]);
         }
-    }, [searchTerm, view]);
+    }, [searchTerm, view, setNavActions]);
 
     const handleAdd = async () => {
         try {
@@ -168,7 +182,6 @@ const ReferenceLibrary: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                {view === 'library' && <button className="btn-primary" onClick={() => setIsAdding(true)}>+ Add Reference</button>}
             </div>
 
             {view === 'library' ? (

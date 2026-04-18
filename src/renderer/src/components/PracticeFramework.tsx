@@ -3,6 +3,7 @@ import { api, PractiseFramework, Persona, FrameworkProposal, PractiseFrameworkIt
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
 import ConfirmationModal from './ConfirmationModal';
 import EntitySelectionModal from './EntitySelectionModal';
+import { useNavbar } from './NavbarContext';
 import { toast } from './ToastProvider';
 
 const FrameworkAspectList: React.FC<{
@@ -98,6 +99,7 @@ const FrameworkAspectList: React.FC<{
 };
 
 const PracticeFramework: React.FC = () => {
+    const { setNavActions } = useNavbar();
     const [core, setCore] = useState<PractiseFramework | null>(null);
     const [personas, setPersonas] = useState<Persona[]>([]);
     const [proposals, setProposals] = useState<FrameworkProposal[]>([]);
@@ -167,8 +169,24 @@ const PracticeFramework: React.FC = () => {
         };
 
         window.addEventListener('global-ws-message' as any, handleWsMessage);
-        return () => window.removeEventListener('global-ws-message' as any, handleWsMessage);
-    }, []);
+        
+        // Update Navbar Actions based on active tab and state
+        let actions: any[] = [];
+        if (activeTab === 'personas' && !selectedPersonaId) {
+            actions.push({ label: '+ Add New Persona', onClick: () => setShowCreatePersona(true) });
+        } else if (activeTab === 'custom' && !selectedCustomRecord) {
+            actions.push({ label: '+ Create Override', onClick: () => setShowAddCustom(true) });
+        } else if (activeTab === 'proposals' && proposals.length > 0) {
+            actions.push({ label: 'Reject All', variant: 'secondary', onClick: rejectAllProposals });
+        }
+        
+        setNavActions(actions);
+
+        return () => {
+            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            setNavActions([]);
+        };
+    }, [activeTab, selectedPersonaId, selectedCustomRecord, proposals.length, setNavActions]);
 
 
     const moveFrameworkItem = async (itemId: number, targetType: string, targetId?: number) => {
@@ -409,9 +427,6 @@ const PracticeFramework: React.FC = () => {
 
                 {activeTab === 'personas' && !selectedPersonaId && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button className="btn-primary" onClick={() => setShowCreatePersona(true)}>+ Add New Persona</button>
-                        </div>
 
                         {showCreatePersona && (
                             <div className="card" style={{ marginBottom: '24px' }}>
@@ -520,10 +535,6 @@ const PracticeFramework: React.FC = () => {
                             <p style={{ margin: 0, fontSize: '0.9rem' }}>
                                 <strong>Stakeholder Frameworks:</strong> Unique professional styles automatically extracted for specific clients or groups.
                             </p>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button className="btn-primary" onClick={() => setShowAddCustom(true)}>+ Add Stakeholder Override</button>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
@@ -740,15 +751,6 @@ const PracticeFramework: React.FC = () => {
                                 Review AI-generated suggestions to evolve your professional style. Items with higher <strong>Weight</strong> were observed more frequently across your practice history.
                             </p>
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                {proposals.length > 0 && (
-                                    <button 
-                                        className="btn-secondary" 
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', borderColor: '#ef4444' }}
-                                        onClick={rejectAllProposals}
-                                    >
-                                        🗑️ Reject All
-                                    </button>
-                                )}
                             </div>
                         </div>
 
@@ -1030,7 +1032,7 @@ const PracticeFramework: React.FC = () => {
             )}
             {showAddCustom && (
                 <EntitySelectionModal 
-                    title="Add Custom Override" 
+                    title="Create Override" 
                     subtitle="Select a person or group to define specific style rules for."
                     onSelect={handleAddCustomOverride}
                     onClose={() => setShowAddCustom(false)}

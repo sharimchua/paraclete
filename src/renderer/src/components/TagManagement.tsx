@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavbar } from './NavbarContext';
 
 interface Tag {
     id: number;
@@ -7,11 +8,13 @@ interface Tag {
 }
 
 const TagManagement: React.FC = () => {
+    const { setNavActions } = useNavbar();
     const [tags, setTags] = useState<Tag[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [newTagValue, setNewTagValue] = useState('');
     const [newTagKey, setNewTagKey] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     const fetchTags = async () => {
         try {
@@ -29,7 +32,16 @@ const TagManagement: React.FC = () => {
 
     useEffect(() => {
         fetchTags();
-    }, []);
+
+        setNavActions([
+            {
+                label: '+ Create New Tag',
+                onClick: () => setShowCreateModal(true)
+            }
+        ]);
+
+        return () => setNavActions([]);
+    }, [setNavActions]);
 
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this tag? It will be removed from all associated items.')) return;
@@ -64,6 +76,7 @@ const TagManagement: React.FC = () => {
                 }
                 setNewTagValue('');
                 setNewTagKey('');
+                setShowCreateModal(false);
             }
         } catch (error) {
             console.error('Error creating tag:', error);
@@ -91,28 +104,6 @@ const TagManagement: React.FC = () => {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                         Manage taxonomy used across persons, groups, notes, and references.
                     </p>
-                </div>
-                
-                <div className="card" style={{ width: '300px', padding: '16px' }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '12px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Create New Tag</h4>
-                    <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <input 
-                            placeholder="Category (e.g. Skill)" 
-                            value={newTagKey}
-                            onChange={(e) => setNewTagKey(e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '8px' }}
-                        />
-                        <input 
-                            placeholder="Value (e.g. Python)" 
-                            value={newTagValue}
-                            onChange={(e) => setNewTagValue(e.target.value)}
-                            required
-                            style={{ fontSize: '0.8rem', padding: '8px' }}
-                        />
-                        <button type="submit" className="btn-primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                            Add Tag
-                        </button>
-                    </form>
                 </div>
             </div>
 
@@ -184,6 +175,41 @@ const TagManagement: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {showCreateModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content card" style={{ width: '400px' }}>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '20px' }}>Create New Tag</h4>
+                        <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Category (Optional)</label>
+                                <input 
+                                    placeholder="e.g. Skill, Role, Industry" 
+                                    className="input-field"
+                                    value={newTagKey}
+                                    onChange={(e) => setNewTagKey(e.target.value)}
+                                    autoFocus
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Used to group related tags</p>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Tag Value</label>
+                                <input 
+                                    placeholder="e.g. Python, Lead Designer" 
+                                    className="input-field"
+                                    value={newTagValue}
+                                    onChange={(e) => setNewTagValue(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                                <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-primary">Add Tag</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
