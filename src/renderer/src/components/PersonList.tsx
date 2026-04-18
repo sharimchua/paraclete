@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api, Person } from '../services/api';
+import { useNavbar } from './NavbarContext';
 
 interface Props {
     onSelectPerson: (id: number) => void;
 }
 
 const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
+    const { setNavActions } = useNavbar();
     const [persons, setPersons] = useState<Person[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -32,9 +34,14 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
     useEffect(() => {
         fetchPersons();
 
-        const handleTriggerCreate = () => setShowCreateModal(true);
-        window.addEventListener('trigger-create-person', handleTriggerCreate);
-        return () => window.removeEventListener('trigger-create-person', handleTriggerCreate);
+        setNavActions([
+            {
+                label: '+ Add Person',
+                onClick: () => setShowCreateModal(true)
+            }
+        ]);
+
+        return () => setNavActions([]);
     }, []);
 
     const handleCreatePerson = async (e: React.FormEvent) => {

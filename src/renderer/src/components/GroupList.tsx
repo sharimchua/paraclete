@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api, Group } from '../services/api';
+import { useNavbar } from './NavbarContext';
 
 interface Props {
     onSelectGroup: (id: number) => void;
 }
 
 const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
+    const { setNavActions } = useNavbar();
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -30,9 +32,14 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
     useEffect(() => {
         fetchGroups();
 
-        const handleTriggerCreate = () => setShowCreateModal(true);
-        window.addEventListener('trigger-create-group', handleTriggerCreate);
-        return () => window.removeEventListener('trigger-create-group', handleTriggerCreate);
+        setNavActions([
+            {
+                label: '+ Add Group',
+                onClick: () => setShowCreateModal(true)
+            }
+        ]);
+
+        return () => setNavActions([]);
     }, []);
 
     const handleCreateGroup = async (e: React.FormEvent) => {

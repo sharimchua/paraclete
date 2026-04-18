@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api, Message } from '../services/api';
+import { useNavbar } from './NavbarContext';
 
 interface MessagesListProps {
     onSelectMessage: (id: number) => void;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
+    const { setNavActions } = useNavbar();
     const [messages, setMessages] = useState<Message[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +27,15 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
 
     useEffect(() => {
         fetchMessages();
+
+        setNavActions([
+            {
+                label: '+ Create Message',
+                onClick: () => window.dispatchEvent(new CustomEvent('trigger-message-modal'))
+            }
+        ]);
+
+        return () => setNavActions([]);
     }, []);
 
     const filteredMessages = messages.filter(m => {
