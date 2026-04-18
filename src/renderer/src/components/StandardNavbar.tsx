@@ -4,7 +4,7 @@ import { useNavbar } from './NavbarContext';
 export interface Action {
     label?: string;
     onClick?: () => void;
-    variant?: 'primary' | 'secondary';
+    variant?: 'primary' | 'secondary' | 'danger';
     disabled?: boolean;
     isSeparator?: boolean;
 }
@@ -18,13 +18,17 @@ interface StandardNavbarProps {
 }
 
 const StandardNavbar: React.FC<StandardNavbarProps> = ({ 
-    title, 
+    title: propTitle, 
     showBack, 
     onBack, 
     actions: propsActions = [], 
-    customContent 
+    customContent: propCustomContent 
 }) => {
-    const { navActions } = useNavbar();
+    const { navActions, title: contextTitle, customContent: contextCustomContent } = useNavbar();
+    
+    // Prioritize dynamic title from context if available
+    const displayTitle = contextTitle || propTitle;
+    const activeCustomContent = contextCustomContent || propCustomContent;
     
     // Merge props actions with context actions, prioritizing props for now if they exist
     // but the plan suggests context will be the primary source.
@@ -68,12 +72,12 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
                     textTransform: 'uppercase',
                     color: 'var(--text-primary)'
                 }}>
-                    {title}
+                    {displayTitle}
                 </h2>
             </div>
 
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                {customContent}
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', overflow: 'hidden' }}>
+                {activeCustomContent}
             </div>
             
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: '200px', justifyContent: 'flex-end' }}>
@@ -95,7 +99,11 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
                     return (
                         <button 
                             key={i}
-                            className={action.variant === 'secondary' ? 'btn-secondary' : 'btn-primary'}
+                            className={
+                                action.variant === 'secondary' ? 'btn-secondary' : 
+                                action.variant === 'danger' ? 'btn-danger' : 
+                                'btn-primary'
+                            }
                             onClick={action.onClick}
                             disabled={action.disabled}
                             style={{ 

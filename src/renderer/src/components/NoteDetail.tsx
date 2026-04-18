@@ -62,7 +62,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
                     }));
                 }},
                 { label: 'Edit Note', onClick: () => setIsEditing(true) },
-                { label: 'Delete', variant: 'secondary', onClick: () => setShowDeleteConfirm(true) }
+                { label: 'Delete', variant: 'danger', onClick: () => setShowDeleteConfirm(true) }
             ]);
         } else {
             setNavActions([]);

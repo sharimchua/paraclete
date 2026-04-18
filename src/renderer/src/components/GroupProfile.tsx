@@ -10,6 +10,7 @@ interface Props {
     onBack: () => void;
     onSelectPerson: (id: number) => void;
     onSelectNote: (id: number) => void;
+    onStartNote: (personId: number | null, groupId: number) => void;
 }
 
 const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSelectNote }) => {
@@ -75,13 +76,18 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
             ]);
         } else {
             setNavActions([
+                { 
+                    label: '+ Create Session Note', 
+                    onClick: () => onStartNote(null, groupId) 
+                },
+                { isSeparator: true },
                 { label: 'Edit Group', onClick: () => setIsEditing(true) },
-                { label: 'Delete', variant: 'secondary', onClick: handleDelete },
+                { label: 'Delete', variant: 'danger', onClick: handleDelete },
                 { isSeparator: true },
                 { label: '+ Add Member', onClick: () => setShowAddMember(true) }
             ]);
         }
-    }, [isEditing, setNavActions]);
+    }, [isEditing, setNavActions, groupId, onStartNote]);
 
     const handleUpdate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();

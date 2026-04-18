@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from './ToastProvider';
 import InterstitialLoader from './InterstitialLoader';
+import { useNavbar } from './NavbarContext';
 
 
 interface Props {
@@ -404,28 +405,39 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
         }
     };
 
-    if (loading) return <div className="loader" />;
+    const { setNavActions, setTitle: setNavbarTitle, setCustomContent } = useNavbar();
 
-    return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Stage Switcher Toolbar - now standardized */}
-            <div className="toolbar">
-                <div style={{ width: '250px' }}>
-                    {noteId && (
-                        <button 
-                            className="btn-secondary" 
-                            style={{ color: '#ef4444', fontSize: '0.75rem', padding: '6px 12px' }}
-                            onClick={handleDeleteNote}
-                        >
-                            Delete Note
-                        </button>
-                    )}
-                </div>
+    useEffect(() => {
+        const baseTitle = noteId ? 'Refining Session' : 'New Session Workflow';
+        const entityName = person?.name || group?.name || '...';
+        setNavbarTitle(`${baseTitle}: ${entityName}`);
+        
+        // Custom content: Stage switcher
+        setCustomContent(
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <input 
+                    type="date" 
+                    value={sessionDate} 
+                    onChange={e => setSessionDate(e.target.value)} 
+                    style={{ 
+                        background: 'var(--bg-deep)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '6px', 
+                        padding: '4px 8px', 
+                        color: 'white', 
+                        fontSize: '0.8rem', 
+                        outline: 'none',
+                        cursor: 'pointer',
+                        colorScheme: 'dark'
+                    }}
+                />
+                
+                <div style={{ width: '1px', height: '20px', background: 'var(--border)', opacity: 0.5 }} />
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button 
                         className="btn-secondary" 
-                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}
+                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         disabled={stage === 'Prepare'}
                         onClick={() => {
                             if (stage === 'Capture') setStage('Prepare');
@@ -434,41 +446,39 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     >
                         &lsaquo;
                     </button>
-
-                    <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '4px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
-                        {[
-                            { id: 'Prepare', label: '1. Preparation' },
-                            { id: 'Capture', label: '2. Capture' },
-                            { id: 'Refine', label: '3. Refinement' }
-                        ].map((s) => {
-                            const isActive = stage === s.id;
-                            const isDisabled = s.id === 'Refine' && !rawText.trim();
-                            
+                    
+                    <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '3px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
+                        {(['Prepare', 'Capture', 'Refine'] as Stage[]).map(sid => {
+                            const isActive = stage === sid;
+                            const isDisabled = sid === 'Refine' && !rawText.trim();
+                            const labels = { Prepare: '1. Prepare', Capture: '2. Capture', Refine: '3. Refinement' };
                             return (
-                                <div
-                                    key={s.id}
-                                    onClick={() => !isDisabled ? (s.id === 'Refine' ? handleStartRefine() : setStage(s.id as Stage)) : null}
+                                <div 
+                                    key={sid}
+                                    onClick={() => !isDisabled ? (sid === 'Refine' ? handleStartRefine() : setStage(sid)) : null}
                                     style={{
-                                        padding: '6px 16px',
+                                        padding: '4px 10px',
                                         borderRadius: '100px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
+                                        fontSize: '0.65rem',
+                                        fontWeight: 700,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.02em',
                                         cursor: isDisabled ? 'not-allowed' : 'pointer',
                                         background: isActive ? 'var(--primary)' : 'transparent',
-                                        color: isActive ? 'var(--bg-deep)' : (isDisabled ? 'var(--text-muted)' : 'var(--text-main)'),
+                                        color: isActive ? 'var(--bg-deep)' : (isDisabled ? 'var(--text-muted)' : 'var(--text-secondary)'),
                                         transition: 'all 0.2s ease',
-                                        opacity: isDisabled ? 0.5 : 1
+                                        opacity: isDisabled ? 0.4 : 1
                                     }}
                                 >
-                                    {isActive && isRefining && s.id === 'Refine' ? 'Processing...' : s.label}
+                                    {isActive && isRefining && sid === 'Refine' ? '...' : labels[sid]}
                                 </div>
                             );
                         })}
                     </div>
-
+                    
                     <button 
                         className="btn-secondary" 
-                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}
+                        style={{ padding: '4px', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         disabled={stage === 'Refine' || (stage === 'Capture' && !rawText.trim())}
                         onClick={() => {
                             if (stage === 'Prepare') setStage('Capture');
@@ -478,34 +488,32 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                         &rsaquo;
                     </button>
                 </div>
-
-                <div style={{ width: '250px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
-                    <input
-                        type="date"
-                        value={sessionDate}
-                        onChange={(e) => setSessionDate(e.target.value)}
-                        className="input-field"
-                        style={{ 
-                            padding: '6px 10px', 
-                            borderRadius: '8px', 
-                            background: 'var(--bg-deep)', 
-                            border: '1px solid var(--border)',
-                            fontSize: '0.8rem',
-                            width: '120px',
-                            cursor: 'pointer',
-                            colorScheme: 'dark'
-                        }}
-                    />
-                    <button 
-                        className="btn-primary" 
-                        disabled={loading || isBriefing}
-                        onClick={handleSaveNote}
-                        style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.8rem' }}
-                    >
-                        {noteId ? 'Update' : 'Save Draft'}
-                    </button>
-                </div>
             </div>
+        );
+
+        setNavActions([
+            { 
+                label: noteId ? 'Update Note' : 'Save Draft', 
+                onClick: handleSaveNote, 
+                disabled: loading || isBriefing || (stage === 'Capture' && !rawText.trim()) 
+            },
+            ...(noteId ? [
+                { isSeparator: true },
+                { label: 'Delete', variant: 'danger' as const, onClick: handleDeleteNote }
+            ] : [])
+        ]);
+
+        return () => {
+            setNavbarTitle(null);
+            setCustomContent(null);
+            setNavActions([]);
+        };
+    }, [stage, noteId, person, group, loading, isBriefing, rawText, sessionDate, setNavbarTitle, setCustomContent, setNavActions]);
+
+    if (loading) return <div className="loader" />;
+
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
             <div style={{ marginTop: '16px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 {stage === 'Prepare' && (

@@ -66,7 +66,7 @@ const FrameworkAspectList: React.FC<{
                                     >
                                         ⇄ Move
                                     </button>
-                                    <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: '0.7rem', color: '#ff5f5f' }} onClick={() => onDelete(item.id)}>Delete</button>
+                                    <button className="btn-danger" style={{ padding: '4px 8px', fontSize: '0.7rem' }} onClick={() => onDelete(item.id)}>Delete</button>
                                 </div>
                             </>
                         )}
@@ -177,7 +177,7 @@ const PracticeFramework: React.FC = () => {
         } else if (activeTab === 'custom' && !selectedCustomRecord) {
             actions.push({ label: '+ Create Override', onClick: () => setShowAddCustom(true) });
         } else if (activeTab === 'proposals' && proposals.length > 0) {
-            actions.push({ label: 'Reject All', variant: 'secondary', onClick: rejectAllProposals });
+            actions.push({ label: 'Reject All', variant: 'danger', onClick: rejectAllProposals });
         }
         
         setNavActions(actions);

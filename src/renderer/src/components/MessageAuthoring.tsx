@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api, Note, Person, Group, Message } from '../services/api';
 import InterstitialLoader from './InterstitialLoader';
+import { useNavbar } from './NavbarContext';
 
 interface MessageAuthoringProps {
     messageId?: number;
@@ -240,94 +241,94 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         }
     };
 
+    const { setNavActions, setTitle, setCustomContent } = useNavbar();
+
+    useEffect(() => {
+        const baseTitle = message.id ? 'Edit Message' : 'Compose Message';
+        const entityName = personContext?.name || groupContext?.name || '...';
+        setTitle(`${baseTitle}: ${entityName}`);
+        
+        // Custom content: Inbound/Outbound toggle + Date
+        setCustomContent(
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <input 
+                    type="date" 
+                    value={message.date || ''} 
+                    onChange={e => {
+                        setMessage({ ...message, date: e.target.value });
+                        if (setIsDirty) setIsDirty(true);
+                    }} 
+                    style={{ 
+                        background: 'var(--bg-deep)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '6px', 
+                        padding: '4px 8px', 
+                        color: 'white', 
+                        fontSize: '0.8rem', 
+                        outline: 'none',
+                        cursor: 'pointer',
+                        colorScheme: 'dark'
+                    }}
+                />
+                
+                <div style={{ width: '1px', height: '20px', background: 'var(--border)', opacity: 0.5 }} />
+
+                <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '3px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
+                    {[
+                        { id: false, label: 'Outbound', color: 'var(--primary)' },
+                        { id: true, label: 'Inbound', color: 'var(--secondary)' }
+                    ].map(type => {
+                        const isActive = message.is_inbound === type.id;
+                        return (
+                             <div
+                                key={type.label}
+                                onClick={() => {
+                                    setMessage({ ...message, is_inbound: type.id });
+                                    if (setIsDirty) setIsDirty(true);
+                                }}
+                                style={{
+                                    padding: '4px 12px',
+                                    borderRadius: '100px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 700,
+                                    textTransform: 'uppercase',
+                                    cursor: 'pointer',
+                                    background: isActive ? type.color : 'transparent',
+                                    color: isActive ? 'var(--bg-deep)' : 'var(--text-secondary)',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                {isActive ? (type.id ? '📥 Inbound' : '📤 Outbound') : type.label}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
+        setNavActions([
+            { 
+                label: isSaving ? 'Saving...' : (message.id ? 'Update Message' : 'Create Message'), 
+                onClick: handleSave, 
+                disabled: isSaving || loading
+            },
+            ...(message.id ? [
+                { isSeparator: true },
+                { label: 'Delete', variant: 'danger' as const, onClick: handleDelete }
+            ] : [])
+        ]);
+
+        return () => {
+            setTitle(null);
+            setCustomContent(null);
+            setNavActions([]);
+        };
+    }, [message.id, message.is_inbound, message.date, personContext, groupContext, isSaving, loading, setTitle, setCustomContent, setNavActions]);
+
     if (loading) return <div className="loader" />;
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div className="toolbar">
-                <div style={{ width: '250px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                     <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Message Composer</h2>
-                </div>
-
-                <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', padding: '4px', borderRadius: '100px', border: '1px solid var(--border)', gap: '2px' }}>
-                    <div
-                        onClick={() => setMessage({ ...message, is_inbound: false })}
-                        style={{
-                            padding: '6px 16px',
-                            borderRadius: '100px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            background: !message.is_inbound ? 'var(--primary)' : 'transparent',
-                            color: !message.is_inbound ? 'var(--bg-deep)' : 'var(--text-main)',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        📤 Outbound
-                    </div>
-                    <div
-                        onClick={() => setMessage({ ...message, is_inbound: true })}
-                        style={{
-                            padding: '6px 16px',
-                            borderRadius: '100px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            background: message.is_inbound ? 'var(--secondary)' : 'transparent',
-                            color: message.is_inbound ? 'var(--bg-deep)' : 'var(--text-main)',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        📥 Inbound
-                    </div>
-                </div>
-
-                <div style={{ width: '250px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
-                    <input
-                        type="date"
-                        value={message.date || ''}
-                        onChange={(e) => {
-                            setMessage({ ...message, date: e.target.value });
-                            if (setIsDirty) setIsDirty(true);
-                        }}
-                        className="input-field"
-                        style={{ 
-                            padding: '6px 10px', 
-                            borderRadius: '8px', 
-                            background: 'var(--bg-deep)', 
-                            border: '1px solid var(--border)',
-                            fontSize: '0.8rem',
-                            width: '120px',
-                            cursor: 'pointer',
-                            colorScheme: 'dark'
-                        }}
-                    />
-                    <button 
-                        className="btn-primary" 
-                        disabled={isSaving}
-                        onClick={handleSave}
-                        style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.8rem' }}
-                    >
-                        {isSaving ? 'Saving...' : (message.id ? 'Update' : 'Save')}
-                    </button>
-                    {message.id && (
-                        <button 
-                            className="btn-secondary" 
-                            onClick={handleDelete}
-                            style={{ 
-                                padding: '6px 16px', 
-                                borderRadius: '8px', 
-                                fontSize: '0.8rem',
-                                color: 'var(--error, #f43f5e)',
-                                borderColor: 'var(--error, #f43f5e)',
-                                opacity: 0.8
-                            }}
-                        >
-                            Delete
-                        </button>
-                    )}
-                </div>
-            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: '24px', flexGrow: 1, marginTop: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

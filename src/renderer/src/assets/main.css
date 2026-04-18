@@ -204,6 +204,22 @@ button.btn-secondary:hover {
   border-color: var(--border-focus);
 }
 
+button.btn-danger {
+  background: var(--error-faded);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+button.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--error);
+}
+
 .input-field, .search-input {
   width: 100%;
   background: var(--bg-surface-elevated);

@@ -320,6 +320,7 @@ const App: React.FC = () => {
                         onSelectNote={(id) => {
                             navigateTo('note-detail', selectedPersonId, null, id);
                         }}
+                        onStartNote={(id) => startNewNote(id)}
                     />
                 );
             }
@@ -338,6 +339,7 @@ const App: React.FC = () => {
                         onSelectNote={(id) => {
                             navigateTo('note-detail', null, selectedGroupId, id);
                         }}
+                        onStartNote={(pid, gid) => startNewNote(pid || undefined, gid)}
                     />
                 );
             }

@@ -11,6 +11,8 @@
   
   --secondary: #818cf8;
   --accent: #f472b6;
+  --error: #ef4444;
+  --error-faded: rgba(239, 68, 68, 0.15);
   
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;

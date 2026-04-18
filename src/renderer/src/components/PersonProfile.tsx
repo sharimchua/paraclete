@@ -8,10 +8,11 @@ import FrameworkAnalysisControls from './FrameworkAnalysisControls';
 interface Props {
     personId: number;
     onBack: () => void;
-    onSelectNote: (id: number) => void;
+    onSelectNote: (noteId: number) => void;
+    onStartNote: (personId: number) => void;
 }
 
-const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
+const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStartNote }) => {
     const { setNavActions } = useNavbar();
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [person, setPerson] = useState<Person | null>(null);
@@ -72,6 +73,11 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
             ]);
         } else {
             setNavActions([
+                { 
+                    label: '+ Create Session Note', 
+                    onClick: () => onStartNote(personId) 
+                },
+                { isSeparator: true },
                 { label: 'Edit Profile', onClick: () => {
                    setIsEditing(true);
                    // Reset edit values to current person data
@@ -80,7 +86,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                        setEditContact(person.contact_method || '');
                    }
                 }},
-                { label: 'Delete', variant: 'secondary', onClick: handleDelete }
+                { label: 'Delete', variant: 'danger', onClick: handleDelete }
             ]);
         }
     }, [isEditing, person, editName, editContact, setNavActions]);
