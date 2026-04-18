@@ -1,0 +1,2344 @@
+{
+  "persons": [
+    {
+      "name": "Mia Okonkwo",
+      "contact_method": "",
+      "id": 1001,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Theo Callahan",
+      "contact_method": "",
+      "id": 1002,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Guitar",
+          "id": 105
+        },
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Priya Nair",
+      "contact_method": "",
+      "id": 1003,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Piano",
+          "id": 102
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Luca Ferrante",
+      "contact_method": "",
+      "id": 1004,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Zara Williamson",
+      "contact_method": "",
+      "id": 1005,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Piano",
+          "id": 102
+        },
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Oscar Tran",
+      "contact_method": "",
+      "id": 1006,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Guitar",
+          "id": 105
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Amara Diallo",
+      "contact_method": "",
+      "id": 1007,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Felix Hartmann",
+      "contact_method": "",
+      "id": 1008,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Piano",
+          "id": 102
+        }
+      ],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Resonance Studio"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Sophie Nguyen",
+      "contact_method": "",
+      "id": 1009,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 3,
+          "name": "Poly High"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Kai Matsumoto",
+      "contact_method": "",
+      "id": 1010,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Guitar",
+          "id": 105
+        }
+      ],
+      "groups": [
+        {
+          "id": 3,
+          "name": "Poly High"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Aaliyah Brooks",
+      "contact_method": "",
+      "id": 1011,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Instrument",
+          "value": "Voice",
+          "id": 101
+        }
+      ],
+      "groups": [
+        {
+          "id": 3,
+          "name": "Poly High"
+        }
+      ],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Dominic Ashford",
+      "contact_method": "",
+      "id": 1012,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Focus",
+          "value": "Leadership Development",
+          "id": 103
+        }
+      ],
+      "groups": [
+        {
+          "id": 2,
+          "name": "Bridgepoint Advisory"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Ingrid Solberg",
+      "contact_method": "",
+      "id": 1013,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Focus",
+          "value": "Communication",
+          "id": 106
+        }
+      ],
+      "groups": [
+        {
+          "id": 2,
+          "name": "Bridgepoint Advisory"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Marcus Webb",
+      "contact_method": "",
+      "id": 1014,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Focus",
+          "value": "Leadership Development",
+          "id": 103
+        }
+      ],
+      "groups": [
+        {
+          "id": 2,
+          "name": "Bridgepoint Advisory"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Camille Rousseau",
+      "contact_method": "",
+      "id": 1015,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Focus",
+          "value": "Communication",
+          "id": 106
+        }
+      ],
+      "groups": [
+        {
+          "id": 2,
+          "name": "Bridgepoint Advisory"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "James Calloway",
+      "contact_method": "",
+      "id": 1016,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Meeting",
+          "value": "Strategy Session",
+          "id": 104
+        }
+      ],
+      "groups": [
+        {
+          "id": 4,
+          "name": "Calloway & Partners"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Rena Chowdhury",
+      "contact_method": "",
+      "id": 1017,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Focus",
+          "value": "Communication",
+          "id": 106
+        }
+      ],
+      "groups": [
+        {
+          "id": 4,
+          "name": "Calloway & Partners"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    },
+    {
+      "name": "Patrick Dunn",
+      "contact_method": "",
+      "id": 1018,
+      "created_at": "2026-01-15T09:00:00.000000",
+      "updated_at": "2026-04-10T08:00:00.000000",
+      "tags": [
+        {
+          "key": "Meeting",
+          "value": "Strategy Session",
+          "id": 104
+        }
+      ],
+      "groups": [
+        {
+          "id": 4,
+          "name": "Calloway & Partners"
+        }
+      ],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "inherited_persona": null,
+      "custom_framework_id": null,
+      "note_count": 0,
+      "message_count": 0,
+      "latest_note_date": null
+    }
+  ],
+  "groups": [
+    {
+      "name": "Resonance Studio",
+      "description": "Voice, piano, and songwriting coaching clients",
+      "id": 1,
+      "created_at": "2026-01-10T08:00:00.000000",
+      "updated_at": "2026-04-10T09:00:00.000000",
+      "tags": [],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "custom_framework_id": null,
+      "members": [
+        {
+          "name": "Mia Okonkwo",
+          "contact_method": "",
+          "id": 1001,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Theo Callahan",
+          "contact_method": "",
+          "id": 1002,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Guitar",
+              "id": 105
+            },
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Priya Nair",
+          "contact_method": "",
+          "id": 1003,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Piano",
+              "id": 102
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Luca Ferrante",
+          "contact_method": "",
+          "id": 1004,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Zara Williamson",
+          "contact_method": "",
+          "id": 1005,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Piano",
+              "id": 102
+            },
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Oscar Tran",
+          "contact_method": "",
+          "id": 1006,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Guitar",
+              "id": 105
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Amara Diallo",
+          "contact_method": "",
+          "id": 1007,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Felix Hartmann",
+          "contact_method": "",
+          "id": 1008,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Piano",
+              "id": 102
+            }
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "name": "Resonance Studio"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        }
+      ],
+      "aggregated_note_count": 0,
+      "aggregated_message_count": 0,
+      "earliest_note_date": null,
+      "latest_note_date": null
+    },
+    {
+      "name": "Bridgepoint Advisory",
+      "description": "Executive and leadership coaching clients",
+      "id": 2,
+      "created_at": "2026-01-10T08:10:00.000000",
+      "updated_at": "2026-04-12T10:00:00.000000",
+      "tags": [],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "custom_framework_id": null,
+      "members": [
+        {
+          "name": "Dominic Ashford",
+          "contact_method": "",
+          "id": 1012,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Focus",
+              "value": "Leadership Development",
+              "id": 103
+            }
+          ],
+          "groups": [
+            {
+              "id": 2,
+              "name": "Bridgepoint Advisory"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Ingrid Solberg",
+          "contact_method": "",
+          "id": 1013,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Focus",
+              "value": "Communication",
+              "id": 106
+            }
+          ],
+          "groups": [
+            {
+              "id": 2,
+              "name": "Bridgepoint Advisory"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Marcus Webb",
+          "contact_method": "",
+          "id": 1014,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Focus",
+              "value": "Leadership Development",
+              "id": 103
+            }
+          ],
+          "groups": [
+            {
+              "id": 2,
+              "name": "Bridgepoint Advisory"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Camille Rousseau",
+          "contact_method": "",
+          "id": 1015,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Focus",
+              "value": "Communication",
+              "id": 106
+            }
+          ],
+          "groups": [
+            {
+              "id": 2,
+              "name": "Bridgepoint Advisory"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        }
+      ],
+      "aggregated_note_count": 0,
+      "aggregated_message_count": 0,
+      "earliest_note_date": null,
+      "latest_note_date": null
+    },
+    {
+      "name": "Poly High",
+      "description": "School-based music programme partnership with Northbrook High",
+      "id": 3,
+      "created_at": "2026-02-01T08:00:00.000000",
+      "updated_at": "2026-03-15T09:00:00.000000",
+      "tags": [],
+      "persona": {
+        "name": "Resonance Studio",
+        "id": 1
+      },
+      "persona_id": 1,
+      "custom_framework_id": null,
+      "members": [
+        {
+          "name": "Sophie Nguyen",
+          "contact_method": "",
+          "id": 1009,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 3,
+              "name": "Poly High"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Kai Matsumoto",
+          "contact_method": "",
+          "id": 1010,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Guitar",
+              "id": 105
+            }
+          ],
+          "groups": [
+            {
+              "id": 3,
+              "name": "Poly High"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Aaliyah Brooks",
+          "contact_method": "",
+          "id": 1011,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Instrument",
+              "value": "Voice",
+              "id": 101
+            }
+          ],
+          "groups": [
+            {
+              "id": 3,
+              "name": "Poly High"
+            }
+          ],
+          "persona": {
+            "name": "Resonance Studio",
+            "id": 1
+          },
+          "persona_id": 1,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        }
+      ],
+      "aggregated_note_count": 0,
+      "aggregated_message_count": 0,
+      "earliest_note_date": null,
+      "latest_note_date": null
+    },
+    {
+      "name": "Calloway & Partners",
+      "description": "Corporate communication workshops for the Calloway & Partners consulting firm",
+      "id": 4,
+      "created_at": "2026-02-15T08:00:00.000000",
+      "updated_at": "2026-04-05T10:00:00.000000",
+      "tags": [],
+      "persona": {
+        "name": "Bridgepoint Advisory",
+        "id": 2
+      },
+      "persona_id": 2,
+      "custom_framework_id": null,
+      "members": [
+        {
+          "name": "James Calloway",
+          "contact_method": "",
+          "id": 1016,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Meeting",
+              "value": "Strategy Session",
+              "id": 104
+            }
+          ],
+          "groups": [
+            {
+              "id": 4,
+              "name": "Calloway & Partners"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Rena Chowdhury",
+          "contact_method": "",
+          "id": 1017,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Focus",
+              "value": "Communication",
+              "id": 106
+            }
+          ],
+          "groups": [
+            {
+              "id": 4,
+              "name": "Calloway & Partners"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        },
+        {
+          "name": "Patrick Dunn",
+          "contact_method": "",
+          "id": 1018,
+          "created_at": "2026-01-15T09:00:00.000000",
+          "updated_at": "2026-04-10T08:00:00.000000",
+          "tags": [
+            {
+              "key": "Meeting",
+              "value": "Strategy Session",
+              "id": 104
+            }
+          ],
+          "groups": [
+            {
+              "id": 4,
+              "name": "Calloway & Partners"
+            }
+          ],
+          "persona": {
+            "name": "Bridgepoint Advisory",
+            "id": 2
+          },
+          "persona_id": 2,
+          "inherited_persona": null,
+          "custom_framework_id": null,
+          "note_count": 0,
+          "message_count": 0,
+          "latest_note_date": null
+        }
+      ],
+      "aggregated_note_count": 0,
+      "aggregated_message_count": 0,
+      "earliest_note_date": null,
+      "latest_note_date": null
+    }
+  ],
+  "tags": [
+    {
+      "key": "Instrument",
+      "value": "Voice",
+      "id": 101
+    },
+    {
+      "key": "Instrument",
+      "value": "Piano",
+      "id": 102
+    },
+    {
+      "key": "Focus",
+      "value": "Leadership Development",
+      "id": 103
+    },
+    {
+      "key": "Meeting",
+      "value": "Strategy Session",
+      "id": 104
+    },
+    {
+      "key": "Instrument",
+      "value": "Guitar",
+      "id": 105
+    },
+    {
+      "key": "Focus",
+      "value": "Communication",
+      "id": 106
+    }
+  ],
+  "notes": [
+    {
+      "title": "Initial Intake – Vocal Assessment",
+      "date": "2025-10-14",
+      "stage": "Published",
+      "raw_capture": "Mia is an experienced singer with a background in musical theatre. She has a warm mezzo-soprano range, comfortable from A3 to E5. Main concern is a tendency to push on the upper passaggio which causes tension. Also wants to work on stylistic flexibility — she wants to move into contemporary R&B and pop after years focused on classical/musical theatre. Previous teacher focused heavily on notation and formal technique.",
+      "cleaned_text": "#### SESSION FOCUS: **Initial Intake & Vocal Assessment**\n- **Voice Type:** Mezzo-soprano, comfortable range A3–E5.\n- **Background:** Musical theatre and classical training, seeking stylistic expansion into R&B and pop.\n- **Key Technical Observation:** Habitual pushing on the upper passaggio (around E4–F4) causing laryngeal tension and a spread, strident tone quality.\n- **Previous Training:** Notation-heavy, formal conservatory approach.\n\n### Intake Findings\nMia arrives with strong foundational skills — her breath support, diction, and sense of musical phrasing are all well-developed. The primary technical focus for the coming months will be releasing the holding pattern around the passaggio, allowing the voice to mix naturally rather than pushing from chest.\n\nStylistically, the shift toward R&B and pop will require building comfort with ornamentation, runs, and a more conversational, speech-rhythm approach to phrasing — a significant departure from her theatre training.\n\n### Initial Goals\n1. Reduce laryngeal tension in the upper-middle register through breath and resonance work.\n2. Build a repertoire of contemporary songs that honour her vocal strengths.\n3. Develop comfort with improvised ornamentation and stylistic inflection.",
+      "session_brief": null,
+      "person_id": 1001,
+      "group_id": null,
+      "id": 5001,
+      "created_at": "2025-10-14T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Mia Okonkwo",
+        "id": 1001
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2025-11-04",
+      "date": "2025-11-04",
+      "stage": "Clean",
+      "raw_capture": "Worked on 'Use Me' by Bill Withers as a vehicle for exploring chest/mix blend. Mia is starting to find the mix on the F4 but still reaching for G4. Did some straw phonation exercises and then lip trills ascending through the passaggio. Good progress. Also started talking about how she uses her breath — she tends to grab a big breath which actually causes more tension. Talked about the idea of sipping rather than gulping.",
+      "cleaned_text": "#### SESSION FOCUS: **Passaggio Release & Breath Management**\n- **Repertoire Vehicle:** 'Use Me' – Bill Withers (contemporary soul/R&B).\n- **Technique:** Straw phonation and lip trill exercises through the passaggio (E4–G4).\n- **Key Insight:** Mia is beginning to access a natural chest/mix blend on F4; G4 still triggers the holding pattern.\n\n### Breath Management\nIdentified a counterproductive habit: Mia takes an exaggerated preparatory breath, which pre-loads tension into the support system before a phrase begins. Introduced the concept of **sipping** (a smaller, lower, quieter breath) versus gulping. This smaller breath keeps the ribcage open and the larynx lower without the added tension of a full-chest expansion.\n\n### Practice Focus\n- Lip trills from D4 through G4, keeping the sensation light and forward.\n- Sip-breath exercise before each phrase of 'Use Me'.",
+      "session_brief": null,
+      "person_id": 1001,
+      "group_id": null,
+      "id": 5002,
+      "created_at": "2025-11-04T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Mia Okonkwo",
+        "id": 1001
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2025-12-09",
+      "date": "2025-12-09",
+      "stage": "Published",
+      "raw_capture": "Great breakthrough session. Mia finally let the G4 go and the mix kicked in naturally during 'Use Me'. She was surprised — said it felt like she wasn't doing anything. We talked about how that feeling of 'not doing' is actually the goal. Then worked on ornamentation — she's very stiff with runs, overly pre-planned. Did a call-and-response game where I sang a short run and she imitated it without thinking. Some lovely spontaneous moments.",
+      "cleaned_text": "#### SESSION FOCUS: **Breakthrough – Mix Register & Ornamentation Play**\n- **Key Achievement:** Mia successfully released into the mixed register on G4 during 'Use Me'. The tone was resonant, easy, and free of the habitual laryngeal grab.\n- **Her Description:** 'It felt like I wasn't doing anything.' — This is the correct sensation.\n\n### Register Breakthrough\nThe release happened during a phrase where Mia was focused on the lyric rather than the technical challenge. This is a key pedagogical lesson: **attention redirected from mechanism to meaning allows the mechanism to self-regulate**. Reinforced this connection explicitly.\n\n### Ornamentation Work\nMia's approach to runs is over-planned and note-specific rather than gestural. Introduced a **call-and-response imitation game** — Clara sings a short ornamental phrase, Mia echoes immediately without analysis. Several genuinely spontaneous and musical responses emerged.\n\n### Practice Focus\n- Sing two phrases of 'Use Me' daily, focusing entirely on the lyric's meaning rather than the F4–G4 transition.\n- Record one improvised ornamentation response daily (phone memo) — no self-editing.",
+      "session_brief": null,
+      "person_id": 1001,
+      "group_id": null,
+      "id": 5003,
+      "created_at": "2025-12-09T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Mia Okonkwo",
+        "id": 1001
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-02-17",
+      "date": "2026-02-17",
+      "stage": "Published",
+      "raw_capture": "Mia brought in a new song she wants to work on — 'Golden' by Jill Scott. Beautiful choice for her voice. We did a harmonic analysis together and talked about the emotional arc of the lyric. Then she sang through it once and we identified two moments where she's reverting to her theatre 'performance face' — a kind of presentational quality that doesn't suit the intimacy of the song. Talked about singing to one person vs performing to a room.",
+      "cleaned_text": "#### SESSION FOCUS: **New Repertoire – 'Golden' by Jill Scott**\n- **Song:** 'Golden' – Jill Scott (neo-soul).\n- **Initial Run-Through:** Strong melodic instincts; two moments of stylistic incongruence identified.\n\n### Stylistic Coaching\nMia is reverting to a theatrical, presentational performance mode — a wide, projected quality more suited to a 1,000-seat theatre than the intimate, conversational world of neo-soul. Discussed the concept of **singing to one person** as a guide for tone, dynamic, and facial expression in this genre.\n\n### Harmonic Context\nThe song sits in a warm Eb major tonality with characteristically lush neo-soul chord extensions (maj7s, 9ths). We traced the emotional arc: the lyric moves from gratitude to defiance to joyful self-possession — each section needs a different dynamic and colouristic approach.\n\n### Practice Focus\n- Record a phone video of yourself singing the first verse as if to a single person in a quiet room.\n- Identify the emotional 'colour' of each of the three sections and choose one word to anchor each.",
+      "session_brief": null,
+      "person_id": 1001,
+      "group_id": null,
+      "id": 5004,
+      "created_at": "2026-02-17T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Mia Okonkwo",
+        "id": 1001
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-04-01",
+      "date": "2026-04-01",
+      "stage": "Clean",
+      "raw_capture": "Pre-performance check-in. Mia has a gig at the Lantern Room in two weeks. She's mostly solid on Golden and Use Me. We ran both songs fully and then did a simulated performance — I sat as an audience and she performed straight through. The theatrical habit is mostly gone on Use Me, still creeping in on the bridge of Golden. Also worked on managing nerves — she's been catastrophising about memory slips. Gave her the 'recovery anchor' concept.",
+      "cleaned_text": "#### SESSION FOCUS: **Pre-Performance Run & Nerves Management**\n- **Upcoming Gig:** The Lantern Room — two weeks.\n- **Repertoire Reviewed:** 'Golden' (Jill Scott), 'Use Me' (Bill Withers).\n- **Simulated Performance:** Full run-through with Clara as audience.\n\n### Performance Notes\n- *'Use Me':* Stylistically consistent — the theatricality has been successfully replaced by intimate directness. Strong.\n- *'Golden':* Bridge section still showing a presentational shift in tone. The lyric is emotionally loaded at this point; Mia is 'managing' the emotion rather than channelling it.\n\n### Nerves & Performance Anxiety\nMia is catastrophising around memory slips. Introduced the **Recovery Anchor** concept: a pre-decided landmark in each song (usually the top of a chorus) that she returns to if she loses her place, without stopping or signalling distress. The anchor removes the catastrophic interpretation from a memory slip — it becomes a navigation event rather than a failure.\n\n### Pre-Gig Practice\n- Full performance runs three times this week, each time treating the anchor as the safety net.\n- Journal one line after each run: 'What went well?'",
+      "session_brief": null,
+      "person_id": 1001,
+      "group_id": null,
+      "id": 5005,
+      "created_at": "2026-04-01T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Mia Okonkwo",
+        "id": 1001
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Songwriting Session – Original Material Review",
+      "date": "2025-11-18",
+      "stage": "Published",
+      "raw_capture": "Theo brought in a new song called 'Harbour Light'. Verse is strong — a fingerpicked guitar pattern in DADGAD tuning with a melody that has a nice melancholic quality. The problem is the chorus. He's going for a big lift but the melody is actually lower than the verse which kills the energy. We talked about the architecture of a song — verse as tension, chorus as release — and how melodic height and rhythmic density are the two levers for the lift. Tried a few alternatives. One that worked was going up a fourth on the chorus title phrase.",
+      "cleaned_text": "#### SESSION FOCUS: **Original Composition – 'Harbour Light'**\n- **Genre/Style:** Indie folk, DADGAD tuning.\n- **Verse Assessment:** Strong. Fingerpicked pattern creates effective forward motion; vocal melody has genuine melancholic character.\n- **Issue Identified:** Chorus melody sits *lower* than verse, undermining the intended emotional lift.\n\n### Compositional Architecture\nIntroduced the framework of **tension and release**: the verse accumulates tension through motion and restraint; the chorus is the release — and for that release to land, something must shift. The two primary levers are:\n1. **Melodic height** — the chorus typically reaches above the verse ceiling.\n2. **Rhythmic density** — strumming, dynamic increase, or rhythmic simplification can all communicate arrival.\n\n### Solution Explored\nTheo experimented with lifting the title phrase 'Harbour Light' up a perfect fourth. This creates a strong pentatonic leap that sits naturally in his voice and gives the chorus the height it needed. The guitar pattern was adjusted to a chord-strummed texture to differentiate from the verse.\n\n### Practice Focus\n- Record a demo of the revised chorus (title phrase up a fourth) against the verse.\n- Explore one additional alternative: what if the chorus title dropped to a lower note as a deflationary choice — would that serve the lyric's meaning differently?",
+      "session_brief": null,
+      "person_id": 1002,
+      "group_id": null,
+      "id": 5006,
+      "created_at": "2025-11-18T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Theo Callahan",
+        "id": 1002
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-01-20",
+      "date": "2026-01-20",
+      "stage": "Clean",
+      "raw_capture": "Theo is stuck on the bridge for Harbour Light. He's tried a few things but nothing is sitting right. We talked about bridges as a 'third thing' — not verse, not chorus, but a perspective shift. Looked at some reference bridges (The Night Will Always Win, Passenger; Skinny Love, Bon Iver) to hear what a bridge does emotionally. Then Theo improvised over a suspended Am chord for a while and found a really interesting descending phrase. We captured it.",
+      "cleaned_text": "#### SESSION FOCUS: **Bridge Development for 'Harbour Light'**\n- **Problem:** Theo is unable to find a bridge section that feels distinct from verse and chorus.\n- **Concept Introduced:** The bridge as a **perspective shift** — not a louder verse or a quieter chorus, but a third emotional vantage point.\n\n### Reference Listening\nListened to two reference bridges to anchor the concept:\n- *'The Night Will Always Win'* (Passenger) — bridge strips away instrumentation, lyric becomes introspective and questioning.\n- *'Skinny Love'* (Bon Iver) — bridge has a fractured, almost spoken quality; completely different from the song's intense strummed sections.\n\n### Improvisation\nTheo improvised over a sustained Am sus2 chord. Found a descending phrase — A, G, E, D — with a held note quality that contrasts beautifully with the motion of the verse and chorus. Captured via phone memo.\n\n### Next Steps\nDevelop the descending phrase into a full 8-bar bridge. Consider sparse instrumentation — voice only with a single fingerpicked note? Let the lyric carry the section.",
+      "session_brief": null,
+      "person_id": 1002,
+      "group_id": null,
+      "id": 5007,
+      "created_at": "2026-01-20T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Theo Callahan",
+        "id": 1002
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-03-10",
+      "date": "2026-03-10",
+      "stage": "Published",
+      "raw_capture": "Harbour Light is essentially finished. Theo performed the full song from top to tail and it held together really well. We made one small adjustment — the last chorus he drops back to fingerpicking rather than strumming which gives it a beautiful quiet resolution. He's thinking about recording it. We talked about home recording basics — interface, mic position for acoustic guitar, and the value of capturing simple, honest demos before overthinking production.",
+      "cleaned_text": "#### SESSION FOCUS: **'Harbour Light' – Song Completion & Recording Discussion**\n- **Status:** Song is complete. Full performance from top to tail — verse, chorus, bridge, final chorus.\n- **Final Arrangement Choice:** Last chorus returns to the verse's fingerpicked texture, creating a quiet and intimate resolution. Highly effective.\n\n### Completion Notes\nThe song has achieved its emotional arc: a journey through longing (verse), a reaching outward (chorus), a private reckoning (bridge), and a quiet return (final chorus). The DADGAD tuning gives it an open, unresolved quality that suits the lyric's ambivalence.\n\n### Home Recording Conversation\nTheo is ready to capture a demo. Key guidance provided:\n- **Interface:** A simple 2-channel USB audio interface is all that's needed.\n- **Microphone Placement:** For acoustic guitar with simultaneous vocal, a single condenser mic at 12th fret distance (45° angle) often gives a pleasing blend. If overdubbing, vocals can be recorded separately.\n- **Philosophy:** Capture the song honestly before any production decisions. The demo should be emotionally true, not technically polished.\n\n### Next Steps\n- Record a first demo this week.\n- Bring it to the next session for listening and notes.",
+      "session_brief": null,
+      "person_id": 1002,
+      "group_id": null,
+      "id": 5008,
+      "created_at": "2026-03-10T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Theo Callahan",
+        "id": 1002
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2025-10-28",
+      "date": "2025-10-28",
+      "stage": "Published",
+      "raw_capture": "Priya is working on Chopin Nocturne Op 9 No 2. Her right hand melody is lovely — she has a natural sense of rubato. The left hand arpeggios are technically sound but mechanical. We talked about the left hand as a rocking boat — it shouldn't feel like counting, it should feel like being on water. Did an exercise where she played only the bass note and the top of the arpeggio as a two-voice texture and listened to the harmony, then rebuilt the full arpeggio around that listening.",
+      "cleaned_text": "#### SESSION FOCUS: **Chopin Nocturne Op. 9 No. 2 – Left Hand Character**\n- **Current Status:** Right hand melody shows natural rubato and expressive instinct. Left hand arpeggios are technically accurate but rhythmically rigid.\n- **Metaphor Introduced:** The left hand as a **rocking boat** — not metronomic, but responsive to the phrase's emotional swell.\n\n### Technical Approach\nThe mechanical quality in the left hand arpeggios comes from treating them as rhythm rather than harmony. Introduced a **harmonic listening exercise**:\n1. Play only the bass note and the top note of each arpeggio as a sparse two-voice texture.\n2. Listen to what those two notes say harmonically — feel their relationship.\n3. Rebuild the full arpeggio around that felt harmonic understanding.\n\nThe result was immediate: Priya's left hand became more relaxed and responsive, following the melodic phrase rather than subdividing it.\n\n### Practice Focus\n- 10 minutes daily on the harmonic listening exercise (bass + top note only) before playing the full arpeggios.\n- Allow the left hand tempo to be slightly flexible in response to the right hand phrase — trust the rocking boat.",
+      "session_brief": null,
+      "person_id": 1003,
+      "group_id": null,
+      "id": 5009,
+      "created_at": "2025-10-28T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Priya Nair",
+        "id": 1003
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2025-12-16",
+      "date": "2025-12-16",
+      "stage": "Published",
+      "raw_capture": "Priya wants to add a jazz standard to her repertoire — something that complements the classical work. We settled on 'Autumn Leaves' as a great harmonic learning vehicle. It's a ii-V-I chain through two keys (G major and G minor), which gives a beautiful opportunity to hear the relative major/minor relationship. Spent the session learning the melody by ear and harmonising the first 8 bars with basic voicings.",
+      "cleaned_text": "#### SESSION FOCUS: **New Repertoire – 'Autumn Leaves' (Jazz Standard)**\n- **Strategic Choice:** 'Autumn Leaves' selected as a harmonic learning vehicle alongside the classical repertoire.\n- **Harmonic Content:** ii–V–I progressions cycling through G major and G minor — an ideal map for understanding relative major/minor relationships and functional harmony.\n\n### Ear-Led Learning\nRather than starting from a lead sheet, Priya learned the melody by ear — listening to the recording, singing it back, then finding it on the keys. This process ensures the melody lives in the ear before it lives in the hand.\n\n### Harmonic Voicings\nIntroduced four-note shell voicings (root, third, seventh, and one colour note) for the first 8 bars. These are sparse, open voicings that give clarity to the harmony without becoming cluttered.\n\n**First 8 bars:**\n| Bar | Chord | Voicing |\n|---|---|---|\n| 1–2 | Am7 | A, G, C, E |\n| 3–4 | D7 | D, F#, C, A |\n| 5–6 | Gmaj7 | G, B, F#, D |\n| 7–8 | Cmaj7 | C, E, B, G |\n\n### Practice Focus\n- Sing the melody while playing just the bass notes.\n- Experiment with the voicings — can you find the chord by ear before reading the chart?",
+      "session_brief": null,
+      "person_id": 1003,
+      "group_id": null,
+      "id": 5010,
+      "created_at": "2025-12-16T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Priya Nair",
+        "id": 1003
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-03-03",
+      "date": "2026-03-03",
+      "stage": "Clean",
+      "raw_capture": "Priya is preparing for her AMEB Grade 8 exam. We did a mock run of the full programme. The Chopin is exam-ready. The Bach Prelude in C needs work — she's rushing the semiquavers in bar 14. Also went through aural tests and general knowledge. She's strong on form and history but gets anxious on interval identification and tends to second-guess herself.",
+      "cleaned_text": "#### SESSION FOCUS: **AMEB Grade 8 Exam Preparation – Mock Run**\n- **Exam Status:** Full mock programme run-through completed.\n- **Overall Assessment:** Strong. Repertoire is largely exam-ready; targeted work needed on one specific technical passage and aural confidence.\n\n### Repertoire Review\n- **Chopin Nocturne Op. 9 No. 2:** Exam-ready. Rubato is expressive and controlled; left hand has the character and responsiveness developed over the past six months.\n- **Bach Prelude in C:** Rushing observed in bar 14 (semiquaver run). Likely caused by anxiety anticipating the following difficult chord change. Isolated bar 14 and worked at 60% tempo.\n\n### Aural Skills\n- **Form & History:** Strong. Confident and accurate.\n- **Interval Identification:** Anxiety-driven second-guessing. Priya's first answer is consistently correct — the problem is self-trust, not ear accuracy.\n- **Strategy:** On the exam, commit to the first answer. Do not revise unless there is a clear logical reason.\n\n### Practice Focus\n- Bach bar 14: 10 slow repetitions daily, then connect to bar 15.\n- Aural drill: interval flashcards, committing to first response without review.",
+      "session_brief": null,
+      "person_id": 1003,
+      "group_id": null,
+      "id": 5011,
+      "created_at": "2026-03-03T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Priya Nair",
+        "id": 1003
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2025-09-30",
+      "date": "2025-09-30",
+      "stage": "Published",
+      "raw_capture": "First session with Luca. He's a 34-year-old who always wanted to sing but was told as a child he was tone-deaf. He absolutely is not tone-deaf — he's a bit pitchy in the upper range but his ear is fine. His main block is psychological — he sings very quietly and apologetically. We did some exercises just to let the voice exist in the room without judgment. Talked about the difference between performing and practicing. He left looking lighter than when he came in.",
+      "cleaned_text": "#### SESSION FOCUS: **Initial Intake – Releasing the Apologetic Voice**\n- **Background:** First-time adult learner. Told as a child he was 'tone-deaf' — this label has inhibited his vocal expression for 25+ years.\n- **Assessment:** Not tone-deaf. Mild pitch instability in upper range is a coordination issue, not an ear issue. His ear is functional and responsive.\n- **Primary Challenge:** Psychological — Luca sings with extreme restraint, apologetically, as if asking permission to exist in the sonic space.\n\n### Approach\nThis session was deliberately low-stakes and exploratory. No technique was taught. The sole goal was to allow the voice to be present in the room without self-judgment. We:\n1. Spoke about the difference between **performing** (for an audience) and **practicing** (for yourself).\n2. Did a series of vocal slides on a neutral 'mmm' — no 'right' note, just the physical sensation of the voice moving.\n3. Luca laughed at himself at several points, which is exactly the right response.\n\n### Outcome\nBy the end of the session, Luca's volume had nearly doubled compared to his opening phrase. The voice is there — it just needs permission.\n\n### Practice Focus\n- One minute daily of humming to yourself — in the shower, in the car — with no judgment about whether it sounds good.",
+      "session_brief": null,
+      "person_id": 1004,
+      "group_id": null,
+      "id": 5012,
+      "created_at": "2025-09-30T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Luca Ferrante",
+        "id": 1004
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-01-13",
+      "date": "2026-01-13",
+      "stage": "Published",
+      "raw_capture": "Luca has been practicing consistently and it shows. He's working on 'The Scientist' by Coldplay. His pitch is much more reliable now — the upper notes are landing about 80% of the time which is great improvement. He still collapses the breath on long phrases. We identified that he's holding his breath before a big note rather than keeping the airflow moving. Worked on keeping a physical sense of forward motion with the breath through long phrases.",
+      "cleaned_text": "#### SESSION FOCUS: **'The Scientist' – Pitch Consolidation & Breath Flow**\n- **Song:** 'The Scientist' – Coldplay.\n- **Progress Report:** Consistent home practice evident. Pitch accuracy now approximately 80% on upper notes — significant improvement from intake.\n\n### Breath Management Issue\nLuca is holding his breath immediately before a high or exposed note — a very common anxiety response. This causes the voice to thin, wobble, or go sharp. The solution is to maintain a sense of **forward motion** in the breath through the whole phrase rather than 'preparing' for the big note.\n\n**Exercise:** Hiss on a sustained 's' through the full phrase (as if the air is flowing continuously) while mentally mapping where the melody goes. Then sing the phrase with that same physical sensation of continuous forward airflow.\n\n### Practice Focus\n- 'The Scientist' verse + chorus, focusing on keeping the breath moving through the ends of phrases.\n- Identify the one note you dread — and practice the phrase *leading into* that note, not the note itself.",
+      "session_brief": null,
+      "person_id": 1004,
+      "group_id": null,
+      "id": 5013,
+      "created_at": "2026-01-13T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Luca Ferrante",
+        "id": 1004
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2025-12-02",
+      "date": "2025-12-02",
+      "stage": "Clean",
+      "raw_capture": "Oscar is working on 'Blackbird' by The Beatles. He has the picking pattern basically down but the thumb is dominating — the bass notes are too loud relative to the melody. We worked on the concept of balancing bass and melody. Also talked about the piece as a conversation between the thumb (bass line) and fingers (melody) rather than a unison performance.",
+      "cleaned_text": "#### SESSION FOCUS: **'Blackbird' – Tone Balance & Voice Independence**\n- **Piece:** 'Blackbird' – The Beatles (Paul McCartney).\n- **Current Status:** Fingerpicking pattern established and rhythmically stable.\n- **Issue Identified:** Thumb-dominated tone — bass notes significantly louder than melody, obscuring the singing line.\n\n### Independence of Voices\nIntroduced the concept of the guitar as a **duet between two voices**: the thumb carries the bass line (accompaniment); the fingers carry the melody (the singer). For the melody to 'sing', it must be louder and brighter than the bass.\n\n**Exercise:**\n1. Play only the melody notes (fingers only) — listen to the phrase.\n2. Play only the bass notes (thumb only) — listen to the phrase.\n3. Recombine, consciously directing more weight into the fingertip.\n\n### Practice Focus\n- Practice the opening 8 bars with an intentional fingertip dig — visualise the melody 'floating above' the bass.\n- Record yourself and listen back: can you hear two separate voices?",
+      "session_brief": null,
+      "person_id": 1006,
+      "group_id": null,
+      "id": 5014,
+      "created_at": "2025-12-02T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Oscar Tran",
+        "id": 1006
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-02-24",
+      "date": "2026-02-24",
+      "stage": "Published",
+      "raw_capture": "Oscar has made great progress on Blackbird. The voice balance is much better. He's ready to add another piece and we settled on 'Dust in the Wind' by Kansas as a natural next step — similar fingerpicking style but introduces a flat pick hybrid technique. Also started talking about chord theory — Oscar is curious about why Blackbird's chord shapes feel 'different' from standard open chords. Explained how McCartney uses open strings as pedal tones to create suspended, modal-sounding harmonies.",
+      "cleaned_text": "#### SESSION FOCUS: **'Blackbird' Consolidation & New Repertoire Introduction**\n- **'Blackbird' Status:** Voice balance greatly improved — melody is singing clearly above the bass line. Ready to consolidate through performance repetition.\n- **New Piece:** 'Dust in the Wind' – Kansas. Shares fingerpicking DNA with Blackbird but introduces hybrid picking concepts.\n\n### Harmonic Curiosity – Open String Pedal Tones\nOscar noticed that Blackbird's chord shapes feel 'different' — more open and suspended — than standard open-position chords. Excellent observation. McCartney exploits **open string pedal tones**: by leaving the open G and high E strings ringing across chord changes, he creates sustained notes that don't belong strictly to any single chord, producing a modal, floating quality.\n\nThis is a gateway concept into understanding how chord voicings interact with open strings on guitar to create harmonic colour beyond standard chord names.\n\n### Practice Focus\n- Begin 'Dust in the Wind' picking pattern at 50% tempo — focus on the pick-and-middle-finger combination on the high strings.\n- Experiment: take any chord shape you know and leave the open high E ringing across it. Listen to what happens.",
+      "session_brief": null,
+      "person_id": 1006,
+      "group_id": null,
+      "id": 5015,
+      "created_at": "2026-02-24T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Oscar Tran",
+        "id": 1006
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-01-27",
+      "date": "2026-01-27",
+      "stage": "Published",
+      "raw_capture": "Felix is a complete beginner — never played an instrument before. Very analytical by nature (works as a software engineer). He wants to understand the why behind everything, which is great. We spent the first session entirely on fundamentals: the layout of the keyboard, the pattern of tones and semitones, how sharps and flats relate to the white keys, and then the C major scale. He picked it up very quickly. Also talked about not using fingering numbers from day one and instead developing tactile memory.",
+      "cleaned_text": "#### SESSION FOCUS: **Initial Session – Keyboard Fundamentals**\n- **Background:** Complete beginner. Software engineer by profession — strong analytical instinct and desire to understand underlying systems.\n- **Approach:** Conceptual-first, informed by his natural systems-thinking orientation.\n\n### Keyboard Architecture\nCovered the physical layout of the piano as a **repeating pattern** — not 88 individual keys, but a 12-note chromatic pattern repeated across octaves. Key concepts:\n- The relationship between white and black keys (tones and semitones).\n- Why sharps and flats are the same physical key (enharmonic equivalence).\n- The C major scale as the 'default' white-key sequence.\n\n### C Major Scale\nFelix learned the C major scale in both hands within the session using a simple pattern of tones (T) and semitones (S): T-T-S-T-T-T-S. He immediately mapped this pattern onto the keyboard layout — a very programmer-like approach.\n\n### Pedagogical Note\nDeliberately avoided numbered fingering notation. Instead, encouraged **tactile and spatial memory** — knowing where the next note is by feel and position rather than reading a number. This builds a more intuitive relationship with the keyboard.\n\n### Practice Focus\n- C major scale, both hands separately, five repetitions per hand per day.\n- Explore: can you find a D major scale using the same T-T-S pattern starting on D?",
+      "session_brief": null,
+      "person_id": 1008,
+      "group_id": null,
+      "id": 5016,
+      "created_at": "2026-01-27T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Felix Hartmann",
+        "id": 1008
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-03-17",
+      "date": "2026-03-17",
+      "stage": "Clean",
+      "raw_capture": "Felix has progressed really well. He can now play C, G, D, and F major scales fluently. He built a mental model of the circle of fifths on his own between sessions, which is great. Today we started on simple chord voicings — major and minor triads in root position. He grasped the concept of thirds quickly. We talked about how a chord is just notes from a scale stacked in thirds. Then we ended with a simple I-IV-V-I progression in C which he was really proud of.",
+      "cleaned_text": "#### SESSION FOCUS: **Triads & First Chord Progressions**\n- **Scale Fluency:** C, G, D, F major scales — confident and accurate in both hands.\n- **Self-Directed Learning:** Felix independently constructed a mental model of the circle of fifths between sessions. Impressive.\n\n### Triads\nIntroduced major and minor triads as **thirds stacked on a scale degree**. Felix grasped this quickly given his scale pattern knowledge:\n- **Major triad:** Root + major third + perfect fifth (e.g., C–E–G).\n- **Minor triad:** Root + minor third + perfect fifth (e.g., A–C–E).\n\nThe conceptual bridge: a chord is not a separate thing to memorise — it is derived from the scale he already knows.\n\n### I-IV-V-I Progression\nPlayed a root-position I–IV–V–I in C major (C–F–G–C). Felix experienced the resolution of V to I as viscerally satisfying — noted 'oh, that wants to go somewhere.' This is the beginning of functional harmony.\n\n### Practice Focus\n- I-IV-V-I in C and G major, hands separately.\n- Identify which chords in each key are major and which are minor using the stacking-thirds method.",
+      "session_brief": null,
+      "person_id": 1008,
+      "group_id": null,
+      "id": 5017,
+      "created_at": "2026-03-17T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Felix Hartmann",
+        "id": 1008
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Term 1 Programme Overview – Northbrook High",
+      "date": "2026-02-03",
+      "stage": "Published",
+      "raw_capture": "First session with the Northbrook Year 9 music elective group. 12 students, mixed experience levels. Three have had private lessons, rest are beginners. The term focus will be on voice and ukulele as ensemble vehicles. Goal: build ensemble listening skills and get everyone performing a simple song by the end of term. Good energy in the room.",
+      "cleaned_text": "#### SESSION FOCUS: **Term 1 Orientation – Year 9 Music Elective**\n- **Group:** Year 9 music elective, Poly High. 12 students; mixed experience (3 with prior lessons, 9 beginners).\n- **Instruments:** Voice and ukulele ensemble.\n- **Term Goal:** Every student performs as part of an ensemble piece by end of Term 1.\n\n### Observations – Student Cohort\n- Strong social dynamic in the group — students are comfortable with each other, which supports ensemble risk-taking.\n- Three experienced students identified as potential section leaders.\n- Two students appear reserved — will need individual encouragement before they're comfortable participating vocally.\n\n### Term Plan\n| Week | Focus |\n|---|---|\n| 1–2 | Ukulele fundamentals (C, F, G7 chords) + unison singing |\n| 3–4 | Simple harmonies; melody vs accompaniment concept |\n| 5–6 | Repertoire rehearsal: 'Somewhere Over the Rainbow' (ukulele arrangement) |\n| 7–8 | Performance preparation and end-of-term showcase |\n\n### Practice Expectation\n10 minutes, three times per week. Chord transitions C–F–G7. Students encouraged to sing along while playing.",
+      "session_brief": null,
+      "person_id": null,
+      "group_id": 3,
+      "id": 5018,
+      "created_at": "2026-02-03T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": null,
+      "group": {
+        "id": 3,
+        "name": "Poly High"
+      },
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Northbrook – Week 4 Ensemble Check-in",
+      "date": "2026-03-03",
+      "stage": "Clean",
+      "raw_capture": "The group is coming along. Most students can now transition C-F-G7 fluently enough to keep ensemble together. Started on the two-part harmony today — melody group and a simple drone/counter-melody group. The reserved students (Sophie and one other) are starting to open up. Sophie in particular has a really lovely natural voice — she doesn't know it yet.",
+      "cleaned_text": "#### SESSION FOCUS: **Week 4 – Harmony Introduction**\n- **Chord Fluency:** ~9 of 12 students can transition C–F–G7 without breaking ensemble rhythm. Two students still working on C–F transition speed.\n- **New Element:** Two-part harmony introduced.\n\n### Harmony Structure\nGroup divided into:\n- **Melody group** (7 students): carry the main 'Somewhere Over the Rainbow' melody.\n- **Counter-melody group** (5 students): sustain a drone and simple descending counter-phrase on the chorus.\n\nThe ensemble effect of two simultaneous lines, even simple ones, was clearly exciting for the students.\n\n### Individual Notes\n- **Sophie N.:** Reserved in early sessions; now singing with increased confidence. Has a naturally warm, resonant voice — significantly more developed than she realises. Will look for an opportunity to highlight this privately.\n- **Kai M.:** Guitar background evident in his ukulele technique — clean chord shapes, good rhythm. Potential for a solo moment in the showcase.\n\n### Upcoming\nWeeks 5–6: Full song rehearsal, performance blocking, dynamics and presence.",
+      "session_brief": null,
+      "person_id": null,
+      "group_id": 3,
+      "id": 5019,
+      "created_at": "2026-03-03T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": null,
+      "group": {
+        "id": 3,
+        "name": "Poly High"
+      },
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Coaching Session – Stakeholder Influence & Upward Communication",
+      "date": "2026-01-22",
+      "stage": "Published",
+      "raw_capture": "Dominic is a newly promoted VP of Product at a mid-size fintech. His challenge: he's technically excellent and respected by his team, but struggles to communicate upward effectively. His CEO and CFO feel he 'goes too deep' in presentations. We diagnosed the issue: Dominic structures his communication from his own cognitive frame (bottom-up, evidence-first) rather than from the executive audience's frame (top-down, decision-first). Talked about the BLUF principle — Bottom Line Up Front.",
+      "cleaned_text": "#### SESSION FOCUS: **Upward Communication – The Executive Frame**\n- **Client:** Dominic Ashford, VP of Product, fintech (recently promoted).\n- **Presenting Problem:** Feedback from CEO and CFO that Dominic 'goes too deep' — presentations are detailed and evidence-heavy but lose the room before reaching the point.\n\n### Diagnosis\nDominic communicates from his natural cognitive frame: **evidence → analysis → conclusion**. This is excellent for technical audiences but misaligned with executive communication, which requires: **conclusion → rationale → evidence (on request)**.\n\nHe is not presenting *wrong information* — he is presenting *in the wrong order*.\n\n### The BLUF Principle\n**Bottom Line Up Front**: Open every executive communication — written or verbal — with the decision, recommendation, or key finding. Everything that follows is supporting evidence for someone who wants to dig deeper.\n\n**Example reframe:**\n- ❌ *'We analysed six months of retention data, identified three cohorts, ran a regression, and found that...'*\n- ✅ *'We have a retention problem in the 30-60 day cohort. Here's what I recommend, and here's the evidence if you'd like it.'*\n\n### Commitment\nDominic will restructure his next board-facing presentation using BLUF. He will share a draft for review before the session next fortnight.",
+      "session_brief": null,
+      "person_id": 1012,
+      "group_id": null,
+      "id": 5020,
+      "created_at": "2026-01-22T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Dominic Ashford",
+        "id": 1012
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Coaching Session – Managing a Difficult Peer",
+      "date": "2026-02-19",
+      "stage": "Published",
+      "raw_capture": "Dominic is in conflict with the VP of Engineering — Marcus — who is publicly challenging his product decisions in cross-functional meetings. The dynamic is damaging team morale and making it hard to move forward. We explored whether this is a personality conflict or a structural/role-boundary problem. Concluded it's structural — the two roles have overlapping authority on technical product decisions with no clear tie-breaker process. Dominic needs to raise this at a structural level with the CEO, not try to 'win' the interpersonal battle.",
+      "cleaned_text": "#### SESSION FOCUS: **Peer Conflict – Structural vs. Interpersonal Analysis**\n- **Situation:** Dominic's VP-Engineering counterpart (Marcus) is publicly challenging his product decisions in cross-functional forums, undermining team confidence and decision velocity.\n- **Dominic's Impulse:** Win the argument in the room; escalate interpersonally.\n\n### Diagnosis\nApplied the **structural vs. interpersonal lens**: Is this a personality conflict, or a symptom of a structural gap?\n\nConclusion: **Structural.** The two VP roles have overlapping authority over technical product decisions — feature prioritisation, build-vs-buy, technical debt trade-offs — with no documented decision-making process or tie-breaker owner. The public conflict is the system finding its own resolution (loudly) in the absence of a designed one.\n\n### Recommended Path\nDominic should not try to win the interpersonal battle — that would require one VP to 'lose', generating lasting resentment. Instead:\n1. **Name the structural problem** to the CEO, framing it as a business risk (decision velocity, team morale) rather than a personal complaint.\n2. **Propose a solution:** A documented RACI or decision matrix for the overlap zone — product and engineering each have explicit ownership domains.\n3. **Separate the structural conversation from the interpersonal one** — the goal is a better system, not a judgement on Marcus.\n\n### Commitment\nDraft a one-page 'structural framing' document for the CEO before the next leadership team meeting. Bring the draft to the next coaching session.",
+      "session_brief": null,
+      "person_id": 1012,
+      "group_id": null,
+      "id": 5021,
+      "created_at": "2026-02-19T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Dominic Ashford",
+        "id": 1012
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Coaching Session – April Check-in",
+      "date": "2026-04-07",
+      "stage": "Clean",
+      "raw_capture": "Good session. The structural conversation with the CEO went better than Dominic expected — the CEO was actually relieved someone had named it. A RACI is now being drafted by the COO. Marcus was apparently less resistant than expected once the CEO framed it as a business process issue rather than a performance issue. Dominic reflected that this was the first time he'd separated the structural from the interpersonal in real time. We explored what made that shift possible.",
+      "cleaned_text": "#### SESSION FOCUS: **April Check-in – Structural Intervention Outcomes**\n- **Update:** Dominic's structural conversation with the CEO was received positively. CEO acknowledged the overlap problem was a known risk that hadn't been addressed.\n- **Outcome:** COO is now drafting a RACI for the Product–Engineering decision boundary. Marcus was cooperative once the conversation was framed as a process problem rather than a personnel issue.\n\n### Reflective Debrief\nDominic identified this as the first time he successfully separated the **structural diagnosis** from the **interpersonal dynamic** in a live, high-stakes situation. Key reflection:\n\n> *'I went in intending to fix a relationship. I came out having fixed a system. The relationship improved because the system improved.'*\n\nThis is a significant shift in his leadership operating model.\n\n### Next Development Focus\nDominic wants to work on: leading his own product team through ambiguity. His team becomes anxious when strategy is unclear, and he tends to either over-explain or over-reassure — neither is effective. Next session will explore **communicating with confidence under uncertainty**.",
+      "session_brief": null,
+      "person_id": 1012,
+      "group_id": null,
+      "id": 5022,
+      "created_at": "2026-04-07T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Dominic Ashford",
+        "id": 1012
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Intake Session – Executive Presence & Voice",
+      "date": "2026-02-03",
+      "stage": "Published",
+      "raw_capture": "Ingrid is a General Manager at a logistics company. Technically exceptional — promoted quickly — but describes herself as feeling 'invisible in the room' at the executive level. She attributes it to being introverted. We explored whether it's actually introversion or whether it's a learned communication pattern — speaking only when she has something 100% certain to add. We reframed the goal: not to speak more, but to speak at the right moments with more weight.",
+      "cleaned_text": "#### SESSION FOCUS: **Intake – Executive Presence Audit**\n- **Client:** Ingrid Solberg, General Manager, logistics sector.\n- **Self-Assessment:** 'I feel invisible in the room at the executive level.'\n- **Attribution:** Self-identifies as introverted.\n\n### Reframe: Introversion vs. Learned Restraint\nIngrid's pattern is not introversion alone — it is **certainty-gating**: she withholds contributions until she is 100% confident in a position. In fast-moving executive discussions, this means she often enters the conversation after the decision has already formed.\n\n**Key distinction:** Introversion is an energy preference; certainty-gating is a communication habit. The habit can be modified.\n\n### Reframed Goal\nNot: speak more.\n**Yes:** Speak *earlier* and with more *weight* at the moments that matter. Quality of presence, not quantity of words.\n\n### Presence Levers Identified\n1. **Physical grounding:** Stillness and deliberate breath before speaking signals authority.\n2. **Pacing:** Slowing the speaking rate by 20% increases perceived gravitas significantly.\n3. **Entry framing:** A short, direct entry — 'I want to add something to that' — takes the floor before certainty is fully formed.\n\n### Commitment\nBefore the next session, Ingrid will identify one meeting per week where she will use an entry frame to contribute earlier, even with an incomplete thought.",
+      "session_brief": null,
+      "person_id": 1013,
+      "group_id": null,
+      "id": 5023,
+      "created_at": "2026-02-03T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Ingrid Solberg",
+        "id": 1013
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Coaching Session – Difficult Conversations Framework",
+      "date": "2026-03-10",
+      "stage": "Published",
+      "raw_capture": "Ingrid has a performance conversation coming up with a direct report who has been underperforming. She has been avoiding it for two months. We explored what's getting in the way — she's catastrophising about the emotional reaction from the direct report and trying to predict every possible response. We worked through the SBI framework (Situation, Behaviour, Impact) and then did a light role-play of the opening of the conversation. She found the opening much easier than the middle.",
+      "cleaned_text": "#### SESSION FOCUS: **Difficult Conversations – SBI Framework & Rehearsal**\n- **Situation:** Ingrid has delayed a required performance conversation with a direct report for approximately eight weeks.\n- **Block:** Catastrophising about unpredictable emotional responses; over-preparing for outcomes rather than the opening.\n\n### Diagnosis\nIngrid is preparing for the *middle* of the conversation (the direct report's possible reactions) before she has secured the *opening*. This creates cognitive overload and avoidance. The opening is the one part she can control fully.\n\n### SBI Framework\n**Situation – Behaviour – Impact** provides a non-blaming, observable structure for performance feedback:\n- **S:** Specific situation or context where the behaviour occurred.\n- **B:** Observable behaviour — what was seen or not seen, without inference about intent.\n- **I:** The concrete impact of that behaviour on the team, project, or outcome.\n\n**Example opening:**\n> *'In the last three sprint reviews (S), I've noticed you haven't presented your section — the team lead has covered it each time (B). The impact is that your contributions aren't visible to the broader team, and I'm concerned it may be affecting how your work is perceived (I).'*\n\n### Role-Play Debrief\nThe opening landed cleanly. Ingrid was surprised by how much easier it felt once she accepted that **she cannot control the middle — only the opening**.\n\n### Commitment\nSchedule the conversation this week. Prepare only the SBI opening. Allow the conversation to develop from there.",
+      "session_brief": null,
+      "person_id": 1013,
+      "group_id": null,
+      "id": 5024,
+      "created_at": "2026-03-10T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Ingrid Solberg",
+        "id": 1013
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-02-25",
+      "date": "2026-02-25",
+      "stage": "Published",
+      "raw_capture": "Marcus runs a 40-person engineering team at a SaaS company. His challenge is the transition from technical leader to people leader. He still wants to be the smartest person in the room technically and it's getting in the way — he jumps in to solve problems before the team has had a chance to try. We talked about the difference between technical authority and leadership authority, and why demonstrating one can undermine the other.",
+      "cleaned_text": "#### SESSION FOCUS: **Leader Transition – From Technical Authority to People Leadership**\n- **Client:** Marcus Webb, Engineering Lead (40-person team), SaaS.\n- **Challenge:** Navigating the transition from individual technical contributor to people leader.\n- **Presenting Pattern:** Solving technical problems before the team has had the opportunity to attempt them.\n\n### The Authority Paradox\nMarcus is demonstrating his technical authority in a way that inadvertently undermines his leadership authority. When a leader solves problems for the team, the message (unintended) is: *'I don't trust you to figure this out.'* Over time, this creates a dependent team that escalates rather than solves.\n\n**Technical authority** is demonstrated by being the best solver.\n**Leadership authority** is demonstrated by creating conditions where others solve — and grow.\n\n### Coaching Challenge\nMarcus' identity is substantially invested in technical excellence. Shifting toward a 'question-asking' leadership posture will feel like a loss of identity before it feels like a gain.\n\n**Reframe:** The highest expression of his technical skill is now the quality of the questions he asks, not the solutions he provides.\n\n### Practice Commitment\nIn the next three technical stand-ups, Marcus will contribute only in the form of questions. Not one solution. He will log how the team responds.",
+      "session_brief": null,
+      "person_id": 1014,
+      "group_id": null,
+      "id": 5025,
+      "created_at": "2026-02-25T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Marcus Webb",
+        "id": 1014
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-04-14",
+      "date": "2026-04-14",
+      "stage": "Clean",
+      "raw_capture": "Great session. Marcus tried the questions-only experiment in standups and something shifted. He said the team is starting to solve things before he even has to ask. He also noticed that he's enjoying the meetings more — he's curious about what they'll come up with rather than impatient with waiting. We explored this as evidence that his leadership identity is beginning to form alongside the technical one rather than replacing it.",
+      "cleaned_text": "#### SESSION FOCUS: **Questions-Only Experiment – Debrief**\n- **Experiment Result:** Marcus maintained a questions-only posture across three standups. Observed effect: team is beginning to resolve issues before he prompts them.\n- **Subjective Report:** 'I'm enjoying the meetings now. I'm curious instead of impatient.'\n\n### Reflective Insight\nThe shift from impatience to curiosity is significant. It suggests that the **questions-only constraint** is changing Marcus' internal orientation, not just his external behaviour. He is beginning to experience the team's problem-solving as interesting rather than slow.\n\nThis is the beginning of a **dual identity**: technical expert *and* leadership coach to his team. These are not in conflict — they are complementary.\n\n### Next Development Focus\nMarcus wants to address one-to-one conversations with direct reports. He tends to run 1:1s as status updates rather than development conversations. Next session: the 1:1 as a coaching container.",
+      "session_brief": null,
+      "person_id": 1014,
+      "group_id": null,
+      "id": 5026,
+      "created_at": "2026-04-14T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Marcus Webb",
+        "id": 1014
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Workshop 1 – Communication Under Pressure",
+      "date": "2026-03-19",
+      "stage": "Published",
+      "raw_capture": "Full-day workshop with the Calloway & Partners leadership team — 8 participants. Focus: communication when under pressure or scrutiny. The team has been through a rough client departure and confidence is a bit low. Key exercises: the 'hot seat' presentation drill (each person presents for 3 minutes on a project, then fields 5 minutes of pointed questions from the group), and a listening audit (pairs doing a structured listening exercise and giving each other feedback on listening quality). Strong engagement throughout. James Calloway was notably more open than expected.",
+      "cleaned_text": "#### SESSION FOCUS: **Workshop 1 – Communication Under Pressure**\n- **Format:** Full-day workshop, Calloway & Partners leadership team (8 participants).\n- **Context:** Team is navigating aftermath of a significant client departure — confidence and communication confidence are both affected.\n\n### Morning: Hot Seat Presentations\nEach participant delivered a 3-minute project presentation, immediately followed by 5 minutes of pointed questions from the group (facilitated to replicate scrutiny, not hostility).\n\n**Observations:**\n- 5 of 8 participants showed visible shifts in composure during questioning — body language closing, speech rate increasing, volume dropping.\n- The most effective respondents paused before answering — even 2 seconds changed perceived confidence dramatically.\n- James Calloway (Principal): performed strongly under pressure; his main challenge was over-qualifying statements ('I think maybe...') rather than any composure issue.\n\n### Afternoon: Listening Audit\nPaired structured listening exercise — one person speaks for 3 minutes without interruption; listener feeds back what they heard. Debrief focused on the gap between what was said and what was received.\n\n**Key insight surfaced by the group:** Most listening failures were *anticipatory* — listeners were preparing their response rather than hearing the current sentence.\n\n### Outcomes\nStrong workshop engagement. Team reported it felt 'uncomfortably useful'. Follow-up workshop in 4 weeks — focus: written communication and async leadership.",
+      "session_brief": null,
+      "person_id": null,
+      "group_id": 4,
+      "id": 5027,
+      "created_at": "2026-03-19T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": null,
+      "group": {
+        "id": 4,
+        "name": "Calloway & Partners"
+      },
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Workshop 2 – Async Leadership & Written Communication",
+      "date": "2026-04-16",
+      "stage": "Published",
+      "raw_capture": "Second workshop with Calloway & Partners. Focus on written communication — emails, Slack, internal memos — as a leadership signal. The team doesn't think much about their written voice and several have habits that create friction (excessive hedging, long preambles, unclear calls to action). Did a written audit exercise — each person brought a real email they'd sent in the last week and we analysed it as a group with anonymised examples. Also introduced the concept of the 'decision email' as a format.",
+      "cleaned_text": "#### SESSION FOCUS: **Workshop 2 – Written Communication as Leadership Signal**\n- **Format:** Full-day workshop, Calloway & Partners leadership team (8 participants).\n- **Premise:** Written communication is not a neutral transmission medium — it signals confidence, clarity, and decisiveness. Leaders are assessed on their writing even when they don't know it.\n\n### Written Audit Exercise\nEach participant brought one real email sent in the past week. With permission, selected examples were anonymised and analysed as a group.\n\n**Patterns identified across the team:**\n- **Excessive hedging:** 'I just wanted to flag that perhaps we might consider...' — removes authority from the message.\n- **Long preamble:** Context and backstory preceding the actual request or point, burying the call to action.\n- **No clear CTA:** Email ends without a specific ask, deadline, or decision — leaves recipient unclear on what to do next.\n\n### The Decision Email Format\nIntroduced a three-part structure for any email that requires a decision or action:\n1. **The situation in one sentence** (what is happening).\n2. **The recommendation or request** (what you want).\n3. **The deadline and next step** (by when, and what happens next).\n\n**Workshop exercise:** Each participant rewrote their audit email using the three-part structure in 10 minutes. Significant improvement across the board.\n\n### Closing Reflection\nRena Chowdhury: 'I've been writing emails to be polite. I need to write them to be useful.' Strong summary of the session's key insight.",
+      "session_brief": null,
+      "person_id": null,
+      "group_id": 4,
+      "id": 5028,
+      "created_at": "2026-04-16T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": null,
+      "group": {
+        "id": 4,
+        "name": "Calloway & Partners"
+      },
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Intake – Senior Communicator Transitioning to Leadership",
+      "date": "2026-03-04",
+      "stage": "Published",
+      "raw_capture": "Camille is a Head of Communications who has been asked to step into a broader Chief of Staff type role. She's an excellent communicator but has always been in a support function. The new role requires her to lead, influence, and own decisions — not just craft the messaging for others' decisions. We explored her relationship with authority and decision-making. She describes herself as 'not a decision person' which is an identity statement worth examining.",
+      "cleaned_text": "#### SESSION FOCUS: **Intake – Identity Shift: Communicator to Decision-Maker**\n- **Client:** Camille Rousseau, Head of Communications transitioning to a hybrid Chief of Staff role.\n- **Core Tension:** Camille has built an identity and expertise around *crafting* other people's messages. The new role requires her to *make* decisions — and own them.\n\n### Presenting Identity Statement\nCamille described herself as 'not a decision person'. This is worth examining carefully.\n\n**Inquiry:** Is this a factual assessment of her capability, or a **role identity** she has internalised from 10+ years in a support function?\n\nEvidence from the intake conversation suggests the latter: Camille makes complex, consequential decisions daily — about framing, strategy, risk, audience — but attributes them to 'communication expertise' rather than 'decision-making'. She is already a decision-maker. She does not yet own that identity.\n\n### Reframe\nThe transition is not from 'communicator' to 'decision-maker' — it is from **making decisions for others' voices** to **making decisions in her own voice**.\n\n### Development Focus\n1. Decision ownership: begin naming her recommendations as decisions, not suggestions.\n2. Authority posture: explore where she habitually defers versus where she genuinely lacks information.\n3. First 90 days in the new role: identify three decisions she can own end-to-end without seeking approval.\n\n### Commitment\nBefore next session: identify one decision from last week that she described as a 'suggestion' or 'recommendation' and rewrite it in her own notes as a decision she made.",
+      "session_brief": null,
+      "person_id": 1015,
+      "group_id": null,
+      "id": 5029,
+      "created_at": "2026-03-04T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Camille Rousseau",
+        "id": 1015
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-01-14",
+      "date": "2026-01-14",
+      "stage": "Published",
+      "raw_capture": "Zara is working on self-accompanying — singing while playing piano. She learned both separately but struggles to integrate them. The main issue is she stops listening to herself sing when she focuses on piano, and vice versa. We talked about foreground and background attention — at any given moment, one part is the 'singer' and the other is the 'accompanist'. Tried an exercise where she narrated what she was paying attention to out loud while playing, then gradually reduced the narration as the division of attention became more natural.",
+      "cleaned_text": "#### SESSION FOCUS: **Self-Accompaniment Integration – Split Attention**\n- **Context:** Zara has separately developed piano and vocal skills. Integration into self-accompaniment is the current challenge.\n- **Presenting Problem:** Attention collapses — when focused on piano, the vocal line degrades; when focused on voice, chord accuracy drops.\n\n### Foreground/Background Attention\nIntroduced the concept of **foreground and background attention**: in self-accompaniment, one part (usually the voice) should occupy foreground attention (active monitoring) while the other (piano) is relegated to background attention (automatic/motor).\n\nThis is how experienced self-accompanying musicians operate — the piano becomes 'automatic' enough that the singer can focus on the singing.\n\n### Narration Exercise\nExercise: Zara played and sang while narrating out loud what she was paying attention to ('now I'm on the E, now I'm watching the chord change, now I'm back on my voice...').\n- This externalises the attention-management process.\n- After several repetitions, narration was gradually reduced, leaving the underlying attention management running silently.\n\n### Practice Focus\n- Practise the verse of the chosen song (TBC) with left hand only, singing fully.\n- Then add the right hand — treat the left hand as now 'automatic'.\n- Record yourself and notice: is the voice maintaining its expressiveness when the right hand enters?",
+      "session_brief": null,
+      "person_id": 1005,
+      "group_id": null,
+      "id": 5030,
+      "created_at": "2026-01-14T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Zara Williamson",
+        "id": 1005
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Session 2026-02-11",
+      "date": "2026-02-11",
+      "stage": "Published",
+      "raw_capture": "Amara is working on an original song she's been writing — a West African highlife-influenced piece with English and French lyrics. The melodic material is wonderful. Her challenge is her voice breaks unpredictably when she moves between the French vowels and the English ones — the vowel space is different enough that she loses resonance on the shift. We worked on mapping her resonance placement across the vowel space and identifying a 'home base' resonance she can return to.",
+      "cleaned_text": "#### SESSION FOCUS: **Original Song – Cross-Linguistic Vowel Resonance**\n- **Context:** Amara is performing an original composition blending highlife-influenced melody with bilingual English and French lyrics.\n- **Challenge:** Resonance breaks occurring at English/French vowel transitions — the vowel formant shifts are destabilising her placement.\n\n### Vowel Space Mapping\nThe issue is physiological: French vowels (particularly the rounded front vowels — 'u' as in *tu*, 'eu' as in *feu*) require a different lip shape and tongue position than their English equivalents. Moving quickly between them mid-phrase disrupts the singer's resonance focus.\n\n**Exercise:** Map five key vowels from the song onto a felt sense of resonance placement:\n1. Find 'home base' resonance on the most comfortable vowel (for Amara: the 'ah' in English 'mama').\n2. Sing each target vowel while trying to maintain the same *quality* of resonance — not the same shape, but the same *buzz* or *warmth*.\n3. Identify which vowels cause the resonance to 'drop out' — these are the transitions to focus on.\n\n### Result\nThe French 'u' vowel was the primary break point. By approaching it with a slightly more neutral, open quality (rather than the very rounded French phoneme), Amara retained resonance while still signalling the French colour to the listener.\n\n### Practice Focus\n- Sing only the problematic phrase 10 times, focusing on keeping the resonance 'alive' through the transition.\n- The goal is not to sound less French — it is to find a version of the French vowel that doesn't break the vocal line.",
+      "session_brief": null,
+      "person_id": 1007,
+      "group_id": null,
+      "id": 5031,
+      "created_at": "2026-02-11T10:00:00.000000",
+      "tags": [],
+      "actions": [],
+      "messages": [],
+      "person": {
+        "name": "Amara Diallo",
+        "id": 1007
+      },
+      "group": null,
+      "analyzed_for_framework": true
+    }
+  ],
+  "references": [
+    {
+      "title": "Supported Breath & Appoggio Technique",
+      "type": "RESOURCE",
+      "body": "A foundational reference on the Italian bel canto concept of appoggio — 'leaning' into the breath — as a technique for producing a supported, resonant tone without tension. Used as a primary reference for advanced vocal students.",
+      "source_note_id": null,
+      "url": "https://www.nats.org/appoggio-technique",
+      "id": 1,
+      "created_at": "2026-02-10T10:00:00.000000",
+      "tags": [],
+      "embedding_status": "complete",
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "The Inner Game of Music – Barry Green",
+      "type": "RESOURCE",
+      "body": "A classic text applying Timothy Gallwey's Inner Game methodology to music performance. Particularly relevant for students experiencing performance anxiety or self-critical internal narratives during practice.",
+      "source_note_id": null,
+      "url": null,
+      "id": 2,
+      "created_at": "2026-02-15T09:00:00.000000",
+      "tags": [],
+      "embedding_status": "complete",
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Circle of Fifths Reference Chart",
+      "type": "RESOURCE",
+      "body": "Interactive circle of fifths used for explaining key relationships, chord progressions, and modulation paths. Especially useful for piano and songwriting students building harmonic understanding.",
+      "source_note_id": null,
+      "url": "https://www.musictheory.net/tools/circle",
+      "id": 3,
+      "created_at": "2026-03-01T08:00:00.000000",
+      "tags": [],
+      "embedding_status": "complete",
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Non-Violent Communication – Marshall Rosenberg",
+      "type": "RESOURCE",
+      "body": "Core text on empathic communication and needs-based conflict resolution. Referenced frequently in Bridgepoint Advisory sessions dealing with interpersonal friction, difficult conversations, and feedback culture.",
+      "source_note_id": null,
+      "url": null,
+      "id": 4,
+      "created_at": "2026-02-20T09:00:00.000000",
+      "tags": [],
+      "embedding_status": "complete",
+      "analyzed_for_framework": true
+    },
+    {
+      "title": "Thinking in Systems – Donella Meadows",
+      "type": "RESOURCE",
+      "body": "Foundational systems thinking text used as a conceptual backbone for organisational analysis in leadership coaching. Helpful for clients who need to move beyond linear cause-and-effect models of workplace problems.",
+      "source_note_id": null,
+      "url": null,
+      "id": 5,
+      "created_at": "2026-03-05T08:00:00.000000",
+      "tags": [],
+      "embedding_status": "complete",
+      "analyzed_for_framework": true
+    }
+  ],
+  "personas": [
+    {
+      "name": "Resonance Studio",
+      "avatar_logo": null,
+      "description": "Music coaching and vocal instruction for students of Resonance Studio.",
+      "framework_id": 2,
+      "id": 1,
+      "framework": {
+        "name": "Resonance Studio Framework",
+        "is_core": false,
+        "id": 2,
+        "items": [
+          {
+            "aspect": "Principles",
+            "value": "Prioritise ear-first, intuition-led learning over notation-driven technical instruction.",
+            "id": 1,
+            "created_at": "2026-01-20T10:00:00.000000"
+          },
+          {
+            "aspect": "Tone",
+            "value": "Warm, encouraging, and celebratory — treat each small breakthrough as meaningful progress.",
+            "id": 2,
+            "created_at": "2026-01-20T10:02:00.000000"
+          },
+          {
+            "aspect": "Phrasing",
+            "value": "Use metaphors drawn from performance, storytelling, and physical sensation to describe musical concepts.",
+            "id": 3,
+            "created_at": "2026-01-20T10:04:00.000000"
+          },
+          {
+            "aspect": "Formatting",
+            "value": "Structure session summaries with a focus section, breakthroughs, and a clear home practice goal.",
+            "id": 4,
+            "created_at": "2026-01-20T10:06:00.000000"
+          },
+          {
+            "aspect": "Principles",
+            "value": "Connect technical work to expressive intention — always give students a 'why' for each exercise.",
+            "id": 5,
+            "created_at": "2026-01-20T10:08:00.000000"
+          }
+        ],
+        "tone_idioms": null,
+        "formatting_preferences": null,
+        "common_phrasing": null,
+        "principles_tenets": null
+      }
+    },
+    {
+      "name": "Bridgepoint Advisory",
+      "avatar_logo": null,
+      "description": "Leadership and communication coaching for executives and teams under the Bridgepoint Advisory trading name.",
+      "framework_id": 3,
+      "id": 2,
+      "framework": {
+        "name": "Bridgepoint Advisory Framework",
+        "is_core": false,
+        "id": 3,
+        "items": [
+          {
+            "aspect": "Principles",
+            "value": "Treat communication breakdowns as systemic issues rather than individual failures; always seek the structural root cause.",
+            "id": 10,
+            "created_at": "2026-02-01T08:00:00.000000"
+          },
+          {
+            "aspect": "Tone",
+            "value": "Analytically grounded yet human-centred — validate the emotional experience while redirecting focus toward actionable levers.",
+            "id": 11,
+            "created_at": "2026-02-01T08:02:00.000000"
+          },
+          {
+            "aspect": "Phrasing",
+            "value": "Use organisational metaphors (architecture, infrastructure, systems) to make abstract leadership concepts tangible for executives.",
+            "id": 12,
+            "created_at": "2026-02-01T08:04:00.000000"
+          },
+          {
+            "aspect": "Formatting",
+            "value": "Structure coaching notes with a situation summary, insight, and a concrete commitment or next action.",
+            "id": 13,
+            "created_at": "2026-02-01T08:06:00.000000"
+          },
+          {
+            "aspect": "Principles",
+            "value": "Every session output should produce at least one concrete, calendar-committable next step for the client.",
+            "id": 14,
+            "created_at": "2026-02-01T08:08:00.000000"
+          },
+          {
+            "aspect": "Principles",
+            "value": "Frame influence and persuasion challenges as a gap between the message the leader intends and the message that lands — diagnosis before prescription.",
+            "id": 15,
+            "created_at": "2026-02-01T08:10:00.000000"
+          }
+        ],
+        "tone_idioms": null,
+        "formatting_preferences": null,
+        "common_phrasing": null,
+        "principles_tenets": null
+      }
+    }
+  ],
+  "practise_frameworks": [
+    {
+      "name": "Global Core",
+      "is_core": true,
+      "id": 1,
+      "items": [
+        {
+          "aspect": "Formatting",
+          "value": "Use Australian English spelling and conventions when writing.",
+          "id": 22,
+          "created_at": "2026-01-15T09:00:00.000000"
+        },
+        {
+          "aspect": "Formatting",
+          "value": "Keep session summaries warm and encouraging in tone, avoiding clinical or detached language.",
+          "id": 23,
+          "created_at": "2026-01-15T09:02:00.000000"
+        },
+        {
+          "aspect": "Principles",
+          "value": "Lead with student or client wins before addressing areas for growth.",
+          "id": 24,
+          "created_at": "2026-01-15T09:04:00.000000"
+        }
+      ],
+      "tone_idioms": null,
+      "formatting_preferences": null,
+      "common_phrasing": null,
+      "principles_tenets": null
+    },
+    {
+      "name": "Resonance Studio Framework",
+      "is_core": false,
+      "id": 2,
+      "items": [
+        {
+          "aspect": "Principles",
+          "value": "Prioritise ear-first, intuition-led learning over notation-driven technical instruction.",
+          "id": 1,
+          "created_at": "2026-01-20T10:00:00.000000"
+        },
+        {
+          "aspect": "Tone",
+          "value": "Warm, encouraging, and celebratory — treat each small breakthrough as meaningful progress.",
+          "id": 2,
+          "created_at": "2026-01-20T10:02:00.000000"
+        },
+        {
+          "aspect": "Phrasing",
+          "value": "Use metaphors drawn from performance, storytelling, and physical sensation to describe musical concepts.",
+          "id": 3,
+          "created_at": "2026-01-20T10:04:00.000000"
+        },
+        {
+          "aspect": "Formatting",
+          "value": "Structure session summaries with a focus section, breakthroughs, and a clear home practice goal.",
+          "id": 4,
+          "created_at": "2026-01-20T10:06:00.000000"
+        },
+        {
+          "aspect": "Principles",
+          "value": "Connect technical work to expressive intention — always give students a 'why' for each exercise.",
+          "id": 5,
+          "created_at": "2026-01-20T10:08:00.000000"
+        }
+      ],
+      "tone_idioms": null,
+      "formatting_preferences": null,
+      "common_phrasing": null,
+      "principles_tenets": null
+    },
+    {
+      "name": "Bridgepoint Advisory Framework",
+      "is_core": false,
+      "id": 3,
+      "items": [
+        {
+          "aspect": "Principles",
+          "value": "Treat communication breakdowns as systemic issues rather than individual failures; always seek the structural root cause.",
+          "id": 10,
+          "created_at": "2026-02-01T08:00:00.000000"
+        },
+        {
+          "aspect": "Tone",
+          "value": "Analytically grounded yet human-centred — validate the emotional experience while redirecting focus toward actionable levers.",
+          "id": 11,
+          "created_at": "2026-02-01T08:02:00.000000"
+        },
+        {
+          "aspect": "Phrasing",
+          "value": "Use organisational metaphors (architecture, infrastructure, systems) to make abstract leadership concepts tangible for executives.",
+          "id": 12,
+          "created_at": "2026-02-01T08:04:00.000000"
+        },
+        {
+          "aspect": "Formatting",
+          "value": "Structure coaching notes with a situation summary, insight, and a concrete commitment or next action.",
+          "id": 13,
+          "created_at": "2026-02-01T08:06:00.000000"
+        },
+        {
+          "aspect": "Principles",
+          "value": "Every session output should produce at least one concrete, calendar-committable next step for the client.",
+          "id": 14,
+          "created_at": "2026-02-01T08:08:00.000000"
+        },
+        {
+          "aspect": "Principles",
+          "value": "Frame influence and persuasion challenges as a gap between the message the leader intends and the message that lands — diagnosis before prescription.",
+          "id": 15,
+          "created_at": "2026-02-01T08:10:00.000000"
+        }
+      ],
+      "tone_idioms": null,
+      "formatting_preferences": null,
+      "common_phrasing": null,
+      "principles_tenets": null
+    },
+    {
+      "name": "Songwriting Coaching Framework",
+      "is_core": false,
+      "id": 4,
+      "items": [
+        {
+          "aspect": "Principles",
+          "value": "Honour the writer's authentic voice above all — resist the impulse to correct toward generic forms.",
+          "id": 20,
+          "created_at": "2026-02-10T09:00:00.000000"
+        },
+        {
+          "aspect": "Tone",
+          "value": "Collaborative and curious — position Clara as a fellow creative rather than an evaluative authority.",
+          "id": 21,
+          "created_at": "2026-02-10T09:02:00.000000"
+        },
+        {
+          "aspect": "Phrasing",
+          "value": "Use questions over directives: 'What if you let this section breathe?' rather than 'You should add a rest here'.",
+          "id": 22,
+          "created_at": "2026-02-10T09:04:00.000000"
+        }
+      ],
+      "tone_idioms": null,
+      "formatting_preferences": null,
+      "common_phrasing": null,
+      "principles_tenets": null
+    }
+  ],
+  "actions": [],
+  "messages": [
+    {
+      "draft_text": "Hi Mia,\n\nWhat a session today! The G4 moment you had was really something — I hope it gave you a sense of what becomes possible when you stop managing the voice and start trusting it.\n\nYour home practice focus:\n- Sing two phrases of 'Use Me' daily, putting your full attention on the lyric's meaning, not the F4–G4 transition.\n- Record one improvised ornament response (phone memo) after listening back to Jill Scott or Bill Withers. No editing — just capture what comes.\n\nSee you in a fortnight. Keep singing!\n\nClara",
+      "sent_text": null,
+      "status": "sent",
+      "source": "native",
+      "date": "2025-12-09",
+      "note_id": 5003,
+      "person_id": 1001,
+      "group_id": null,
+      "persona_id": 1,
+      "is_inbound": false,
+      "id": 1,
+      "sent_at": null,
+      "created_at": "2025-12-09T11:00:00.000000",
+      "updated_at": "2025-12-09T11:00:00.000000",
+      "person": {
+        "name": "Mia Okonkwo",
+        "id": 1001
+      },
+      "group": null,
+      "note": {
+        "id": 5003,
+        "title": "Session 2025-12-09",
+        "date": "2025-12-09"
+      }
+    },
+    {
+      "draft_text": "Hi Theo,\n\nSo good to hear 'Harbour Light' from top to tail today — it really held together beautifully. The decision to bring the last chorus back to fingerpicking was exactly right: it gave the song room to breathe out.\n\nFor your home recording session:\n- Keep it simple. One mic (or even your phone in a quiet room) is fine for a first demo.\n- The goal is to capture the emotional truth of the song, not to produce it. Don't let production questions stop you from hitting record.\n\nSend me the demo when you have it — I'd love to hear it.\n\nClara",
+      "sent_text": null,
+      "status": "sent",
+      "source": "native",
+      "date": "2026-03-10",
+      "note_id": 5009,
+      "person_id": 1002,
+      "group_id": null,
+      "persona_id": 1,
+      "is_inbound": false,
+      "id": 2,
+      "sent_at": null,
+      "created_at": "2026-03-10T11:30:00.000000",
+      "updated_at": "2026-03-10T11:30:00.000000",
+      "person": {
+        "name": "Theo Callahan",
+        "id": 1002
+      },
+      "group": null,
+      "note": {
+        "id": 5009,
+        "title": "Session 2025-10-28",
+        "date": "2025-10-28"
+      }
+    },
+    {
+      "draft_text": "Hi Dominic,\n\nThank you for sharing how the CEO conversation went — it's genuinely great to hear that naming the structural problem created more relief than friction. That's often the case when a structural issue has been lingering: someone naming it clearly is experienced as leadership, not complaint.\n\nFor our next session: come prepared to talk about how you communicate with your team when strategy is unclear. Think of a specific moment in the last month when you had to do this — what did you say, and how did it land?\n\nTalk soon.\n\nClara",
+      "sent_text": null,
+      "status": "sent",
+      "source": "native",
+      "date": "2026-04-07",
+      "note_id": 5015,
+      "person_id": 1012,
+      "group_id": null,
+      "persona_id": 2,
+      "is_inbound": false,
+      "id": 3,
+      "sent_at": null,
+      "created_at": "2026-04-07T14:00:00.000000",
+      "updated_at": "2026-04-07T14:00:00.000000",
+      "person": {
+        "name": "Dominic Ashford",
+        "id": 1012
+      },
+      "group": null,
+      "note": {
+        "id": 5015,
+        "title": "Session 2026-02-24",
+        "date": "2026-02-24"
+      }
+    },
+    {
+      "draft_text": "Hi Ingrid,\n\nScheduling that conversation is the hardest part — you've done it. The SBI opening is what you have in your pocket. Use it.\n\nOne reminder: you are not responsible for how the conversation goes after the opening. Your job is to open it clearly, honestly, and with care. What happens next is a shared responsibility.\n\nLet me know how it goes.\n\nClara",
+      "sent_text": null,
+      "status": "sent",
+      "source": "native",
+      "date": "2026-03-10",
+      "note_id": 5017,
+      "person_id": 1013,
+      "group_id": null,
+      "persona_id": 2,
+      "is_inbound": false,
+      "id": 4,
+      "sent_at": null,
+      "created_at": "2026-03-10T15:00:00.000000",
+      "updated_at": "2026-03-10T15:00:00.000000",
+      "person": {
+        "name": "Ingrid Solberg",
+        "id": 1013
+      },
+      "group": null,
+      "note": {
+        "id": 5017,
+        "title": "Session 2026-03-17",
+        "date": "2026-03-17"
+      }
+    },
+    {
+      "draft_text": "Hi all,\n\nThank you for such an engaged day — 'uncomfortably useful' is about the best thing you can say about a workshop, so I'll take it.\n\nThe written communication exercise you each did in the second half is worth continuing. Before you send any email this week that requires a decision or action, take 60 seconds to check: is the situation clear in one sentence? Is my recommendation explicit? Is there a deadline and a next step?\n\nLooking forward to our follow-up session in four weeks.\n\nClara",
+      "sent_text": null,
+      "status": "sent",
+      "source": "native",
+      "date": "2026-04-16",
+      "note_id": 5031,
+      "person_id": null,
+      "group_id": 4,
+      "persona_id": 2,
+      "is_inbound": false,
+      "id": 5,
+      "sent_at": null,
+      "created_at": "2026-04-16T17:00:00.000000",
+      "updated_at": "2026-04-16T17:00:00.000000",
+      "person": null,
+      "group": {
+        "id": 4,
+        "name": "Calloway & Partners"
+      },
+      "note": {
+        "id": 5031,
+        "title": "Session 2026-02-11",
+        "date": "2026-02-11"
+      }
+    },
+    {
+      "draft_text": "Hi Priya,\n\nYou are so ready for this exam. The Chopin is genuinely beautiful, and your aural instincts are strong — you just need to get out of your own way on the interval questions.\n\nRemember: your first answer is almost always right. Commit to it.\n\nBar 14 of the Bach — slow, slow, slow. Connect it to bar 15 every time.\n\nI'll be thinking of you on the day. Let me know how it goes.\n\nClara",
+      "sent_text": null,
+      "status": "sent",
+      "source": "native",
+      "date": "2026-03-03",
+      "note_id": 5012,
+      "person_id": 1003,
+      "group_id": null,
+      "persona_id": 1,
+      "is_inbound": false,
+      "id": 6,
+      "sent_at": null,
+      "created_at": "2026-03-03T11:00:00.000000",
+      "updated_at": "2026-03-03T11:00:00.000000",
+      "person": {
+        "name": "Priya Nair",
+        "id": 1003
+      },
+      "group": null,
+      "note": {
+        "id": 5012,
+        "title": "Session 2025-09-30",
+        "date": "2025-09-30"
+      }
+    }
+  ]
+}
