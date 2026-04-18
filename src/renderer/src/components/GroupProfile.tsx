@@ -13,7 +13,7 @@ interface Props {
     onStartNote: (personId: number | null, groupId: number) => void;
 }
 
-const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSelectNote }) => {
+const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSelectNote, onStartNote }) => {
     const { setNavActions } = useNavbar();
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [group, setGroup] = useState<Group | null>(null);
@@ -154,7 +154,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     if (loading && !group) return <div className="loader" />;
     if (!group) return <div>Group not found.</div>;
 
-    const availablePersons = allPersons.filter(p => !group.members.some(m => m.id === p.id));
+    const availablePersons = allPersons.filter(p => !(group.members || []).some(m => m.id === p.id));
     
     const noteStats = {
         total: group.aggregated_note_count || 0,
@@ -166,12 +166,16 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         if (!noteStats.earliest || !noteStats.latest) return 'N/A';
         const first = new Date(noteStats.earliest);
         const last = new Date(noteStats.latest);
+        if (isNaN(first.getTime()) || isNaN(last.getTime())) return 'N/A';
+        
         const today = new Date();
         const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
         const isActive = (today.getTime() - last.getTime()) <= oneMonthMs;
         const end = isActive ? today : last;
         
         const diffMs = end.getTime() - first.getTime();
+        if (diffMs < 0) return '0 days';
+        
         const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         const months = Math.floor(days / 30.44);
         const years = Math.floor(months / 12);
@@ -239,7 +243,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                         </div>
                         
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                            {group.tags.map(tag => (
+                            {(group.tags || []).map(tag => (
                                 <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
                                     {tag.key ? `${tag.key}: ` : ''}{tag.value}
                                 </span>
@@ -283,14 +287,14 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Group Members ({group.members.length})</h3>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Group Members ({(group.members || []).length})</h3>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                        {group.members.length === 0 ? (
+                        {(!group.members || group.members.length === 0) ? (
                             <p style={{ color: 'var(--text-muted)' }}>No members in this group yet.</p>
                         ) : (
-                            group.members.map(member => (
+                            (group.members || []).map(member => (
                                 <div key={member.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', position: 'relative', overflow: 'hidden' }}>
                                     <div style={{ cursor: 'pointer', flexGrow: 1 }} onClick={() => onSelectPerson(member.id)}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -399,7 +403,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                                     onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', messageId: msg.id } }))}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{msg.date || msg.created_at.split('T')[0]}</span>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{msg.date || msg.created_at?.split('T')[0] || 'N/A'}</span>
                                         <span style={{ 
                                             fontSize: '0.6rem', 
                                             padding: '2px 6px', 
@@ -431,7 +435,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
             {showTagModal && (
                 <TagSelectionModal 
                     title={`Tag ${group.name}`}
-                    existingTagIds={group.tags.map(t => t.id)}
+                    existingTagIds={(group.tags || []).map(t => t.id)}
                     onClose={() => setShowTagModal(false)}
                     onSelect={handleSelectTag}
                 />

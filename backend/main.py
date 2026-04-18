@@ -328,8 +328,8 @@ def create_person(person: schemas.PersonCreate, db: Session = Depends(get_db)):
 @app.get("/persons/", response_model=List[schemas.Person])
 def read_persons(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     persons = db.query(models.Person).options(
-        joinedload(models.Person.persona),
-        joinedload(models.Person.groups).joinedload(models.Group.persona)
+        joinedload(models.Person.persona).joinedload(models.Persona.framework),
+        joinedload(models.Person.groups).joinedload(models.Group.persona).joinedload(models.Persona.framework)
     ).offset(skip).limit(limit).all()
     
     for p in persons:
@@ -344,8 +344,8 @@ def read_persons(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 @app.get("/persons/{person_id}", response_model=schemas.Person)
 def read_person(person_id: int, db: Session = Depends(get_db)):
     db_person = db.query(models.Person).options(
-        joinedload(models.Person.persona),
-        joinedload(models.Person.groups).joinedload(models.Group.persona)
+        joinedload(models.Person.persona).joinedload(models.Persona.framework),
+        joinedload(models.Person.groups).joinedload(models.Group.persona).joinedload(models.Persona.framework)
     ).filter(models.Person.id == person_id).first()
     
     if db_person is None:
@@ -398,7 +398,8 @@ def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 @app.get("/groups/{group_id}", response_model=schemas.Group)
 def read_group(group_id: int, db: Session = Depends(get_db)):
     db_group = db.query(models.Group).options(
-        joinedload(models.Group.persona),
+        joinedload(models.Group.persona).joinedload(models.Persona.framework),
+        joinedload(models.Group.members).joinedload(models.Person.persona).joinedload(models.Persona.framework),
         joinedload(models.Group.members).joinedload(models.Person.notes),
         joinedload(models.Group.members).joinedload(models.Person.messages)
     ).filter(models.Group.id == group_id).first()
@@ -678,9 +679,9 @@ def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
 @app.get("/notes/", response_model=List[schemas.Note])
 def read_notes(person_id: int = None, group_id: int = None, search: str = None, skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)):
     query = db.query(models.Note).options(
-        joinedload(models.Note.person).joinedload(models.Person.persona),
-        joinedload(models.Note.person).joinedload(models.Person.groups).joinedload(models.Group.persona),
-        joinedload(models.Note.group).joinedload(models.Group.persona),
+        joinedload(models.Note.person).joinedload(models.Person.persona).joinedload(models.Persona.framework),
+        joinedload(models.Note.person).joinedload(models.Person.groups).joinedload(models.Group.persona).joinedload(models.Persona.framework),
+        joinedload(models.Note.group).joinedload(models.Group.persona).joinedload(models.Persona.framework),
         joinedload(models.Note.tags),
         joinedload(models.Note.actions),
         joinedload(models.Note.messages)
@@ -1143,6 +1144,8 @@ def export_data(db: Session = Depends(get_db)):
         "tags": db.query(models.Tag).all(),
         "notes": db.query(models.Note).all(),
         "references": db.query(models.Reference).all(),
+        "personas": db.query(models.Persona).all(),
+        "practise_frameworks": db.query(models.PractiseFramework).all(),
         "actions": db.query(models.Action).all(),
         "messages": db.query(models.Message).all()
     }
@@ -1151,7 +1154,7 @@ def export_data(db: Session = Depends(get_db)):
 async def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
     # This acts as a single atomic SQL transaction
     try:
-        # Clear all existing data
+        # Clear all existing data (including framework entities)
         db.query(models.Message).delete()
         db.query(models.Action).delete()
         db.query(models.Note).delete()
@@ -1159,58 +1162,120 @@ async def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
         db.query(models.Person).delete()
         db.query(models.Group).delete()
         db.query(models.Tag).delete()
+        db.query(models.Persona).delete()
+        db.query(models.PractiseFrameworkItem).delete()
+        db.query(models.PractiseFramework).delete()
         db.flush()
         
-        # 1. Reload Tags
+        # 1. Reload Frameworks
+        framework_map = {}
+        for pf in data.practise_frameworks:
+            # Exclude virtual legacy fields and items list
+            dump = pf.model_dump(exclude={"items", "tone_idioms", "formatting_preferences", "common_phrasing", "principles_tenets"})
+            db_pf = models.PractiseFramework(**dump)
+            for item in pf.items:
+                db_pf.items.append(models.PractiseFrameworkItem(**item.model_dump(exclude={"id"})))
+            db.add(db_pf)
+            db.flush()
+            framework_map[pf.id] = db_pf.id
+
+        # 2. Reload Personas
+        persona_map = {}
+        for persona in data.personas:
+            dump = persona.model_dump(exclude={"framework"})
+            db_persona = models.Persona(**dump)
+            db.add(db_persona)
+            db.flush()
+            persona_map[persona.id] = db_persona.id
+
+        # 3. Reload Tags
         tag_map = {}
         for t in data.tags:
             db_tag = models.Tag(**t.model_dump())
             db.add(db_tag)
+            db.flush()
             tag_map[t.id] = db_tag
-        db.flush()
         
-        # 2. Reload Persons & Groups
-        person_map = {}
+        # 4. Reload Persons & Groups
+        old_person_id_to_new_db_person = {}
         for p in data.persons:
-            # RELATIONSHIP FIX: Exclude tags and groups lists which are dicts
-            db_person = models.Person(**p.model_dump(exclude={"tags", "groups"}))
+            # RELATIONSHIP & VIRTUAL FIELD FIX
+            exclude_fields = {"tags", "groups", "persona", "inherited_persona", "note_count", "message_count", "latest_note_date"}
+            dump = p.model_dump(exclude=exclude_fields)
+            if p.persona_id and p.persona_id in persona_map:
+                dump["persona_id"] = persona_map[p.persona_id]
+            
+            db_person = models.Person(**dump)
             for t in p.tags:
                 if t.id in tag_map:
                     db_person.tags.append(tag_map[t.id])
             db.add(db_person)
-            person_map[p.id] = db_person
+            db.flush()
+            old_person_id_to_new_db_person[p.id] = db_person
             
-        group_map = {}
+        old_group_id_to_new_db_group = {}
         for g in data.groups:
-            # RELATIONSHIP FIX: Exclude tags and members lists
-            db_group = models.Group(**g.model_dump(exclude={"tags", "members"}))
+            # RELATIONSHIP & VIRTUAL FIELD FIX
+            exclude_fields = {"tags", "members", "persona", "aggregated_note_count", "aggregated_message_count", "earliest_note_date", "latest_note_date"}
+            dump = g.model_dump(exclude=exclude_fields)
+            if g.persona_id and g.persona_id in persona_map:
+                dump["persona_id"] = persona_map[g.persona_id]
+                
+            db_group = models.Group(**dump)
             for t in g.tags:
                 if t.id in tag_map:
                     db_group.tags.append(tag_map[t.id])
+            
+            # RE-ESTABLISH GROUP MEMBERSHIP
+            for m in g.members:
+                if m.id in old_person_id_to_new_db_person:
+                    db_group.members.append(old_person_id_to_new_db_person[m.id])
+                    
             db.add(db_group)
-            group_map[g.id] = db_group
-        db.flush()
+            db.flush()
+            old_group_id_to_new_db_group[g.id] = db_group
         
-        # 3. Reload Notes
-        note_map = {}
+        # 5. Reload Notes
+        old_note_id_to_new_db_note = {}
         for n in data.notes:
-            # RELATIONSHIP FIX: Exclude all nested relationship objects
             dump = n.model_dump(exclude={"tags", "actions", "messages", "person", "group"})
+            # Link to new person/group IDs
+            if n.person_id and n.person_id in old_person_id_to_new_db_person:
+                dump["person_id"] = old_person_id_to_new_db_person[n.person_id].id
+            if n.group_id and n.group_id in old_group_id_to_new_db_group:
+                dump["group_id"] = old_group_id_to_new_db_group[n.group_id].id
+                
             db_note = models.Note(**dump)
             for t in n.tags:
                 if t.id in tag_map:
                     db_note.tags.append(tag_map[t.id])
+            
+            db.add(db_note)
+            db.flush()
+            old_note_id_to_new_db_note[n.id] = db_note
+            
+            # Actions (messages handled globally now)
             for a in n.actions:
                 db_note.actions.append(models.Action(**a.model_dump(exclude={"id"})))
-            for m in n.messages:
-                db_note.messages.append(models.Message(**m.model_dump(exclude={"id"})))
-            db.add(db_note)
-            note_map[n.id] = db_note
-        db.flush()
         
-        # 4. Reload References
+        # 6. Reload Messages (Global list handles both linked and standalone)
+        for m in data.messages:
+            m_dump = m.model_dump(exclude={"id", "person", "group", "note", "persona"})
+            # Re-link entities using maps
+            if m.person_id and m.person_id in old_person_id_to_new_db_person:
+                m_dump["person_id"] = old_person_id_to_new_db_person[m.person_id].id
+            if m.group_id and m.group_id in old_group_id_to_new_db_group:
+                m_dump["group_id"] = old_group_id_to_new_db_group[m.group_id].id
+            if m.note_id and m.note_id in old_note_id_to_new_db_note:
+                m_dump["note_id"] = old_note_id_to_new_db_note[m.note_id].id
+            if m.persona_id and m.persona_id in persona_map:
+                m_dump["persona_id"] = persona_map[m.persona_id]
+                
+            db_msg = models.Message(**m_dump)
+            db.add(db_msg)
+            
+        # 7. Reload References
         for r in data.references:
-            # RELATIONSHIP FIX: Exclude nested tags and other backrefs
             db_ref = models.Reference(**r.model_dump(exclude={"tags", "linked_notes", "persons"}))
             for t in r.tags:
                 if t.id in tag_map:
@@ -1220,7 +1285,7 @@ async def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
         db.commit()
         # Broadcast that everything has changed
         await ws_manager.broadcast({"event": "framework_proposals_updated", "data": {"context": "import"}})
-        return {"status": "success", "message": "Atomic import completed with relationship reconstruction"}
+        return {"status": "success", "message": "Full atomic import completed with framework entities and outreach history"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")

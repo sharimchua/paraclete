@@ -137,7 +137,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '0.8rem', opacity: 0.5 }}>
-                                <span>📅 {msg.date || msg.created_at.split('T')[0]}</span>
+                                <span>📅 {msg.date || msg.created_at?.split('T')[0] || 'N/A'}</span>
                                 {msg.note && (
                                     <span style={{ color: 'var(--primary)', opacity: 0.8 }}>🔗 {msg.note.title.substring(0, 24)}...</span>
                                 )}

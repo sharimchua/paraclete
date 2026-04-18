@@ -78,7 +78,7 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
                             <p style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{group.description || 'No description'}</p>
                             
                             <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {group.tags.map(tag => (
+                                {(group.tags || []).map(tag => (
                                     <span key={tag.id} className="tag-pill">
                                         {tag.key ? `${tag.key}: ` : ''}{tag.value}
                                     </span>

@@ -243,7 +243,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
                                 </div>
                                 
                                 <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                                    {person.tags.map(tag => (
+                                    {(person.tags || []).map(tag => (
                                         <span key={tag.id} className="tag-pill" style={{ background: 'var(--primary-faded)', color: 'var(--primary)', border: 'none' }}>
                                             {tag.key ? `${tag.key}: ` : ''}{tag.value}
                                         </span>
@@ -367,7 +367,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
                                 onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'message-authoring', messageId: msg.id } }))}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{msg.date || msg.created_at.split('T')[0]}</span>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{msg.date || msg.created_at?.split('T')[0] || 'N/A'}</span>
                                     <span style={{ 
                                         fontSize: '0.6rem', 
                                         padding: '2px 6px', 
@@ -398,7 +398,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
             {showTagModal && (
                 <TagSelectionModal 
                     title={`Tag ${person.name}`}
-                    existingTagIds={person.tags.map(t => t.id)}
+                    existingTagIds={(person.tags || []).map(t => t.id)}
                     onClose={() => setShowTagModal(false)}
                     onSelect={handleSelectTag}
                 />

@@ -46,8 +46,8 @@ class PersonBadge(BaseModel):
 
 class Person(PersonBase):
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     tags: List[Tag] = []
     groups: List[GroupBadge] = []
     persona: Optional["Persona"] = None
@@ -68,8 +68,8 @@ class GroupUpdate(BaseModel):
 
 class Group(GroupBase):
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     tags: List[Tag] = []
     members: List[Person] = []
     persona: Optional["Persona"] = None
@@ -143,8 +143,8 @@ class NoteBadge(BaseModel):
 class Message(MessageBase):
     id: int
     sent_at: Optional[datetime] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     person: Optional["Person"] = None
     group: Optional["Group"] = None
     note: Optional[NoteBadge] = None
@@ -173,7 +173,7 @@ class NoteUpdate(BaseModel):
 
 class Note(NoteBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     tags: List[Tag] = []
     actions: List[Action] = []
     messages: List[Message] = []
@@ -201,7 +201,7 @@ class ReferenceCreate(ReferenceBase):
 
 class Reference(ReferenceBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     tags: List[Tag] = []
     embedding_status: str = "pending"
     analyzed_for_framework: Optional[bool] = False
@@ -218,7 +218,7 @@ class PractiseFrameworkItemCreate(PractiseFrameworkItemBase):
 
 class PractiseFrameworkItem(PractiseFrameworkItemBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
 class PractiseFrameworkBase(BaseModel):
@@ -252,7 +252,7 @@ class PersonaCreate(PersonaBase):
 
 class Persona(PersonaBase):
     id: int
-    framework: PractiseFramework
+    framework: Optional[PractiseFramework] = None
     model_config = ConfigDict(from_attributes=True)
 
 class FrameworkProposalStatus(str, Enum):
@@ -283,7 +283,7 @@ class FrameworkProposalBase(BaseModel):
 
 class FrameworkProposal(FrameworkProposalBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
 class ReferenceProposalBase(BaseModel):
@@ -298,7 +298,7 @@ class ReferenceProposalCreate(ReferenceProposalBase):
 
 class ReferenceProposal(ReferenceProposalBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
 # For Atomic JSON Import/Export (Phase 2 Step 4.2)
@@ -308,6 +308,8 @@ class FullExport(BaseModel):
     tags: List[Tag]
     notes: List[Note]
     references: List[Reference]
+    personas: List[Persona] = []
+    practise_frameworks: List[PractiseFramework] = []
     actions: List[Action] = []
     messages: List[Message] = []
 
