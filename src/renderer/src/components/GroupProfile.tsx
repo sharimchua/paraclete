@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, Group, Person, Note, Message } from '../services/api';
+import { useNavbar } from './NavbarContext';
 import TagSelectionModal from './TagSelectionModal';
 import ReactMarkdown from 'react-markdown';
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSelectNote }) => {
+    const { setNavActions } = useNavbar();
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [group, setGroup] = useState<Group | null>(null);
     const [allPersons, setAllPersons] = useState<Person[]>([]);
@@ -61,11 +63,28 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         return () => {
             window.removeEventListener('refresh-profile', fetchData);
             window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            setNavActions([]);
         };
     }, [groupId]);
 
-    const handleUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    useEffect(() => {
+        if (isEditing) {
+            setNavActions([
+                { label: 'Save Changes', onClick: () => handleUpdate() },
+                { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
+            ]);
+        } else {
+            setNavActions([
+                { label: 'Edit Group', onClick: () => setIsEditing(true) },
+                { label: 'Delete', variant: 'secondary', onClick: handleDelete },
+                { isSeparator: true },
+                { label: '+ Add Member', onClick: () => setShowAddMember(true) }
+            ]);
+        }
+    }, [isEditing, setNavActions]);
+
+    const handleUpdate = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         try {
             await api.patch(`/groups/${groupId}`, { name: editName, description: editDesc });
             setIsEditing(false);
@@ -161,18 +180,11 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn-secondary" onClick={() => setIsEditing(!isEditing)}>{isEditing ? 'Cancel Edit' : 'Edit Group'}</button>
-                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={handleDelete}>Delete</button>
-                    </div>
-                </div>
 
                 {isEditing ? (
                     <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <input className="input-field" value={editName} onChange={e => setEditName(e.target.value)} required />
                         <textarea className="input-field" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
-                        <button type="submit" className="btn-primary" style={{ alignSelf: 'flex-end' }}>Save Changes</button>
                     </form>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -266,7 +278,6 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Group Members ({group.members.length})</h3>
-                        <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => setShowAddMember(true)}>+ Add Member</button>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>

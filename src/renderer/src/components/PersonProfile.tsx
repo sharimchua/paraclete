@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, Person, Note, Message } from '../services/api';
+import { useNavbar } from './NavbarContext';
 import TagSelectionModal from './TagSelectionModal';
 import ReactMarkdown from 'react-markdown';
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
+    const { setNavActions } = useNavbar();
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [person, setPerson] = useState<Person | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
@@ -44,6 +46,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
             });
         };
 
+    useEffect(() => {
         fetchAll();
 
         const handleWsMessage = (e: any) => {
@@ -58,15 +61,37 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
         return () => {
             window.removeEventListener('refresh-profile', fetchAll);
             window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            setNavActions([]);
         };
     }, [personId]);
+
+    useEffect(() => {
+        if (isEditing) {
+            setNavActions([
+                { label: 'Save Changes', onClick: () => handleUpdate() },
+                { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
+            ]);
+        } else {
+            setNavActions([
+                { label: 'Edit Profile', onClick: () => {
+                   setIsEditing(true);
+                   // Reset edit values to current person data
+                   if (person) {
+                       setEditName(person.name);
+                       setEditContact(person.contact_method || '');
+                   }
+                }},
+                { label: 'Delete', variant: 'secondary', onClick: handleDelete }
+            ]);
+        }
+    }, [isEditing, person, editName, editContact, setNavActions]);
 
     const refreshPerson = () => {
         api.get<Person>(`/persons/${personId}`).then(data => setPerson(data));
     };
 
-    const handleUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleUpdate = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         try {
             await api.patch(`/persons/${personId}`, { name: editName, contact_method: editContact });
             setIsEditing(false);
@@ -137,12 +162,6 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn-secondary" onClick={() => setIsEditing(!isEditing)}>{isEditing ? 'Cancel' : 'Edit'}</button>
-                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={handleDelete}>Delete</button>
-                    </div>
-                </div>
 
                 {isEditing ? (
                     <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -154,7 +173,6 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
                             <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Contact Method</label>
                             <input className="input-field" value={editContact} onChange={e => setEditContact(e.target.value)} />
                         </div>
-                        <button type="submit" className="btn-primary" style={{ alignSelf: 'flex-end' }}>Save Changes</button>
                     </form>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
