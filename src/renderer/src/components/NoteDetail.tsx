@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, Note, Person, Group } from '../services/api';
+import { useNavbar } from './NavbarContext';
 import ReactMarkdown from 'react-markdown';
 import NoteAuthoring from './NoteAuthoring';
 import NoteUtilities from './NoteUtilities';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
+    const { setNavActions } = useNavbar();
     const [note, setNote] = useState<Note | null>(null);
     const [person, setPerson] = useState<Person | null>(null);
     const [group, setGroup] = useState<Group | null>(null);
@@ -43,7 +45,29 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
 
     useEffect(() => {
         fetchData();
+        return () => setNavActions([]);
     }, [noteId]);
+
+    useEffect(() => {
+        if (!isEditing && note) {
+            setNavActions([
+                { label: 'Draft Message', variant: 'secondary', onClick: () => {
+                    window.dispatchEvent(new CustomEvent('navigate', { 
+                        detail: { 
+                            view: 'message-authoring', 
+                            noteId: note.id,
+                            personId: note.person_id,
+                            groupId: note.group_id
+                        } 
+                    }));
+                }},
+                { label: 'Edit Note', onClick: () => setIsEditing(true) },
+                { label: 'Delete', variant: 'secondary', onClick: () => setShowDeleteConfirm(true) }
+            ]);
+        } else {
+            setNavActions([]);
+        }
+    }, [isEditing, note, setNavActions]);
 
     const handleDelete = async () => {
         try {
@@ -90,30 +114,6 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
             width: '100%'
         }}>
             <div className="card" style={{ padding: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button 
-                            className="btn-primary" 
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent('navigate', { 
-                                    detail: { 
-                                        view: 'message-authoring', 
-                                        noteId: note.id,
-                                        personId: note.person_id,
-                                        groupId: note.group_id
-                                    } 
-                                }));
-                            }}
-                            style={{ background: 'var(--secondary)' }}
-                        >
-                            📩 Draft Message
-                        </button>
-                        <button className="btn-secondary" onClick={() => setIsEditing(true)}>
-                            Edit Note
-                        </button>
-                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => setShowDeleteConfirm(true)}>Delete</button>
-                    </div>
-                </div>
 
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
