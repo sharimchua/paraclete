@@ -1154,6 +1154,15 @@ def export_data(db: Session = Depends(get_db)):
 async def import_data(data: schemas.FullExport, db: Session = Depends(get_db)):
     # This acts as a single atomic SQL transaction
     try:
+        # Clear all junction tables first to prevent orphaned associations mapping to new IDs
+        db.execute(models.group_members.delete())
+        db.execute(models.person_tags.delete())
+        db.execute(models.group_tags.delete())
+        db.execute(models.note_tags.delete())
+        db.execute(models.reference_tags.delete())
+        db.execute(models.note_references.delete())
+        db.execute(models.person_references.delete())
+
         # Clear all existing data (including framework entities)
         db.query(models.Message).delete()
         db.query(models.Action).delete()
