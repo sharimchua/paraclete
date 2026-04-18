@@ -342,7 +342,7 @@ const PracticeFramework: React.FC = () => {
         <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
                 <div style={{ flex: 1 }}>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Practise Framework</h1>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Practice Framework</h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
                         Manage your professional professional style and AI-driven growth.
                     </p>

@@ -514,9 +514,9 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                 subtitle="Paraclete is drafting a professionally structured response based on your session history."
                 tasks={[
                     "Loading session context...",
-                    "Analyzing clinical themes...",
+                    "Analysing clinical themes...",
                     "Applying professional persona...",
-                    "Normalizing semantics...",
+                    "Normalising semantics...",
                     "Polishing response structure..."
                 ]}
             />

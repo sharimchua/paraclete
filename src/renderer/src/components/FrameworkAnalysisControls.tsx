@@ -144,7 +144,7 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
                 onClick={handleAnalyze}
                 disabled={busy || isGlobalBusy || disabled}
             >
-                {busy ? 'Starting Job...' : (isGlobalBusy ? 'Analysis in Progress...' : `Analyze ${counts.total} Artifacts`)}
+                {busy ? 'Starting Job...' : (isGlobalBusy ? 'Analysis in Progress...' : `Analyse ${counts.total} Artifacts`)}
             </button>
             <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
                 Runs in background. Results appear in Proposals.

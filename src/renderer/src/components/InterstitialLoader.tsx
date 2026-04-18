@@ -12,11 +12,11 @@ const InterstitialLoader: React.FC<InterstitialLoaderProps> = ({
     title = "Processing", 
     subtitle = "Paraclete is structuring your insights",
     tasks = [
-        "Initializing Neural Engine...",
-        "Normalizing Semantics...",
+        "Initialising Neural Engine...",
+        "Normalising Semantics...",
         "Structuring Clinical Context...",
-        "Optimizing Document Graph...",
-        "Finalizing Synthesis..."
+        "Optimising Document Graph...",
+        "Finalising Synthesis..."
     ]
 }) => {
     const [currentTaskIndex, setCurrentTaskIndex] = useState(0);

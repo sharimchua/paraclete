@@ -16,7 +16,7 @@ async def get_pending_analysis_count(
     group_id: Optional[int] = None,
     persona_id: Optional[int] = None
 ) -> Dict[str, int]:
-    """Returns counts of un-analyzed items within the given scope."""
+    """Returns counts of un-analysed items within the given scope."""
     
     note_query = db.query(models.Note).filter(
         or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None),
@@ -85,7 +85,7 @@ async def run_item_analysis_task(
     force_group_id: Optional[int] = None
 ):
     """
-    Analyzes a SINGLE item in the background. 
+    Analyses a SINGLE item in the background. 
     This is the discrete task called by the BackgroundTaskManager.
     """
     if item_type == "note":
@@ -321,7 +321,7 @@ async def run_item_analysis_task(
                     db.add(new_proposal)
                     session_proposals.append(new_proposal)
         
-        # Successful completion - Mark as analyzed
+        # Successful completion - Mark as analysed
         if item_type == "note":
             db.query(models.Note).filter(models.Note.id == item_id).update({"analyzed_for_framework": True})
         elif item_type == "message":
@@ -335,11 +335,11 @@ async def run_item_analysis_task(
     except Exception as e:
         db.rollback()
         error_msg = str(e)
-        # If it's a model loading error, WE DO NOT mark it as analyzed so it can be retried
+        # If it's a model loading error, WE DO NOT mark it as analysed so it can be retried
         is_model_error = "Model not loaded" in error_msg or "RuntimeError" in error_msg
         
         if not is_model_error:
-            # Mark as analyzed anyway to avoid poison pills for logic/parsing errors
+            # Mark as analysed anyway to avoid poison pills for logic/parsing errors
             if item_type == "note":
                 db.query(models.Note).filter(models.Note.id == item_id).update({"analyzed_for_framework": True})
             elif item_type == "message":

@@ -24,7 +24,7 @@ async def get_pending_count(
     persona_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
-    """Returns the number of un-analyzed artifacts for the given scope."""
+    """Returns the number of un-analysed artifacts for the given scope."""
     db.expire_all() 
     from ..services.framework_analysis_job import get_pending_analysis_count
     counts = await get_pending_analysis_count(
@@ -81,11 +81,11 @@ async def trigger_framework_analysis(
     persona_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
-    """Triggers the background framework analysis for each un-analyzed entity."""
+    """Triggers the background framework analysis for each un-analysed entity."""
     from ..services.framework_analysis_job import run_item_analysis_task
     from sqlalchemy import or_
 
-    # 1. Fetch un-analyzed entries
+    # 1. Fetch un-analysed entries
     note_query = db.query(models.Note.id).filter(
         or_(models.Note.analyzed_for_framework == False, models.Note.analyzed_for_framework == None),
         models.Note.stage == models.NoteStage.PUBLISHED
@@ -143,17 +143,17 @@ async def trigger_framework_analysis(
     
     # Notes
     for (nid,) in note_query.all():
-        jid = background_manager.add_job(f"Analyze Note {nid}", worker_wrapper, item_type="note", item_id=nid, interrupt_event=True)
+        jid = background_manager.add_job(f"Analyse Note {nid}", worker_wrapper, item_type="note", item_id=nid, interrupt_event=True)
         job_ids.append(jid)
     
     # Messages
     for (mid,) in msg_query.all():
-        jid = background_manager.add_job(f"Analyze Message {mid}", worker_wrapper, item_type="message", item_id=mid, interrupt_event=True)
+        jid = background_manager.add_job(f"Analyse Message {mid}", worker_wrapper, item_type="message", item_id=mid, interrupt_event=True)
         job_ids.append(jid)
         
     # References
     for (rid,) in ref_query.all():
-        jid = background_manager.add_job(f"Analyze Reference {rid}", worker_wrapper, item_type="reference", item_id=rid, interrupt_event=True)
+        jid = background_manager.add_job(f"Analyse Reference {rid}", worker_wrapper, item_type="reference", item_id=rid, interrupt_event=True)
         job_ids.append(jid)
 
     from ..websockets_manager import ws_manager

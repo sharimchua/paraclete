@@ -240,7 +240,7 @@ async def process_ocr(files: List[UploadFile] = File(...)):
                 tmp.write(await file.read())
             temp_paths.append(temp_path)
             
-        await ws_manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(temp_paths)} image(s)"}})
+        await ws_manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analysing {len(temp_paths)} image(s)"}})
         
         # Use the specialized OCR workflow with multiple paths
         result = await llm.workflows.run_ocr(temp_paths)
@@ -260,7 +260,7 @@ async def process_ocr_companion(sid: str):
     
     image_paths = COMPANION_SESSIONS[sid]
     
-    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analyzing {len(image_paths)} companion image(s)"}})
+    await ws_manager.broadcast({"event": "llm_start", "data": {"type": "ocr", "prompt": f"Analysing {len(image_paths)} companion image(s)"}})
     
     try:
         # Use the specialized OCR workflow

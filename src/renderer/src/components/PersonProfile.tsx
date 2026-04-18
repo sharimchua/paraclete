@@ -295,7 +295,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Practise Insights</h3>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Practice Insights</h3>
                 </div>
                 <div style={{ maxWidth: '400px' }}>
                     <FrameworkAnalysisControls personId={personId} title="Targeted Framework Analysis" />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Logo from './Logo';
 
 const SetupScreen: React.FC = () => {
-    const [status, setStatus] = useState<string>('Initializing...');
+    const [status, setStatus] = useState<string>('Initialising...');
     const [progress, setProgress] = useState<number>(0);
     const [logs, setLogs] = useState<string[]>([]);
 

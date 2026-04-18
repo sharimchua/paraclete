@@ -19,6 +19,10 @@ import ParacletePanel from './components/ParacletePanel';
 import StandardNavbar from './components/StandardNavbar';
 import { NavbarProvider } from './components/NavbarContext';
 import { api } from './services/api';
+import PersonaSelectionModal from './components/PersonaSelectionModal';
+import EntitySelectionModal from './components/EntitySelectionModal';
+import ConfirmationModal from './components/ConfirmationModal';
+import ReformatModal from './components/ReformatModal';
 
 const App: React.FC = () => {
     const [isSetup, setIsSetup] = useState<boolean | null>(null);

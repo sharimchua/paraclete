@@ -334,7 +334,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Practise Insights</h3>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Practice Insights</h3>
                         </div>
                         <div style={{ maxWidth: '400px' }}>
                             <FrameworkAnalysisControls groupId={groupId} title="Targeted Framework Analysis" />
