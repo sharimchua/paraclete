@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavbar } from './NavbarContext';
 
-interface Action {
+export interface Action {
     label: string;
-    onClick: () => void;
+    onClick?: () => void;
     variant?: 'primary' | 'secondary';
     disabled?: boolean;
+    isSeparator?: boolean;
 }
 
 interface StandardNavbarProps {
@@ -19,9 +21,15 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
     title, 
     showBack, 
     onBack, 
-    actions = [], 
+    actions: propsActions = [], 
     customContent 
 }) => {
+    const { navActions } = useNavbar();
+    
+    // Merge props actions with context actions, prioritizing props for now if they exist
+    // but the plan suggests context will be the primary source.
+    const allActions = [...navActions, ...propsActions];
+
     return (
         <header className="header" style={{
             height: '64px',
@@ -69,25 +77,43 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
             </div>
             
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: '200px', justifyContent: 'flex-end' }}>
-                {actions.map((action, i) => (
-                    <button 
-                        key={i}
-                        className={action.variant === 'secondary' ? 'btn-secondary' : 'btn-primary'}
-                        onClick={action.onClick}
-                        disabled={action.disabled}
-                        style={{ 
-                            padding: '6px 14px', 
-                            fontSize: '0.8rem',
-                            height: '34px',
-                            opacity: action.disabled ? 0.5 : 1
-                        }}
-                    >
-                        {action.label}
-                    </button>
-                ))}
+                {allActions.map((action, i) => {
+                    if (action.isSeparator) {
+                        return (
+                            <div 
+                                key={i} 
+                                style={{ 
+                                    width: '1px', 
+                                    height: '24px', 
+                                    background: 'var(--border)', 
+                                    margin: '0 4px',
+                                    opacity: 0.5 
+                                }} 
+                            />
+                        );
+                    }
+                    return (
+                        <button 
+                            key={i}
+                            className={action.variant === 'secondary' ? 'btn-secondary' : 'btn-primary'}
+                            onClick={action.onClick}
+                            disabled={action.disabled}
+                            style={{ 
+                                padding: '6px 14px', 
+                                fontSize: '0.8rem',
+                                height: '34px',
+                                opacity: action.disabled ? 0.5 : 1
+                            }}
+                        >
+                            {action.label}
+                        </button>
+                    );
+                })}
             </div>
         </header>
     );
 };
+
+
 
 export default StandardNavbar;
