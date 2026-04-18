@@ -906,7 +906,6 @@ const PracticeFramework: React.FC = () => {
                     <div className="modal-content card" style={{ width: '90%', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }} onClick={e => e.stopPropagation()}>
                         <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{consolidatedView.title}</h2>
-                            <button className="btn-secondary" style={{ padding: '6px 16px' }} onClick={() => setConsolidatedView(null)}>Close</button>
                         </div>
                         <div style={{ padding: '32px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', minHeight: '300px' }}>
                             {consolidatedView.structuredData ? (
