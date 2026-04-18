@@ -46,7 +46,6 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote }) => {
             });
         };
 
-    useEffect(() => {
         fetchAll();
 
         const handleWsMessage = (e: any) => {

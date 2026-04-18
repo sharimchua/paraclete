@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavbar } from './NavbarContext';
 
 export interface Action {
-    label: string;
+    label?: string;
     onClick?: () => void;
     variant?: 'primary' | 'secondary';
     disabled?: boolean;
