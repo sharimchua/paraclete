@@ -11,6 +11,8 @@ import AdminPanel from './components/AdminPanel';
 import TagManagement from './components/TagManagement';
 import NotesList from './components/NotesList';
 import ReferenceLibrary from './components/ReferenceLibrary';
+import MessagesList from './components/MessagesList';
+import MessageAuthoring from './components/MessageAuthoring';
 import PracticeFramework from './components/PracticeFramework';
 import Logo from './components/Logo';
 import ParacletePanel from './components/ParacletePanel';
