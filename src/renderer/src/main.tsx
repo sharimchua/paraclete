@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './mocks/electronMock'
 import ToastProvider from './components/ToastProvider'
 
 import { StrictMode } from 'react'
