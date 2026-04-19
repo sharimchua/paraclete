@@ -105,6 +105,9 @@ async def run_item_analysis_task(
     if not item:
         return
 
+    target_persona = None
+    content = ""
+
     if force_persona_id:
         target_persona = db.query(models.Persona).filter(models.Persona.id == force_persona_id).first()
     
