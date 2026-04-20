@@ -39,6 +39,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
                 setPerson(personData);
                 setEditName(personData.name);
                 setEditContact(personData.contact_method || '');
+                setEditAvatarLogo(personData.avatar_logo || '');
                 setNotes(personNotes);
                 setMessages(personMessages);
                 setPendingCount(pendingData.count);

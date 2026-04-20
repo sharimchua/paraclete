@@ -41,7 +41,12 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ value, onChange 
                     type="button"
                     className={`btn-secondary ${mode === 'plant' ? 'active' : ''}`}
                     style={{ flex: 1, background: mode === 'plant' ? 'var(--primary-faded)' : 'transparent', color: mode === 'plant' ? 'var(--primary)' : 'var(--text)' }}
-                    onClick={() => setMode('plant')}
+                    onClick={() => {
+                        setMode('plant');
+                        if (!value.startsWith('plant:')) {
+                            handlePlantSelect(currentPlantType, currentPlantColor);
+                        }
+                    }}
                 >
                     Plant Theme
                 </button>

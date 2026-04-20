@@ -340,7 +340,8 @@ def update_persona(persona_id: int, persona: schemas.PersonaCreate, db: Session 
     if not db_persona:
         raise HTTPException(status_code=404, detail="Persona not found")
     
-    for key, value in persona.model_dump().items():
+    update_data = persona.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
         setattr(db_persona, key, value)
     
     db.commit()
