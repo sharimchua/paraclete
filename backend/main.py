@@ -319,7 +319,7 @@ async def health():
 # --- Person CRUD ---
 @app.post("/persons/", response_model=schemas.Person)
 def create_person(person: schemas.PersonCreate, db: Session = Depends(get_db)):
-    db_person = models.Person(name=person.name, contact_method=person.contact_method)
+    db_person = models.Person(**person.model_dump())
     db.add(db_person)
     db.commit()
     db.refresh(db_person)
@@ -385,7 +385,7 @@ def delete_person(person_id: int, db: Session = Depends(get_db)):
 # --- Group CRUD ---
 @app.post("/groups/", response_model=schemas.Group)
 def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
-    db_group = models.Group(name=group.name, description=group.description)
+    db_group = models.Group(**group.model_dump())
     db.add(db_group)
     db.commit()
     db.refresh(db_group)
