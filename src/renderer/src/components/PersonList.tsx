@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Avatar } from './Avatar';
+import { AvatarSelector } from './AvatarSelector';
+
 import { api, Person } from '../services/api';
 import { useNavbar } from './NavbarContext';
 
@@ -14,6 +17,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newName, setNewName] = useState('');
     const [newContact, setNewContact] = useState('');
+    const [newAvatarLogo, setNewAvatarLogo] = useState('');
     const [filterText, setFilterText] = useState('');
 
     const fetchPersons = () => {
@@ -47,10 +51,11 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
     const handleCreatePerson = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/persons/', { name: newName, contact_method: newContact });
+            await api.post('/persons/', { name: newName, contact_method: newContact, avatar_logo: newAvatarLogo });
             setShowCreateModal(false);
             setNewName('');
             setNewContact('');
+            setNewAvatarLogo('');
             fetchPersons();
         } catch (err) {
             console.error(err);
@@ -102,41 +107,26 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
                                     top: '12px', 
                                     right: '12px', 
                                     display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-end',
-                                    gap: '4px'
-                                }}>
-                                    {person.groups.map(g => (
-                                        <div key={g.id} style={{ 
-                                            background: 'var(--secondary-faded)', 
-                                            color: 'var(--secondary)',
-                                            fontSize: '0.6rem',
-                                            fontWeight: 700,
-                                            padding: '1px 8px',
-                                            borderRadius: '4px',
-                                            textTransform: 'uppercase',
-                                            whiteSpace: 'nowrap'
-                                        }}>
-                                            {g.name}
-                                        </div>
+                                    gap: '4px',
+                                    background: 'var(--bg-card)',
+                                    padding: '4px',
+                                    borderRadius: '24px',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                }} title={person.groups.map(g => g.name).join(', ')}>
+                                    {person.groups.slice(0, 3).map(g => (
+                                        <Avatar key={g.id} avatarLogo={g.avatar_logo} name={g.name} size={24} style={{ border: '2px solid var(--bg-card)' }} />
                                     ))}
+                                    {person.groups.length > 3 && (
+                                        <div style={{
+                                            width: '24px', height: '24px', borderRadius: '50%', background: 'var(--secondary-faded)',
+                                            color: 'var(--secondary)', fontSize: '0.6rem', display: 'flex', alignItems: 'center',
+                                            justifyContent: 'center', fontWeight: 'bold'
+                                        }}>+{person.groups.length - 3}</div>
+                                    )}
                                 </div>
                             )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                <div style={{ 
-                                    width: '48px', 
-                                    height: '48px', 
-                                    background: 'var(--primary-faded)', 
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '1.2rem',
-                                    color: 'var(--primary)',
-                                    fontWeight: 600
-                                }}>
-                                    {person.name.charAt(0)}
-                                </div>
+                                <Avatar avatarLogo={person.avatar_logo} name={person.name} size={48} />
                                 <div>
                                     <h4 style={{ fontSize: '1.1rem' }}>{person.name}</h4>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{person.contact_method || 'No contact info'}</p>
@@ -179,6 +169,10 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
                                     onChange={e => setNewContact(e.target.value)}
                                     placeholder="e.g. Email, Signal, Phone"
                                 />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Avatar / Logo</label>
+                                <AvatarSelector value={newAvatarLogo} onChange={setNewAvatarLogo} />
                             </div>
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
                                 <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>

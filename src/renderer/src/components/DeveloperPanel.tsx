@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-interface LLMEvent {
+export interface LLMEvent {
     event: 'llm_start' | 'llm_finish' | 'llm_error';
     data: any;
 }

@@ -3,6 +3,8 @@ import { api, Person, Note, Message } from '../services/api';
 import { useNavbar } from './NavbarContext';
 import TagSelectionModal from './TagSelectionModal';
 import ReactMarkdown from 'react-markdown';
+import { Avatar } from './Avatar';
+import { AvatarSelector } from './AvatarSelector';
 import FrameworkAnalysisControls from './FrameworkAnalysisControls';
 
 interface Props {
@@ -22,6 +24,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [editContact, setEditContact] = useState('');
+    const [editAvatarLogo, setEditAvatarLogo] = useState('');
     const [showTagModal, setShowTagModal] = useState(false);
 
     useEffect(() => {
@@ -84,6 +87,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
                    if (person) {
                        setEditName(person.name);
                        setEditContact(person.contact_method || '');
+                       setEditAvatarLogo(person.avatar_logo || '');
                    }
                 }},
                 { label: 'Delete', variant: 'danger', onClick: handleDelete }
@@ -98,7 +102,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
     const handleUpdate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         try {
-            await api.patch(`/persons/${personId}`, { name: editName, contact_method: editContact });
+            await api.patch(`/persons/${personId}`, { name: editName, contact_method: editContact, avatar_logo: editAvatarLogo });
             setIsEditing(false);
             refreshPerson();
         } catch (err) {
@@ -178,24 +182,16 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
                             <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Contact Method</label>
                             <input className="input-field" value={editContact} onChange={e => setEditContact(e.target.value)} />
                         </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Avatar/Logo</label>
+                            <AvatarSelector value={editAvatarLogo} onChange={setEditAvatarLogo} />
+                        </div>
+
                     </form>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                            <div style={{ 
-                                width: '80px', 
-                                height: '80px', 
-                                background: 'linear-gradient(135deg, var(--primary), var(--secondary))', 
-                                borderRadius: '20px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '2rem',
-                                color: 'var(--bg-deep)',
-                                fontWeight: 700
-                            }}>
-                                {person.name.charAt(0)}
-                            </div>
+                            <Avatar avatarLogo={person.avatar_logo} name={person.name} size={80} style={{ borderRadius: '20px' }} />
                             <div style={{ flexGrow: 1 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
