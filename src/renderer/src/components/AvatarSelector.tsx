@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Avatar, PLANT_TYPES, PLANT_COLORS } from './Avatar';
+import { Avatar } from './Avatar';
+import { PLANT_TYPES, PLANT_COLORS } from './avatarConstants';
 
 interface AvatarSelectorProps {
     value: string;
