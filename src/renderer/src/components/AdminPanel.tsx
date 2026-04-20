@@ -142,7 +142,7 @@ const AdminPanel: React.FC = () => {
                         </p>
 
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Name</label>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Full Name</label>
                             <input
                                 type="text"
                                 value={settings['practitioner_name'] || ''}
@@ -153,12 +153,12 @@ const AdminPanel: React.FC = () => {
                         </div>
 
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Role / Title</label>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Preferred Name (How the AI addresses you)</label>
                             <input
                                 type="text"
-                                value={settings['practitioner_role'] || ''}
-                                onChange={(e) => updateSetting('practitioner_role', e.target.value)}
-                                placeholder="e.g. Executive Coach"
+                                value={settings['practitioner_preferred_name'] || ''}
+                                onChange={(e) => updateSetting('practitioner_preferred_name', e.target.value)}
+                                placeholder="e.g. Jane"
                                 style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                             />
                         </div>

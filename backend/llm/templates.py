@@ -12,17 +12,17 @@ RAW NOTE:
 
 CLEANED NOTE:"""
 
-def clean_session_note(text: str, person_name: str, person_tags: str, references: str, previous_notes: str, existing_tags: str, framework_expectations: str = "", practitioner_name: str = "the practitioner", practitioner_role: str = "professional", practitioner_bio: str = "") -> str:
+def clean_session_note(text: str, person_name: str, person_tags: str, references: str, previous_notes: str, existing_tags: str, framework_expectations: str = "", practitioner_name: str = "the practitioner", practitioner_preferred_name: str = "the practitioner", practitioner_bio: str = "") -> str:
     """Advanced RAG-based session expansion with framework adherence."""
     framework_section = ""
     if framework_expectations:
         framework_section = f"### Practice Framework Style & Tone Constraints (STRICT ADHERENCE)\n{framework_expectations}\n\n"
 
-    practitioner_context = f"Practitioner: {practitioner_name} ({practitioner_role})\n"
+    practitioner_context = f"Practitioner: {practitioner_name} (Address them as {practitioner_preferred_name})\n"
     if practitioner_bio:
         practitioner_context += f"Background: {practitioner_bio}\n"
 
-    return f"""{framework_section}You are an expert practitioner assistant for {practitioner_name}, a {practitioner_role}.
+    return f"""{framework_section}You are an expert practitioner assistant for {practitioner_name}.
 Your goal is to transform raw, fragmented session notes into a high-fidelity, comprehensive summary that incorporates relevant professional context and adheres to the practitioner's established style.
 
 {practitioner_context}
@@ -93,13 +93,13 @@ Return valid JSON only.
 
 ### STRUCTURAL JSON:"""
 
-def professional_draft(person_name: str, summary: str, history: str, framework_context: str = "", practitioner_name: str = "the practitioner", practitioner_role: str = "professional", practitioner_bio: str = "") -> str:
+def professional_draft(person_name: str, summary: str, history: str, framework_context: str = "", practitioner_name: str = "the practitioner", practitioner_preferred_name: str = "the practitioner", practitioner_bio: str = "") -> str:
     """Consolidated professional message drafting template with granular framework adherence."""
     framework_section = ""
     if framework_context:
         framework_section = f"### Practice Framework Constraints (STRICT ADHERENCE)\n{framework_context}\n\n"
         
-    practitioner_context = f"From Practitioner: {practitioner_name} ({practitioner_role})\n"
+    practitioner_context = f"From Practitioner: {practitioner_name} (Referred to as {practitioner_preferred_name})\n"
     if practitioner_bio:
         practitioner_context += f"Background: {practitioner_bio}\n"
 

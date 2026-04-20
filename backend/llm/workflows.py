@@ -41,11 +41,11 @@ async def run_note_cleanse(text: str, context: dict) -> str:
         existing_tags=context.get("existing_tags", "None"),
         framework_expectations=context.get("framework_expectations", ""),
         practitioner_name=context.get("practitioner_name", "the practitioner"),
-        practitioner_role=context.get("practitioner_role", "professional"),
+        practitioner_preferred_name=context.get("practitioner_preferred_name", "the practitioner"),
         practitioner_bio=context.get("practitioner_bio", "")
     )
     
-    system_prompt = f"You are an expert practitioner assistant for {context.get('practitioner_name', 'the practitioner')}, a {context.get('practitioner_role', 'professional')}."
+    system_prompt = f"You are an expert practitioner assistant for {context.get('practitioner_name', 'the practitioner')}."
     if context.get("practitioner_bio"):
         system_prompt += f" Background: {context.get('practitioner_bio')}"
 
@@ -88,11 +88,11 @@ async def run_draft_message(context: dict) -> str:
         history=context.get("history", "No prior history."),
         framework_context=context.get("framework_context", ""),
         practitioner_name=context.get("practitioner_name", "the practitioner"),
-        practitioner_role=context.get("practitioner_role", "professional"),
+        practitioner_preferred_name=context.get("practitioner_preferred_name", "the practitioner"),
         practitioner_bio=context.get("practitioner_bio", "")
     )
     
-    system_prompt = f"You are drafting a follow-up message as {context.get('practitioner_name', 'the practitioner')}, a {context.get('practitioner_role', 'professional')}."
+    system_prompt = f"You are drafting a follow-up message as {context.get('practitioner_name', 'the practitioner')}."
     if context.get("practitioner_bio"):
         system_prompt += f" Background: {context.get('practitioner_bio')}"
 

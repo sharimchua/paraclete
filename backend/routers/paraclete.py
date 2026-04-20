@@ -301,12 +301,12 @@ async def paraclete_chat(
     # Practitioner Profile Context
     settings = {s.key: s.value for s in db.query(models.Setting).all()}
     practitioner_name = settings.get("practitioner_name", "the practitioner")
-    practitioner_role = settings.get("practitioner_role", "professional")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
     practitioner_bio = settings.get("practitioner_bio", "")
 
     bio_section = f"\nPractitioner Bio: {practitioner_bio}" if practitioner_bio else ""
 
-    system_prompt = f"""You are Paraclete, an intelligent AI companion for {practitioner_name}, a {practitioner_role}.
+    system_prompt = f"""You are Paraclete, an intelligent AI companion for {practitioner_name} (Address them as {practitioner_preferred_name}).
 Your goal is to assist with note-taking, framework extraction, message drafting, and workspace management.{bio_section}
 
 WORKSPACE SUMMARY:

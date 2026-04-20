@@ -601,7 +601,7 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
     # Practitioner Profile Context
     settings = {s.key: s.value for s in db.query(models.Setting).all()}
     practitioner_name = settings.get("practitioner_name", "the practitioner")
-    practitioner_role = settings.get("practitioner_role", "professional")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
     practitioner_bio = settings.get("practitioner_bio", "")
 
     context = {
@@ -612,7 +612,7 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
         "existing_tags": tag_taxonomy,
         "framework_expectations": framework_context,
         "practitioner_name": practitioner_name,
-        "practitioner_role": practitioner_role,
+        "practitioner_preferred_name": practitioner_preferred_name,
         "practitioner_bio": practitioner_bio
     }
 
@@ -847,7 +847,7 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     # Practitioner Profile Context
     settings = {s.key: s.value for s in db.query(models.Setting).all()}
     practitioner_name = settings.get("practitioner_name", "the practitioner")
-    practitioner_role = settings.get("practitioner_role", "professional")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
     practitioner_bio = settings.get("practitioner_bio", "")
 
     # 4. Cleaning
@@ -859,7 +859,7 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
         "existing_tags": tag_taxonomy,
         "framework_expectations": framework_context,
         "practitioner_name": practitioner_name,
-        "practitioner_role": practitioner_role,
+        "practitioner_preferred_name": practitioner_preferred_name,
         "practitioner_bio": practitioner_bio
     }
     
@@ -900,7 +900,7 @@ async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
     # Practitioner Profile Context
     settings = {s.key: s.value for s in db.query(models.Setting).all()}
     practitioner_name = settings.get("practitioner_name", "the practitioner")
-    practitioner_role = settings.get("practitioner_role", "professional")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
     practitioner_bio = settings.get("practitioner_bio", "")
 
     context = {
@@ -909,7 +909,7 @@ async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
         "history": history_text,
         "framework_context": framework_context,
         "practitioner_name": practitioner_name,
-        "practitioner_role": practitioner_role,
+        "practitioner_preferred_name": practitioner_preferred_name,
         "practitioner_bio": practitioner_bio
     }
     
