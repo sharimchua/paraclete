@@ -91,7 +91,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
                 { label: '+ Add Member', onClick: () => setShowAddMember(true) }
             ]);
         }
-    }, [isEditing, setNavActions, groupId, onStartNote]);
+    }, [isEditing, setNavActions, groupId, onStartNote, editName, editDesc, editAvatarLogo]);
 
     const handleUpdate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();

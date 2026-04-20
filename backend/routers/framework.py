@@ -335,7 +335,7 @@ def read_persona(persona_id: int, db: Session = Depends(get_db)):
     return persona
 
 @router.patch("/personas/{persona_id}", response_model=schemas.Persona)
-def update_persona(persona_id: int, persona: schemas.PersonaCreate, db: Session = Depends(get_db)):
+def update_persona(persona_id: int, persona: schemas.PersonaUpdate, db: Session = Depends(get_db)):
     db_persona = db.query(models.Persona).filter(models.Persona.id == persona_id).first()
     if not db_persona:
         raise HTTPException(status_code=404, detail="Persona not found")

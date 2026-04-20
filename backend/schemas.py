@@ -262,6 +262,11 @@ class Persona(PersonaBase):
     framework: Optional[PractiseFramework] = None
     model_config = ConfigDict(from_attributes=True)
 
+class PersonaUpdate(BaseModel):
+    name: Optional[str] = None
+    avatar_logo: Optional[str] = None
+    description: Optional[str] = None
+
 class FrameworkProposalStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"

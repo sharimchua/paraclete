@@ -67,7 +67,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
             window.removeEventListener('global-ws-message' as any, handleWsMessage);
             setNavActions([]);
         };
-    }, [personId]);
+    }, [personId, setNavActions]);
 
     useEffect(() => {
         if (isEditing) {
@@ -94,7 +94,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
                 { label: 'Delete', variant: 'danger', onClick: handleDelete }
             ]);
         }
-    }, [isEditing, person, editName, editContact, setNavActions]);
+    }, [isEditing, person, editName, editContact, editAvatarLogo, setNavActions, personId, onStartNote]);
 
     const refreshPerson = () => {
         api.get<Person>(`/persons/${personId}`).then(data => setPerson(data));
