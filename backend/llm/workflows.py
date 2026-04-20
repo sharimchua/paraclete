@@ -39,14 +39,21 @@ async def run_note_cleanse(text: str, context: dict) -> str:
         references=context.get("references", "No relevant references found."),
         previous_notes=context.get("previous_notes", "No previous session history."),
         existing_tags=context.get("existing_tags", "None"),
-        framework_expectations=context.get("framework_expectations", "")
+        framework_expectations=context.get("framework_expectations", ""),
+        practitioner_name=context.get("practitioner_name", "the practitioner"),
+        practitioner_preferred_name=context.get("practitioner_preferred_name", "the practitioner"),
+        practitioner_bio=context.get("practitioner_bio", "")
     )
     
+    system_prompt = f"You are an expert practitioner assistant for {context.get('practitioner_name', 'the practitioner')}."
+    if context.get("practitioner_bio"):
+        system_prompt += f" Background: {context.get('practitioner_bio')}"
+
     # call() returns the cleaned string directly
     result = await asyncio.to_thread(
         llm_manager.call,
         prompt=prompt,
-        system="You are an expert practitioner assistant.",
+        system=system_prompt,
         max_tokens=2000
     )
 
@@ -79,13 +86,20 @@ async def run_draft_message(context: dict) -> str:
         person_name=context.get("person_name", "Friend"),
         summary=context.get("summary", ""),
         history=context.get("history", "No prior history."),
-        framework_context=context.get("framework_context", "")
+        framework_context=context.get("framework_context", ""),
+        practitioner_name=context.get("practitioner_name", "the practitioner"),
+        practitioner_preferred_name=context.get("practitioner_preferred_name", "the practitioner"),
+        practitioner_bio=context.get("practitioner_bio", "")
     )
     
+    system_prompt = f"You are drafting a follow-up message as {context.get('practitioner_name', 'the practitioner')}."
+    if context.get("practitioner_bio"):
+        system_prompt += f" Background: {context.get('practitioner_bio')}"
+
     return await asyncio.to_thread(
         llm_manager.call,
         prompt=prompt,
-        system="Draft a warm, professional follow-up message.",
+        system=system_prompt,
         max_tokens=1024
     )
 
