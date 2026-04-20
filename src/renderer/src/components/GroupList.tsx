@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Avatar } from './Avatar';
+import { AvatarSelector } from './AvatarSelector';
+
 import { api, Group } from '../services/api';
 import { useNavbar } from './NavbarContext';
 
@@ -14,6 +17,7 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [newGroupDesc, setNewGroupDesc] = useState('');
+    const [newAvatarLogo, setNewAvatarLogo] = useState('');
 
     const fetchGroups = () => {
         setLoading(true);
@@ -45,10 +49,11 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
     const handleCreateGroup = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/groups/', { name: newGroupName, description: newGroupDesc });
+            await api.post('/groups/', { name: newGroupName, description: newGroupDesc, avatar_logo: newAvatarLogo });
             setShowCreateModal(false);
             setNewGroupName('');
             setNewGroupDesc('');
+            setNewAvatarLogo('');
             fetchGroups();
         } catch (err) {
             console.error(err);
@@ -72,7 +77,10 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
                     groups.map(group => (
                         <div key={group.id} className="card" style={{ cursor: 'pointer' }} onClick={() => onSelectGroup(group.id)}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h4 style={{ fontSize: '1.2rem' }}>{group.name}</h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    <Avatar avatarLogo={group.avatar_logo} name={group.name} size={48} />
+                                    <h4 style={{ fontSize: '1.2rem' }}>{group.name}</h4>
+                                </div>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{group.members?.length || 0} members</span>
                             </div>
                             <p style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{group.description || 'No description'}</p>
@@ -113,6 +121,10 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
                                     value={newGroupDesc} 
                                     onChange={e => setNewGroupDesc(e.target.value)}
                                 />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Avatar / Logo</label>
+                                <AvatarSelector value={newAvatarLogo} onChange={setNewAvatarLogo} />
                             </div>
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
                                 <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>

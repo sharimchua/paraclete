@@ -10,25 +10,34 @@ export interface Person {
     id: number;
     name: string;
     contact_method?: string;
+    avatar_logo?: string;
     created_at: string;
     updated_at: string;
     tags: Tag[];
-    groups?: { name: string, id: number }[];
+    groups?: { name: string, id: number, avatar_logo?: string }[];
     persona_id?: number;
     persona?: Persona;
     inherited_persona?: Persona;
+    note_count?: number;
+    message_count?: number;
+    latest_note_date?: string;
 }
 
 export interface Group {
     id: number;
     name: string;
     description?: string;
+    avatar_logo?: string;
     created_at: string;
     updated_at: string;
     tags: Tag[];
     members: Person[];
     persona_id?: number;
     persona?: Persona;
+    aggregated_note_count?: number;
+    aggregated_message_count?: number;
+    earliest_note_date?: string;
+    latest_note_date?: string;
 }
 
 export interface Note {
@@ -74,6 +83,8 @@ export interface PractiseFrameworkItem {
     aspect: string;
     value: string;
     created_at: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'SUPERSEDED';
+    possible_groups?: { name: string, id: number, avatar_logo?: string }[];
 }
 
 export interface FrameworkProposal {
@@ -95,6 +106,8 @@ export interface FrameworkProposal {
     group_name?: string;
     is_core: boolean;
     created_at: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'SUPERSEDED';
+    possible_groups?: { name: string, id: number, avatar_logo?: string }[];
 }
 
 export interface CustomFrameworkRecord {
@@ -109,6 +122,7 @@ export interface Persona {
     id: number;
     name: string;
     description?: string;
+    avatar_logo?: string;
     logo_url?: string;
     framework?: PractiseFramework;
 }

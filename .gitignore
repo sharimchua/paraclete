@@ -16,3 +16,4 @@ uploads/companion/
 Agents.md
 paraclete.db-shm
 paraclete.db-wal
+venv/

@@ -64,6 +64,9 @@ const ReferenceLibrary: React.FC = () => {
         } else {
             fetchProposals();
             setNavActions([]);
+            return () => {
+                setNavActions([]);
+            };
         }
     }, [searchTerm, view, setNavActions]);
 

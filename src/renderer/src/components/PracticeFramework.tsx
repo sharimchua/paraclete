@@ -17,7 +17,7 @@ const FrameworkAspectList: React.FC<{
     onDelete: (id: number) => void;
     onMove: (item: PractiseFrameworkItem) => void;
     hierarchyContext: { type: 'core' | 'persona' | 'custom', name: string, personaId?: number };
-}> = ({ title, aspect, description, framework, items, onAdd, onUpdate, onDelete, onMove, hierarchyContext }) => {
+}> = ({ title, aspect, description, items, onAdd, onUpdate, onDelete, onMove }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [newValue, setNewValue] = useState('');
     const [editingId, setEditingId] = useState<number|null>(null);
@@ -207,7 +207,7 @@ const PracticeFramework: React.FC = () => {
         }
 
         try {
-            const res = await api.post<{status: string, id: number}>(`/api/framework/custom/${target.type}/${target.id}`, {});
+            await api.post<{status: string, id: number}>(`/api/framework/custom/${target.type}/${target.id}`, {});
             setShowAddCustom(false);
             await fetchData();
             

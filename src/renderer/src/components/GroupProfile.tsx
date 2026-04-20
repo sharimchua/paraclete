@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Avatar } from './Avatar';
+import { AvatarSelector } from './AvatarSelector';
 import { api, Group, Person, Note, Message } from '../services/api';
 import { useNavbar } from './NavbarContext';
 import TagSelectionModal from './TagSelectionModal';
@@ -24,6 +26,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [editDesc, setEditDesc] = useState('');
+    const [editAvatarLogo, setEditAvatarLogo] = useState('');
     const [showAddMember, setShowAddMember] = useState(false);
     const [showTagModal, setShowTagModal] = useState(false);
 
@@ -39,6 +42,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
             setGroup(groupData);
             setEditName(groupData.name);
             setEditDesc(groupData.description || '');
+            setEditAvatarLogo(groupData.avatar_logo || '');
             setAllPersons(personsData);
             setGroupNotes(notesData);
             setGroupMessages(messagesData);
@@ -92,7 +96,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
     const handleUpdate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         try {
-            await api.patch(`/groups/${groupId}`, { name: editName, description: editDesc });
+            await api.patch(`/groups/${groupId}`, { name: editName, description: editDesc, avatar_logo: editAvatarLogo });
             setIsEditing(false);
             fetchData();
         } catch (err) {
@@ -193,15 +197,28 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
 
                 {isEditing ? (
                     <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <input className="input-field" value={editName} onChange={e => setEditName(e.target.value)} required />
-                        <textarea className="input-field" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
+                            <input className="input-field" value={editName} onChange={e => setEditName(e.target.value)} required />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Description</label>
+                            <textarea className="input-field" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Avatar/Logo</label>
+                            <AvatarSelector value={editAvatarLogo} onChange={setEditAvatarLogo} />
+                        </div>
                     </form>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ flexGrow: 1 }}>
-                                <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>{group.name}</h1>
-                                <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>{group.description || 'No description'}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexGrow: 1 }}>
+                                <Avatar avatarLogo={group.avatar_logo} name={group.name} size={100} style={{ borderRadius: '24px' }} />
+                                <div>
+                                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>{group.name}</h1>
+                                    <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>{group.description || 'No description'}</p>
+                                </div>
                             </div>
                             <div style={{ display: 'flex', gap: '24px', textAlign: 'right', background: 'rgba(56, 189, 248, 0.03)', padding: '16px', borderRadius: '12px', alignItems: 'center' }}>
                                 <div>

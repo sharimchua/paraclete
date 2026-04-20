@@ -22,6 +22,7 @@ class TagLink(BaseModel):
 class PersonBase(BaseModel):
     name: str
     contact_method: Optional[str] = None
+    avatar_logo: Optional[str] = None
 
 class PersonCreate(PersonBase):
     pass
@@ -29,14 +30,17 @@ class PersonCreate(PersonBase):
 class PersonUpdate(BaseModel):
     name: Optional[str] = None
     contact_method: Optional[str] = None
+    avatar_logo: Optional[str] = None
 
 class GroupBase(BaseModel):
     name: str
     description: Optional[str] = None
+    avatar_logo: Optional[str] = None
 
 class GroupBadge(BaseModel):
     id: int
     name: str
+    avatar_logo: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class PersonBadge(BaseModel):
@@ -65,6 +69,7 @@ class GroupCreate(GroupBase):
 class GroupUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    avatar_logo: Optional[str] = None
 
 class Group(GroupBase):
     id: int
