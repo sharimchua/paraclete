@@ -298,8 +298,16 @@ async def paraclete_chat(
     group_count = db.query(models.Group).count()
     note_count = db.query(models.Note).count()
     
-    system_prompt = f"""You are Paraclete, an intelligent AI companion for professional practitioners.
-Your goal is to assist with note-taking, framework extraction, message drafting, and workspace management.
+    # Practitioner Profile Context
+    settings = {s.key: s.value for s in db.query(models.Setting).all()}
+    practitioner_name = settings.get("practitioner_name", "the practitioner")
+    practitioner_role = settings.get("practitioner_role", "professional")
+    practitioner_bio = settings.get("practitioner_bio", "")
+
+    bio_section = f"\nPractitioner Bio: {practitioner_bio}" if practitioner_bio else ""
+
+    system_prompt = f"""You are Paraclete, an intelligent AI companion for {practitioner_name}, a {practitioner_role}.
+Your goal is to assist with note-taking, framework extraction, message drafting, and workspace management.{bio_section}
 
 WORKSPACE SUMMARY:
 - People: {person_count}
