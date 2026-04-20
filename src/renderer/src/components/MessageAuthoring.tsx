@@ -83,30 +83,21 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         loadContexts();
     }, [messageId, noteId, personId, groupId]);
 
-    const handleDelete = async () => {
-        if (!message.id) return;
-        
-        const confirmed = window.confirm("Are you sure you want to delete this message? This action cannot be undone.");
-        if (!confirmed) return;
-        
-        try {
-            await api.delete(`/api/messages/${message.id}`);
-            if (setIsDirty) setIsDirty(false);
-            onComplete();
-        } catch (err) {
-            console.error('Failed to delete message:', err);
-            alert('Failed to delete message.');
-        }
-    };
-
-    const handleSave = async () => {
+    const handleSave = React.useCallback(async () => {
         setIsSaving(true);
         try {
+            // Refine data to only send necessary fields, avoiding large nested objects
             const data = {
-                ...message,
+                draft_text: message.draft_text,
+                sent_text: message.sent_text,
+                status: message.status,
+                source: message.source,
+                is_inbound: message.is_inbound,
+                date: message.date,
                 note_id: noteId || message.note_id || noteContext?.id || null,
                 person_id: personId || message.person_id || personContext?.id || null,
                 group_id: groupId || message.group_id || groupContext?.id || null,
+                persona_id: message.persona_id
             };
 
             if (message.id) {
@@ -123,7 +114,23 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [message, noteId, noteContext, personId, personContext, groupId, groupContext, onComplete, setIsDirty]);
+
+    const handleDelete = React.useCallback(async () => {
+        if (!message.id) return;
+        
+        const confirmed = window.confirm("Are you sure you want to delete this message? This action cannot be undone.");
+        if (!confirmed) return;
+        
+        try {
+            await api.delete(`/api/messages/${message.id}`);
+            if (setIsDirty) setIsDirty(false);
+            onComplete();
+        } catch (err) {
+            console.error('Failed to delete message:', err);
+            alert('Failed to delete message.');
+        }
+    }, [message.id, onComplete, setIsDirty]);
 
     const handleGenerateDraft = async () => {
         let msgId = message.id;
@@ -304,7 +311,18 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
             setCustomContent(null);
             setNavActions([]);
         };
-    }, [message.id, message.is_inbound, message.date, personContext, groupContext, isSaving, loading, setTitle, setCustomContent, setNavActions]);
+    }, [
+        message, 
+        personContext, 
+        groupContext, 
+        isSaving, 
+        loading, 
+        setTitle, 
+        setCustomContent, 
+        setNavActions, 
+        handleSave, 
+        handleDelete
+    ]);
 
     if (loading) return <div className="loader" />;
 

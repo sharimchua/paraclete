@@ -132,6 +132,8 @@ class MessageUpdate(BaseModel):
     date: Optional[str] = None
     person_id: Optional[int] = None
     group_id: Optional[int] = None
+    note_id: Optional[int] = None
+    persona_id: Optional[int] = None
     sent_at: Optional[datetime] = None
 
 class NoteBadge(BaseModel):
