@@ -134,6 +134,50 @@ const AdminPanel: React.FC = () => {
 
                 <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
                     <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ opacity: 0.7 }}>👤</span> Practitioner Profile
+                    </h4>
+                    <div className="admin-card" style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                            These details inform the AI about who you are, allowing it to personalise drafts and references.
+                        </p>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Full Name</label>
+                            <input
+                                type="text"
+                                value={settings['practitioner_name'] || ''}
+                                onChange={(e) => updateSetting('practitioner_name', e.target.value)}
+                                placeholder="e.g. Dr. Jane Smith"
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Preferred Name (How the AI addresses you)</label>
+                            <input
+                                type="text"
+                                value={settings['practitioner_preferred_name'] || ''}
+                                onChange={(e) => updateSetting('practitioner_preferred_name', e.target.value)}
+                                placeholder="e.g. Jane"
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                            />
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px', color: 'var(--text-muted)' }}>Bio / Description</label>
+                            <textarea
+                                value={settings['practitioner_bio'] || ''}
+                                onChange={(e) => updateSetting('practitioner_bio', e.target.value)}
+                                placeholder="Briefly describe your approach or background..."
+                                rows={3}
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'white', resize: 'vertical' }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="admin-section" style={{ borderTop: '1px solid var(--border-color)', marginTop: '32px', paddingTop: '24px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ opacity: 0.7 }}>📦</span> Data Portability
                     </h4>
                     

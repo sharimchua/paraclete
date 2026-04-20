@@ -598,13 +598,22 @@ async def transient_process(req: AnalysisRequest, db: Session = Depends(get_db))
     existing_tags = db.query(models.Tag).all()
     tag_taxonomy = ", ".join([f"{t.key}: {t.value}" for t in existing_tags]) if existing_tags else "None"
 
+    # Practitioner Profile Context
+    settings = {s.key: s.value for s in db.query(models.Setting).all()}
+    practitioner_name = settings.get("practitioner_name", "the practitioner")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
+    practitioner_bio = settings.get("practitioner_bio", "")
+
     context = {
         "person_name": person_name,
         "person_tags": person_tags,
         "references": references_text,
         "previous_notes": history_text,
         "existing_tags": tag_taxonomy,
-        "framework_expectations": framework_context
+        "framework_expectations": framework_context,
+        "practitioner_name": practitioner_name,
+        "practitioner_preferred_name": practitioner_preferred_name,
+        "practitioner_bio": practitioner_bio
     }
 
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "note_refinement", "prompt": "Refining Session Note"}})
@@ -835,6 +844,12 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     # Hierarchy-aware Practise Framework
     framework_context = resolve_framework_items(db, person_id=db_note.person_id, group_id=db_note.group_id)
 
+    # Practitioner Profile Context
+    settings = {s.key: s.value for s in db.query(models.Setting).all()}
+    practitioner_name = settings.get("practitioner_name", "the practitioner")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
+    practitioner_bio = settings.get("practitioner_bio", "")
+
     # 4. Cleaning
     context = {
         "person_name": person_name,
@@ -842,7 +857,10 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
         "references": references_text,
         "previous_notes": history_text,
         "existing_tags": tag_taxonomy,
-        "framework_expectations": framework_context
+        "framework_expectations": framework_context,
+        "practitioner_name": practitioner_name,
+        "practitioner_preferred_name": practitioner_preferred_name,
+        "practitioner_bio": practitioner_bio
     }
     
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "clean_note", "prompt": "Expansion with Context"}})
@@ -879,11 +897,20 @@ async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
     from .services.framework_resolver import resolve_framework_items
     framework_context = resolve_framework_items(db, person_id=db_note.person_id, group_id=db_note.group_id)
 
+    # Practitioner Profile Context
+    settings = {s.key: s.value for s in db.query(models.Setting).all()}
+    practitioner_name = settings.get("practitioner_name", "the practitioner")
+    practitioner_preferred_name = settings.get("practitioner_preferred_name", "the practitioner")
+    practitioner_bio = settings.get("practitioner_bio", "")
+
     context = {
         "person_name": db_note.person.name if db_note.person else "Unknown",
         "summary": db_note.cleaned_text or db_note.raw_capture,
         "history": history_text,
-        "framework_context": framework_context
+        "framework_context": framework_context,
+        "practitioner_name": practitioner_name,
+        "practitioner_preferred_name": practitioner_preferred_name,
+        "practitioner_bio": practitioner_bio
     }
     
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "draft_message", "prompt": "Drafting Follow-up"}})
