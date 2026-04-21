@@ -996,26 +996,30 @@ async def semantic_search(query: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=500, detail="Could not generate query embedding")
         
         q_vec = np.array(query_embedding["data"][0]["embedding"])
+        norm_q = np.linalg.norm(q_vec)
         
         note_embeddings = db.query(models.NoteEmbedding).all()
-        results = []
+        matched_scores = {}
         
         for ne in note_embeddings:
             n_vec = np.array(json.loads(ne.vector))
             # Cosine similarity
-            norm_q = np.linalg.norm(q_vec)
             norm_n = np.linalg.norm(n_vec)
             if norm_q > 0 and norm_n > 0:
                 score = np.dot(q_vec, n_vec) / (norm_q * norm_n)
                 # Higher threshold for better results
                 if score > 0.3: 
-                    note = db.query(models.Note).filter(models.Note.id == ne.note_id).first()
-                    if note:
-                        results.append({
-                            "note": note,
-                            "score": float(score)
-                        })
+                    matched_scores[ne.note_id] = float(score)
         
+        results = []
+        if matched_scores:
+            notes = db.query(models.Note).filter(models.Note.id.in_(matched_scores.keys())).all()
+            for note in notes:
+                results.append({
+                    "note": note,
+                    "score": matched_scores[note.id]
+                })
+
         results.sort(key=lambda x: x["score"], reverse=True)
         await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "semantic_search", "count": len(results)}})
         return results[:10]
