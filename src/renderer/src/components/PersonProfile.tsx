@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { api, Person, Note, Message } from '../services/api'
 import { useNavbar } from './NavbarContext'
 import TagSelectionModal from './TagSelectionModal'
@@ -27,49 +27,49 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
   const [editAvatarLogo, setEditAvatarLogo] = useState('')
   const [showTagModal, setShowTagModal] = useState(false)
 
-  useEffect(() => {
-    const fetchAll = () => {
-      setLoading(true)
-      Promise.all([
-        api.get<Person>(`/persons/${personId}`),
-        api.get<Note[]>(`/notes/?person_id=${personId}`),
-        api.get<Message[]>(`/api/messages/?person_id=${personId}`),
-        api.get<{ count: number }>(`/api/framework/pending-count?person_id=${personId}`)
-      ])
-        .then(([personData, personNotes, personMessages, pendingData]) => {
-          setPerson(personData)
-          setEditName(personData.name)
-          setEditContact(personData.contact_method || '')
-          setEditAvatarLogo(personData.avatar_logo || '')
-          setNotes(personNotes)
-          setMessages(personMessages)
-          setPendingCount(pendingData.count)
-          setLoading(false)
-        })
-        .catch((err) => {
-          console.error(err)
-          alert(`Error loading person profile: ${err instanceof Error ? err.message : String(err)}`)
-          setLoading(false)
-        })
-    }
+  const fetchData = useCallback(() => {
+    setLoading(true)
+    Promise.all([
+      api.get<Person>(`/persons/${personId}`),
+      api.get<Note[]>(`/notes/?person_id=${personId}`),
+      api.get<Message[]>(`/api/messages/?person_id=${personId}`),
+      api.get<{ count: number }>(`/api/framework/pending-count?person_id=${personId}`)
+    ])
+      .then(([personData, personNotes, personMessages, pendingData]) => {
+        setPerson(personData)
+        setEditName(personData.name)
+        setEditContact(personData.contact_method || '')
+        setEditAvatarLogo(personData.avatar_logo || '')
+        setNotes(personNotes)
+        setMessages(personMessages)
+        setPendingCount(pendingData.count)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error(err)
+        alert(`Error loading person profile: ${err instanceof Error ? err.message : String(err)}`)
+        setLoading(false)
+      })
+  }, [personId])
 
-    fetchAll()
+  useEffect(() => {
+    fetchData()
 
     const handleWsMessage = (e: any) => {
       const { event } = e.detail
       if (event === 'framework_proposals_updated') {
-        fetchAll()
+        fetchData()
       }
     }
 
-    window.addEventListener('refresh-profile', fetchAll)
+    window.addEventListener('refresh-profile', fetchData)
     window.addEventListener('global-ws-message' as any, handleWsMessage)
     return () => {
-      window.removeEventListener('refresh-profile', fetchAll)
+      window.removeEventListener('refresh-profile', fetchData)
       window.removeEventListener('global-ws-message' as any, handleWsMessage)
       setNavActions([])
     }
-  }, [personId])
+  }, [fetchData, setNavActions])
 
   useEffect(() => {
     if (isEditing) {
@@ -88,7 +88,6 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
           label: 'Edit Profile',
           onClick: () => {
             setIsEditing(true)
-            // Reset edit values to current person data
             if (person) {
               setEditName(person.name)
               setEditContact(person.contact_method || '')
@@ -99,43 +98,23 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         { label: 'Delete', variant: 'danger', onClick: handleDelete }
       ])
     }
-  }, [isEditing, person, editName, editContact, setNavActions])
+  }, [isEditing, person, editName, editContact, editAvatarLogo, setNavActions, personId, onStartNote])
 
-        window.addEventListener('refresh-profile', fetchAll);
-        window.addEventListener('global-ws-message' as any, handleWsMessage);
-        return () => {
-            window.removeEventListener('refresh-profile', fetchAll);
-            window.removeEventListener('global-ws-message' as any, handleWsMessage);
-            setNavActions([]);
-        };
-    }, [personId, setNavActions]);
-
-    useEffect(() => {
-        if (isEditing) {
-            setNavActions([
-                { label: 'Save Changes', onClick: () => handleUpdate() },
-                { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
-            ]);
-        } else {
-            setNavActions([
-                {
-                    label: '+ Create Session Note',
-                    onClick: () => onStartNote(personId)
-                },
-                { isSeparator: true },
-                { label: 'Edit Profile', onClick: () => {
-                   setIsEditing(true);
-                   // Reset edit values to current person data
-                   if (person) {
-                       setEditName(person.name);
-                       setEditContact(person.contact_method || '');
-                       setEditAvatarLogo(person.avatar_logo || '');
-                   }
-                }},
-                { label: 'Delete', variant: 'danger', onClick: handleDelete }
-            ]);
-        }
-    }, [isEditing, person, editName, editContact, editAvatarLogo, setNavActions, personId, onStartNote]);
+  const handleUpdate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    try {
+      await api.patch(`/persons/${personId}`, {
+        name: editName,
+        contact_method: editContact,
+        avatar_logo: editAvatarLogo
+      })
+      setIsEditing(false)
+      fetchData()
+    } catch (err) {
+      console.error(err)
+      alert('Failed to update person')
+    }
+  }
 
   const handleDelete = async () => {
     if (
@@ -161,7 +140,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         tag_id: tagId
       })
       setShowTagModal(false)
-      refreshPerson()
+      fetchData()
     } catch (err) {
       console.error(err)
       alert('Failed to link tag')
