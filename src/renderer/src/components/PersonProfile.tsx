@@ -662,7 +662,13 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
       {showTagModal && (
         <TagSelectionModal
           title={`Tag ${person.name}`}
+<<<<<<< bolt-optimize-practice-calendar-lookup-7155225150331239072
           existingTagIds={(person.tags || []).map((t) => t.id as number)}
+=======
+          existingTagIds={(person.tags || [])
+            .map((t) => t.id)
+            .filter((id): id is number => id !== undefined)}
+>>>>>>> main
           onClose={() => setShowTagModal(false)}
           onSelect={handleSelectTag}
         />

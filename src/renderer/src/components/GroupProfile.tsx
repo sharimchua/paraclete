@@ -796,7 +796,13 @@ const GroupProfile: React.FC<Props> = ({
       {showTagModal && (
         <TagSelectionModal
           title={`Tag ${group.name}`}
+<<<<<<< bolt-optimize-practice-calendar-lookup-7155225150331239072
           existingTagIds={(group.tags || []).map((t) => t.id as number)}
+=======
+          existingTagIds={(group.tags || [])
+            .map((t) => t.id)
+            .filter((id): id is number => id !== undefined)}
+>>>>>>> main
           onClose={() => setShowTagModal(false)}
           onSelect={handleSelectTag}
         />
