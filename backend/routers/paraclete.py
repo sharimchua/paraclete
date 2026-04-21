@@ -292,11 +292,29 @@ async def paraclete_chat(
     user_messages = request.get("messages", [])
     print(f"DEBUG: PARACLETE CHAT - Processing {len(user_messages)} history turns.")
     
-    # Base Workspace Context
+# Base Workspace Context
     person_count = db.query(models.Person).count()
     group_count = db.query(models.Group).count()
     note_count = db.query(models.Note).count()
     
+    # Optional Targeted Entity Context
+    req_context = request.get("context", {})
+    entity_context_str = ""
+    if req_context and req_context.get("type") == "entity-reflection":
+        entity_id = req_context.get("entityId")
+        entity_type = req_context.get("entityType")
+        entity_name = req_context.get("entityName")
+
+        active_topics = []
+        if entity_type == "person":
+            active_topics = db.query(models.Topic).filter(models.Topic.person_id == entity_id, models.Topic.state != models.TopicState.closed).all()
+        elif entity_type == "group":
+            active_topics = db.query(models.Topic).filter(models.Topic.group_id == entity_id, models.Topic.state != models.TopicState.closed).all()
+
+        topics_str = "\n".join([f"- {t.title} ({t.state}): {t.summary}" for t in active_topics]) if active_topics else "No active or future topics."
+
+        entity_context_str = f"\n\nCURRENT ENTITY FOCUS: {entity_name} ({entity_type})\nActive/Future Topics:\n{topics_str}\n"
+
     # Practitioner Profile Context
     settings = {s.key: s.value for s in db.query(models.Setting).all()}
     practitioner_name = settings.get("practitioner_name", "the practitioner")
@@ -311,7 +329,7 @@ Your goal is to assist with note-taking, framework extraction, message drafting,
 WORKSPACE SUMMARY:
 - People: {person_count}
 - Groups: {group_count}
-- Notes: {note_count}
+- Notes: {note_count}{entity_context_str}
 
 INSTRUCTIONS:
 - You are professional, insightful, and concise.

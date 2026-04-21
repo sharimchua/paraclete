@@ -177,16 +177,25 @@ AUDIO CONTENT:
 
 TRANSCRIPTION:"""
 
-def session_brief(person_name: str, previous_notes: str) -> str:
-    """Generate a brief for a new session based on history."""
+def session_brief(person_name: str, previous_notes: str, active_topics: str = "", recent_reflections: str = "") -> str:
+    """Generate a brief for a new session based on history, topics, and reflections."""
+
+    topics_section = ""
+    if active_topics:
+        topics_section = f"\n### Active Topics\n{active_topics}"
+
+    reflections_section = ""
+    if recent_reflections:
+        reflections_section = f"\n### Recent Reflections\n{recent_reflections}"
+
     return f"""### Context
 Person: {person_name}
 
 ### Session History & Trends
-{previous_notes}
+{previous_notes}{topics_section}{reflections_section}
 
 ### Goal
-Based on the previous sessions' trends, summarise what topics have been covered and identify potential areas to explore in this new session. 
+Based on the previous sessions' trends, active topics, and recent practitioner reflections, summarise what has been covered and identify areas to explore in this new session.
 Provide a concise, professional briefing for the practitioner to read before starting the session.
 
 ### AI Session Brief:"""
@@ -343,3 +352,18 @@ def extract_references(text: str) -> str:
 
 JSON:"""
 
+
+
+def topic_summary(topic_title: str, topic_content: str) -> str:
+    """Summarize all associated notes/messages/reflections for a single topic."""
+    return f"""### Topic
+Title: {topic_title}
+
+### Associated Content
+{topic_content}
+
+### Goal
+Based on the associated content, generate a concise, 2-3 sentence summary of the current state of this topic.
+Focus on key insights, ongoing threads, or unresolved matters. Do not use conversational filler.
+
+### Summary:"""
