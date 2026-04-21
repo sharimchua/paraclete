@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   api,
   PractiseFramework,
@@ -10,8 +10,8 @@ import {
 import FrameworkAnalysisControls from './FrameworkAnalysisControls'
 import ConfirmationModal from './ConfirmationModal'
 import EntitySelectionModal from './EntitySelectionModal'
-import { useNavbar } from '../hooks/useNavbar'
-import { toast } from './ToastProvider'
+import { useNavbar, Action } from '../hooks/useNavbar'
+import { toast } from '../services/toastService'
 
 const FrameworkAspectList: React.FC<{
   title: string
@@ -307,7 +307,7 @@ const PracticeFramework: React.FC = () => {
     window.addEventListener('global-ws-message', handleWsMessage as EventListener)
 
     // Update Navbar Actions based on active tab and state
-    const actions: { label: string; onClick: () => void; variant?: string }[] = []
+    const actions: Action[] = []
     if (activeTab === 'personas' && !selectedPersonaId) {
       actions.push({ label: '+ Add New Persona', onClick: () => setShowCreatePersona(true) })
     } else if (activeTab === 'custom' && !selectedCustomRecord) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Avatar } from './Avatar'
 import { AvatarSelector } from './AvatarSelector'
 

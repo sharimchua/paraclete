@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { api, Note, Person, Group } from '../services/api'
 import { useNavbar } from '../hooks/useNavbar'
 import ReactMarkdown from 'react-markdown'
 import NoteAuthoring from './NoteAuthoring'
 import NoteUtilities from './NoteUtilities'
 import ConfirmationModal from './ConfirmationModal'
-import { toast } from './ToastProvider'
+import { toast } from '../services/toastService'
 
 interface Props {
   noteId: number

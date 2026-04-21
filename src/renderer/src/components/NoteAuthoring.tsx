@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { api, Person, Note, API_BASE } from '../services/api'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { api, Person, Note, API_BASE, Group } from '../services/api'
 import ReactMarkdown from 'react-markdown'
 import ConfirmationModal from './ConfirmationModal'
-import { toast } from './ToastProvider'
+import { toast } from '../services/toastService'
 import InterstitialLoader from './InterstitialLoader'
 import { useNavbar } from '../hooks/useNavbar'
 
@@ -41,9 +41,9 @@ const NoteAuthoring: React.FC<Props> = ({
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
-  const [suggestedTags, setSuggestedTags] = useState<{ key: string; value: string }[]>([])
-  const [selectedTags, setSelectedTags] = useState<{ key: string; value: string }[]>([])
-  const [existingTaxonomy, setExistingTaxonomy] = useState<{ key: string; value: string }[]>([])
+  const [suggestedTags, setSuggestedTags] = useState<any[]>([])
+  const [selectedTags, setSelectedTags] = useState<any[]>([])
+  const [existingTaxonomy, setExistingTaxonomy] = useState<any[]>([])
   const [sessionBrief, setSessionBrief] = useState<string>('')
   const [isBriefing, setIsBriefing] = useState(false)
   const [isLlmReady, setIsLlmReady] = useState(false)
@@ -1339,7 +1339,7 @@ const NoteAuthoring: React.FC<Props> = ({
                       }}
                     >
                       <img
-                        src={`${API_BASE}${img.url}`}
+                        src={`${API_BASE}${img}`}
                         alt="Capture"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />

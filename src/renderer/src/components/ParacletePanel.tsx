@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { api } from '../services/api'
 import Logo from './Logo'
@@ -94,7 +94,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     }
   }
 
-  const renderChat = (): JSX.Element => {
+  const renderChat = (): React.ReactElement => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div
@@ -352,7 +352,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     }
   }, [events, jobs, activeTab])
 
-  const renderJobs = (): JSX.Element => {
+  const renderJobs = (): React.ReactElement => {
     const pendingCount = jobs.filter((j) => j.status === 'pending' || j.status === 'running').length
 
     return (
@@ -436,7 +436,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     )
   }
 
-  const renderForensics = (): JSX.Element => (
+  const renderForensics = (): React.ReactElement => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {events.length === 0 && (
         <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '40px' }}>
@@ -477,12 +477,12 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
           </div>
           <div style={{ fontSize: '0.7rem', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
             {(() => {
-              if (ev.event === 'llm_start') return ev.data.prompt || 'Thinking...'
+              if (ev.event === 'llm_start') return (ev.data as any).prompt || 'Thinking...'
               if (ev.event === 'llm_finish')
-                return typeof ev.data.result === 'string'
-                  ? ev.data.result
-                  : ev.data.type
-                    ? `Finished ${ev.data.type}`
+                return typeof (ev.data as any).result === 'string'
+                  ? (ev.data as any).result
+                  : (ev.data as any).type
+                    ? `Finished ${(ev.data as any).type}`
                     : 'Process Complete'
 
               const displayData = ev.data

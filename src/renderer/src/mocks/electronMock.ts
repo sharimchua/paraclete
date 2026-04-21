@@ -36,6 +36,6 @@ if (typeof window !== 'undefined' && !window.electron) {
         console.log(`[Mock ipcRenderer.removeAllListeners] ${channel}`)
         return window.electron.ipcRenderer
       }
-    } as ElectronAPI['ipcRenderer']
+    } as unknown as ElectronAPI['ipcRenderer']
   }
 }

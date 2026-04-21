@@ -227,7 +227,11 @@ export const api = {
   getMessages: (params?: Record<string, string | number | boolean>) => {
     let qs = ''
     if (params) {
-      qs = '?' + new URLSearchParams(params).toString()
+      const searchParams = new URLSearchParams()
+      Object.entries(params).forEach(([key, value]) => {
+        searchParams.append(key, String(value))
+      })
+      qs = '?' + searchParams.toString()
     }
     return api.get<Message[]>(`/api/messages/${qs}`)
   },

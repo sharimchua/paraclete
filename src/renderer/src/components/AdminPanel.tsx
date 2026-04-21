@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import ConfirmationModal from './ConfirmationModal'
-import { toast } from './ToastProvider'
+import { toast } from '../services/toastService'
 import { api } from '../services/api'
 
 const AdminPanel: React.FC = () => {
