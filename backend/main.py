@@ -281,9 +281,30 @@ async def process_dictate(file: UploadFile = File(...)):
     await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
     return {"text": result}
 
+# --- CORS Configuration ---
+# Restrict origins to localhost for the desktop app and local IP for the companion app.
+allowed_origins = [
+    "http://localhost",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8000",
+]
+
+# Dynamically add the current local IP for the companion mobile app
+local_ip = get_local_ip()
+if local_ip and local_ip != "127.0.0.1":
+    allowed_origins.append(f"http://{local_ip}:8000")
+
+# Support additional origins via environment variable
+env_origins = os.getenv("ALLOWED_ORIGINS")
+if env_origins:
+    allowed_origins.extend([o.strip() for o in env_origins.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
