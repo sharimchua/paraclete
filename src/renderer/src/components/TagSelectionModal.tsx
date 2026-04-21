@@ -27,7 +27,7 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
   }, [])
 
   const filteredTags = allTags.filter((tag) => {
-    const isNotAlreadyUsed = !existingTagIds.includes(tag.id)
+    const isNotAlreadyUsed = !existingTagIds.includes(tag.id as number)
     const matchesSearch =
       tag.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (tag.key && tag.key.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -84,7 +84,7 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
                   alignItems: 'center',
                   fontSize: '0.9rem'
                 }}
-                onClick={() => onSelect(tag.id)}
+                onClick={() => onSelect(tag.id as number)}
               >
                 <span>
                   {tag.key && (
