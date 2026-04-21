@@ -349,8 +349,7 @@ AVAILABLE TOOLS:
         # Reasoning Loop (Max 5 iterations for tool calling)
         for i in range(5):
             # Generate response (non-streaming for tool discovery)
-            response = await asyncio.to_thread(
-                llm.llm_manager.chat,
+            response = await llm.llm_manager.achat(
                 messages=current_messages,
                 max_tokens=1024,
                 stop=["<turn|>", "<|channel|>", "<eos>"],
@@ -395,8 +394,7 @@ AVAILABLE TOOLS:
                 continue
             else:
                 # Final Pass: Stream the completion
-                response_iter = await asyncio.to_thread(
-                    llm.llm_manager.chat,
+                response_iter = await llm.llm_manager.achat(
                     messages=current_messages,
                     stream=True,
                     max_tokens=2048,

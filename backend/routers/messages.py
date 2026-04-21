@@ -166,9 +166,7 @@ async def iterate_message(
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "message_refinement", "prompt": f"Refining message for {person_name}"}})
     
     try:
-        # FIX: Must use asyncio.to_thread because llm_manager.call is synchronous
-        new_draft = await asyncio.to_thread(
-            llm.llm_manager.call, 
+        new_draft = await llm.llm_manager.acall(
             prompt=prompt,
             system=f"Refining professional outreach for {person_name}."
         )
