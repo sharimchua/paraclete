@@ -807,10 +807,9 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
             history_text = "\n".join(hist)
 
     # 2. Semantic Search for Relevant References (RAG)
-    loop = asyncio.get_event_loop()
     relevant_refs = []
     query = db_note.raw_capture[:500] if db_note.raw_capture else db_note.title
-    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+    query_embedding_resp = await llm.llm_manager.aembed(query)
     if query_embedding_resp:
         q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
         all_ref_embs = db.query(models.ReferenceEmbedding).all()
@@ -942,13 +941,12 @@ async def publish_note(note_id: int, db: Session = Depends(get_db)):
     
     try:
         # 2. Generate/Update Embedding based on FINAL text
-        loop = asyncio.get_event_loop()
         embed_text = llm.templates.embed_note(
             title=db_note.title, 
             text=db_note.cleaned_text or db_note.raw_capture
         )
         
-        embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+        embed_response = await llm.llm_manager.aembed(embed_text)
         if embed_response:
             vector = embed_response["data"][0]["embedding"]
             db_emb = db.query(models.NoteEmbedding).filter(models.NoteEmbedding.note_id == note_id).first()
@@ -972,8 +970,7 @@ async def publish_note(note_id: int, db: Session = Depends(get_db)):
 async def semantic_search(query: str, db: Session = Depends(get_db)):
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "semantic_search", "prompt": "Searching through knowledge..."}})
     try:
-        loop = asyncio.get_event_loop()
-        query_embedding = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+        query_embedding = await llm.llm_manager.aembed(query)
         if not query_embedding:
             raise HTTPException(status_code=500, detail="Could not generate query embedding")
         
