@@ -99,6 +99,7 @@ const DeveloperPanel: React.FC = () => {
         </h3>
         <button
           onClick={() => setIsOpen(false)}
+          aria-label="Close Developer Panel"
           style={{
             background: 'none',
             border: 'none',
