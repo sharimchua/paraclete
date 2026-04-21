@@ -9,7 +9,8 @@ const Logo: React.FC<{
   const [isRendered, setIsRendered] = useState(false)
 
   useEffect(() => {
-    setIsRendered(true)
+    const timer = setTimeout(() => setIsRendered(true), 0)
+    return () => clearTimeout(timer)
   }, [])
 
   return (

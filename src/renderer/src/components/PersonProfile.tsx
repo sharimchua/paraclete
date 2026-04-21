@@ -27,8 +27,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
   const [editAvatarLogo, setEditAvatarLogo] = useState('')
   const [showTagModal, setShowTagModal] = useState(false)
 
-  const fetchData = useCallback(() => {
-    setLoading(true)
+  const fetchData = useCallback((): void => {
     Promise.all([
       api.get<Person>(`/persons/${personId}`),
       api.get<Note[]>(`/notes/?person_id=${personId}`),
@@ -52,10 +51,45 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
       })
   }, [personId])
 
+  const handleUpdate = useCallback(
+    async (e?: React.FormEvent): Promise<void> => {
+      if (e) e.preventDefault()
+      try {
+        await api.patch(`/persons/${personId}`, {
+          name: editName,
+          contact_method: editContact,
+          avatar_logo: editAvatarLogo
+        })
+        setIsEditing(false)
+        fetchData()
+      } catch (err) {
+        console.error(err)
+        alert('Failed to update person')
+      }
+    },
+    [personId, editName, editContact, editAvatarLogo, fetchData]
+  )
+
+  const handleDelete = useCallback(async (): Promise<void> => {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this person? All their notes will remain but will be unlinked.'
+      )
+    ) {
+      try {
+        await api.delete(`/persons/${personId}`)
+        onBack()
+      } catch (err) {
+        console.error(err)
+        alert('Failed to delete person')
+      }
+    }
+  }, [personId, onBack])
+
   useEffect(() => {
     fetchData()
 
-    const handleWsMessage = (e: Event) => {
+    const handleWsMessage = (e: Event): void => {
       const { event } = (e as CustomEvent).detail
       if (event === 'framework_proposals_updated') {
         fetchData()
@@ -98,50 +132,9 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         { label: 'Delete', variant: 'danger', onClick: handleDelete }
       ])
     }
-  }, [
-    isEditing,
-    person,
-    editName,
-    editContact,
-    editAvatarLogo,
-    setNavActions,
-    personId,
-    onStartNote
-  ])
+  }, [isEditing, person, setNavActions, personId, onStartNote, handleDelete, handleUpdate])
 
-  const handleUpdate = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    try {
-      await api.patch(`/persons/${personId}`, {
-        name: editName,
-        contact_method: editContact,
-        avatar_logo: editAvatarLogo
-      })
-      setIsEditing(false)
-      fetchData()
-    } catch (err) {
-      console.error(err)
-      alert('Failed to update person')
-    }
-  }
-
-  const handleDelete = async () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this person? All their notes will remain but will be unlinked.'
-      )
-    ) {
-      try {
-        await api.delete(`/persons/${personId}`)
-        onBack()
-      } catch (err) {
-        console.error(err)
-        alert('Failed to delete person')
-      }
-    }
-  }
-
-  const handleSelectTag = async (tagId: number) => {
+  const handleSelectTag = async (tagId: number): Promise<void> => {
     try {
       await api.post('/tags/link', {
         entity_type: 'person',
@@ -167,7 +160,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
       notes.length > 0 ? [...notes].sort((a, b) => b.date.localeCompare(a.date))[0].date : null
   }
 
-  const calculateTenure = () => {
+  const calculateTenure = (): string => {
     if (!noteStats.earliest || !noteStats.latest) return 'N/A'
     const first = new Date(noteStats.earliest)
     const last = new Date(noteStats.latest)

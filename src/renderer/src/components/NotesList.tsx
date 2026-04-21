@@ -11,7 +11,7 @@ const NotesList: React.FC<Props> = ({ onSelectNote }) => {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const fetchNotes = async (searchTerm: string = '') => {
+  const fetchNotes = async (searchTerm: string = ''): Promise<void> => {
     setLoading(true)
     try {
       const data = await api.get<Note[]>(

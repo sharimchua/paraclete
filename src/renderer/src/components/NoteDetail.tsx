@@ -21,7 +21,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
       const noteData = await api.get<Note>(`/notes/${noteId}`)
@@ -41,12 +41,12 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
       toast.error('Failed to load note details')
       setLoading(false)
     }
-  }
+  }, [noteId])
 
   useEffect(() => {
     fetchData()
     return () => setNavActions([])
-  }, [noteId])
+  }, [fetchData, setNavActions])
 
   useEffect(() => {
     if (!isEditing && note) {
@@ -75,7 +75,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     }
   }, [isEditing, note, setNavActions])
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async (): Promise<void> => {
     try {
       await api.delete(`/notes/${noteId}`)
       onBack()
@@ -85,7 +85,7 @@ const NoteDetail: React.FC<Props> = ({ noteId, onBack }) => {
     } finally {
       setShowDeleteConfirm(false)
     }
-  }
+  }, [noteId, onBack])
 
   if (loading) return <div className="loader" />
   if (!note) return <div>Note not found.</div>

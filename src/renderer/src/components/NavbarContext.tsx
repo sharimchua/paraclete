@@ -26,7 +26,7 @@ export const NavbarProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   )
 }
 
-export const useNavbar = () => {
+export const useNavbar = (): NavbarContextType => {
   const context = useContext(NavbarContext)
   if (context === undefined) {
     throw new Error('useNavbar must be used within a NavbarProvider')

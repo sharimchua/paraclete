@@ -16,7 +16,7 @@ const TagManagement: React.FC = () => {
   const [newTagKey, setNewTagKey] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
-  const fetchTags = async () => {
+  const fetchTags = async (): Promise<void> => {
     try {
       const response = await fetch('http://127.0.0.1:8000/tags/')
       if (response.ok) {
@@ -43,7 +43,7 @@ const TagManagement: React.FC = () => {
     return () => setNavActions([])
   }, [setNavActions])
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number): Promise<void> => {
     if (
       !confirm(
         'Are you sure you want to delete this tag? It will be removed from all associated items.'
@@ -63,7 +63,7 @@ const TagManagement: React.FC = () => {
     }
   }
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     if (!newTagValue.trim()) return
 

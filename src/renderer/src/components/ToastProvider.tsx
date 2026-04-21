@@ -40,7 +40,7 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [isExiting])
 
   useEffect(() => {
-    const handleToast = (e: Event) => {
+    const handleToast = (e: Event): void => {
       const detail = (e as CustomEvent).detail
       addToast(detail.message, detail.type)
     }
@@ -168,19 +168,6 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             `}</style>
     </div>
   )
-}
-
-export const toast = {
-  success: (message: string) =>
-    window.dispatchEvent(
-      new CustomEvent('paraclete-toast', { detail: { message, type: 'success' } })
-    ),
-  error: (message: string) =>
-    window.dispatchEvent(
-      new CustomEvent('paraclete-toast', { detail: { message, type: 'error' } })
-    ),
-  info: (message: string) =>
-    window.dispatchEvent(new CustomEvent('paraclete-toast', { detail: { message, type: 'info' } }))
 }
 
 export default ToastProvider

@@ -22,7 +22,7 @@ const ReformatModal: React.FC<ReformatModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState('')
 
-  const handleReformat = async () => {
+  const handleReformat = async (): Promise<void> => {
     if (!prompt.trim()) return
     setIsProcessing(true)
     try {
@@ -138,7 +138,7 @@ const ReformatModal: React.FC<ReformatModalProps> = ({
                 opacity: 0.8
               }}
             >
-              "{selectedText}"
+              &quot;{selectedText}&quot;
             </div>
           </div>
 

@@ -27,7 +27,7 @@ const NoteAuthoring: React.FC<Props> = ({
 }) => {
   const [stage, setStage] = useState<Stage>('Prepare')
   const [person, setPerson] = useState<Person | null>(null)
-  const [group, setGroup] = useState<any | null>(null)
+  const [group, setGroup] = useState<Group | null>(null)
   const [recentNotes, setRecentNotes] = useState<Note[]>([])
   const [rawText, setRawText] = useState('')
   const [title, setTitle] = useState('')
@@ -42,8 +42,8 @@ const NoteAuthoring: React.FC<Props> = ({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
   const [suggestedTags, setSuggestedTags] = useState<{ key: string; value: string }[]>([])
-  const [selectedTags, setSelectedTags] = useState<any[]>([])
-  const [existingTaxonomy, setExistingTaxonomy] = useState<any[]>([])
+  const [selectedTags, setSelectedTags] = useState<{ key: string; value: string }[]>([])
+  const [existingTaxonomy, setExistingTaxonomy] = useState<{ key: string; value: string }[]>([])
   const [sessionBrief, setSessionBrief] = useState<string>('')
   const [isBriefing, setIsBriefing] = useState(false)
   const [isLlmReady, setIsLlmReady] = useState(false)
@@ -55,7 +55,7 @@ const NoteAuthoring: React.FC<Props> = ({
   // Companion State
   const [companionSessionId, setCompanionSessionId] = useState<string | null>(null)
   const [companionUrl, setCompanionUrl] = useState<string | null>(null)
-  const [companionImages, setCompanionImages] = useState<any[]>([])
+  const [companionImages, setCompanionImages] = useState<string[]>([])
   const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [interstitial, setInterstitial] = useState<{
@@ -126,28 +126,28 @@ const NoteAuthoring: React.FC<Props> = ({
         if (data.event === 'companion_image' && data.data.session_id === companionSessionId) {
           setCompanionImages((prev) => [...prev, data.data])
         }
-      } catch (e) {
-        console.error('WS Error:', e)
+      } catch (err) {
+        console.error(err)
       }
     }
     return () => socket.close()
   }, [companionSessionId])
 
   useEffect(() => {
-    const loadMainEntity = async () => {
+    const loadContexts = async (): Promise<void> => {
       try {
         if (personId) {
           const p = await api.get<Person>(`/persons/${personId}`)
           setPerson(p)
         } else if (groupId) {
-          const g = await api.get<any>(`/groups/${groupId}`)
+          const g = await api.get<Group>(`/groups/${groupId}`)
           setGroup(g)
         } else if (noteId && currentNote) {
           if (currentNote.person_id) {
             const p = await api.get<Person>(`/persons/${currentNote.person_id}`)
             setPerson(p)
           } else if (currentNote.group_id) {
-            const g = await api.get<any>(`/groups/${currentNote.group_id}`)
+            const g = await api.get<Group>(`/groups/${currentNote.group_id}`)
             setGroup(g)
           }
         }
@@ -158,11 +158,11 @@ const NoteAuthoring: React.FC<Props> = ({
       }
     }
 
-    const loadBackgroundData = async () => {
+    const loadBackgroundData = async (): Promise<void> => {
       try {
         const [notes, tags] = await Promise.all([
           api.get<Note[]>(`/notes/`),
-          api.get<any[]>('/tags/')
+          api.get<{ key: string; value: string }[]>('/tags/')
         ])
         setExistingTaxonomy(tags)
 
@@ -180,81 +180,103 @@ const NoteAuthoring: React.FC<Props> = ({
     }
 
     if (personId || groupId || noteId) {
-      loadMainEntity()
+      loadContexts()
       loadBackgroundData()
     } else {
       setLoading(false)
     }
   }, [personId, groupId, noteId, currentNote?.id])
 
-  const handleStartRefine = async (force: boolean = false) => {
-    if (!rawText.trim()) return
+  const handleStartRefine = useCallback(
+    async (force: boolean = false): Promise<void> => {
+      if (!rawText.trim()) return
 
-    // If we already have a draft for this exact raw text, just show it
-    if (!force && currentNote && currentNote.raw_capture === rawText && currentNote.cleaned_text) {
+      // If we already have a draft for this exact raw text, just show it
+      if (
+        !force &&
+        currentNote &&
+        currentNote.raw_capture === rawText &&
+        currentNote.cleaned_text
+      ) {
+        setStage('Refine')
+        return
+      }
+
+      setIsRefining(true)
+      setInterstitial({
+        title: 'Neural Refinement',
+        subtitle: 'Paraclete is normalizing capture text and extracting entities.'
+      })
       setStage('Refine')
-      return
-    }
 
-    setIsRefining(true)
-    setInterstitial({
-      title: 'Neural Refinement',
-      subtitle: 'Paraclete is normalizing capture text and extracting entities.'
-    })
-    setStage('Refine')
+      try {
+        // Call TRANSIENT analysis (Doesn't save to DB yet)
+        const processRes = await api.post<{ result: string }>('/analysis/process', {
+          raw_text: rawText,
+          person_id: personId || currentNote?.person_id,
+          group_id: groupId || currentNote?.group_id
+        })
 
-    try {
-      // Call TRANSIENT analysis (Doesn't save to DB yet)
-      const processRes = await api.post<{ result: string }>('/analysis/process', {
-        raw_text: rawText,
-        person_id: personId || currentNote?.person_id,
-        group_id: groupId || currentNote?.group_id
-      })
+        // We'll update a local ref/state to hold the transient cleaned text
+        setCurrentNote({
+          id: noteId || 0,
+          title: title || `Session ${sessionDate}`,
+          cleaned_text: processRes.result,
+          raw_capture: rawText,
+          session_brief: sessionBrief,
+          stage: 'Clean',
+          date: sessionDate,
+          tags: selectedTags
+        } as Note)
+        if (setIsDirty) setIsDirty(true)
 
-      // We'll update a local ref/state to hold the transient cleaned text
-      setCurrentNote({
-        id: noteId || 0,
-        title: title || `Session ${sessionDate}`,
-        cleaned_text: processRes.result,
-        raw_capture: rawText,
-        session_brief: sessionBrief,
-        stage: 'Clean',
-        date: sessionDate,
-        tags: selectedTags
-      } as any)
-      if (setIsDirty) setIsDirty(true)
+        // Extract entities (Transient)
+        const metadata = await api.post<{
+          suggestedDate?: string
+          tags?: { key: string; value: string }[]
+        }>('/analysis/extract', {
+          raw_text: rawText,
+          person_id: personId || currentNote?.person_id,
+          group_id: groupId || currentNote?.group_id
+        })
 
-      // Extract entities (Transient)
-      const metadata = await api.post<any>('/analysis/extract', {
-        raw_text: rawText,
-        person_id: personId || currentNote?.person_id,
-        group_id: groupId || currentNote?.group_id
-      })
-
-      if (metadata.suggestedDate && !noteId) {
-        // If the user hasn't touched the date (it's still 'Today'), allow the AI to suggest it.
-        // Otherwise, respect the user's explicit choice.
-        const today = new Date().toISOString().split('T')[0]
-        if (sessionDate === today) {
-          setSessionDate(metadata.suggestedDate)
+        if (metadata.suggestedDate && !noteId) {
+          // If the user hasn't touched the date (it's still 'Today'), allow the AI to suggest it.
+          // Otherwise, respect the user's explicit choice.
+          const today = new Date().toISOString().split('T')[0]
+          if (sessionDate === today) {
+            setSessionDate(metadata.suggestedDate)
+          }
         }
-      }
-      if (metadata.tags) {
-        setSuggestedTags(metadata.tags)
-      }
+        if (metadata.tags) {
+          setSuggestedTags(metadata.tags)
+        }
 
-      setIsRefining(false)
-      setInterstitial(null)
-    } catch (err) {
-      console.error('Failed to process note:', err)
-      setStage('Capture')
-      setIsRefining(false)
-      setInterstitial(null)
-      alert('Failed to process with AI. Please try again.')
-    }
-  }
+        setIsRefining(false)
+        setInterstitial(null)
+      } catch (err) {
+        console.error('Failed to process note:', err)
+        setStage('Capture')
+        setIsRefining(false)
+        setInterstitial(null)
+        alert('Failed to process with AI. Please try again.')
+      }
+    },
+    [
+      rawText,
+      currentNote,
+      personId,
+      groupId,
+      noteId,
+      title,
+      sessionDate,
+      sessionBrief,
+      selectedTags,
+      setIsDirty
+    ]
+  )
 
-  const handleSuggestTitle = async () => {
+  const handleSuggestTitle = async (): Promise<void> => {
     const textToAnalyze = currentNote?.cleaned_text || rawText
     if (!textToAnalyze) return
 
@@ -272,14 +294,14 @@ const NoteAuthoring: React.FC<Props> = ({
     }
   }
 
-  const handleUpdateNoteText = (val: string) => {
+  const handleUpdateNoteText = (val: string): void => {
     if (currentNote) {
       setCurrentNote({ ...currentNote, cleaned_text: val })
       if (setIsDirty) setIsDirty(true)
     }
   }
 
-  const handleSaveNote = async () => {
+  const handleSaveNote = useCallback(async (): Promise<Note | null> => {
     setLoading(true)
     try {
       const finalDate =
@@ -322,7 +344,7 @@ const NoteAuthoring: React.FC<Props> = ({
       // In a real app we'd need a way to clear them. For now, let's just add new ones.
       // Better: api.post('/tags/link') already handles duplicates gracefully in backend if we implement it.
       for (const tagObj of selectedTags) {
-        const tag = await api.post<any>('/tags/', {
+        const tag = await api.post<{ id: number; key: string; value: string }>('/tags/', {
           key: tagObj.key,
           value: tagObj.value
         })
@@ -342,14 +364,27 @@ const NoteAuthoring: React.FC<Props> = ({
       setLoading(false)
       return null
     }
-  }
+  }, [
+    sessionDate,
+    stage,
+    currentNote,
+    title,
+    rawText,
+    sessionBrief,
+    personId,
+    groupId,
+    noteId,
+    localNoteId,
+    selectedTags,
+    setIsDirty
+  ])
 
-  const handleDeleteNote = async () => {
+  const handleDeleteNote = useCallback(async (): Promise<void> => {
     if (!noteId) return
     setShowDeleteConfirm(true)
-  }
+  }, [noteId])
 
-  const executeDelete = async () => {
+  const executeDelete = async (): Promise<void> => {
     try {
       await api.delete(`/notes/${noteId}`)
       if (setIsDirty) setIsDirty(false)
@@ -365,7 +400,7 @@ const NoteAuthoring: React.FC<Props> = ({
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     type: 'ocr' | 'dictate'
-  ) => {
+  ): Promise<void> => {
     if (!e.target.files || e.target.files.length === 0) return
     setLoading(true)
     try {
@@ -390,9 +425,9 @@ const NoteAuthoring: React.FC<Props> = ({
     }
   }
 
-  const handleStartCompanion = async () => {
+  const handleStartCompanion = async (): Promise<void> => {
     try {
-      const data = await api.post<any>('/companion/session', {})
+      const data = await api.post<{ session_id: string; url: string }>('/companion/session', {})
       setCompanionSessionId(data.session_id)
       setCompanionUrl(data.url)
       setIsCompanionModalOpen(true)
@@ -402,7 +437,7 @@ const NoteAuthoring: React.FC<Props> = ({
     }
   }
 
-  const handlePerformCompanionOCR = async () => {
+  const handlePerformCompanionOCR = async (): Promise<void> => {
     if (!companionSessionId || companionImages.length === 0) return
     setInterstitial({
       title: 'Vision Analysis',
@@ -543,9 +578,13 @@ const NoteAuthoring: React.FC<Props> = ({
     isBriefing,
     rawText,
     sessionDate,
+    isRefining,
     setNavbarTitle,
     setCustomContent,
-    setNavActions
+    setNavActions,
+    handleSaveNote,
+    handleDeleteNote,
+    handleStartRefine
   ])
 
   if (loading) return <div className="loader" />
@@ -1133,7 +1172,7 @@ const NoteAuthoring: React.FC<Props> = ({
                       <div
                         style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}
                       >
-                        Use format 'Category: Value' or pick from list
+                        Use format &apos;Category: Value&apos; or pick from list
                       </div>
                     </div>
                   </div>

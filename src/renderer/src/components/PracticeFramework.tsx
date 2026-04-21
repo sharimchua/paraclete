@@ -196,6 +196,17 @@ const FrameworkAspectList: React.FC<{
   )
 }
 
+interface ConsolidatedView {
+  title: string
+  text: string
+  structuredData?: {
+    core?: PractiseFrameworkItem[]
+    persona?: { name: string; items: PractiseFrameworkItem[] }
+    groups?: { name: string; items: PractiseFrameworkItem[] }[]
+    person?: { name: string; items: PractiseFrameworkItem[] }
+  }
+}
+
 const PracticeFramework: React.FC = () => {
   const { setNavActions } = useNavbar()
   const [core, setCore] = useState<PractiseFramework | null>(null)
@@ -209,11 +220,7 @@ const PracticeFramework: React.FC = () => {
   )
   const [loading, setLoading] = useState(true)
   const [showCreatePersona, setShowCreatePersona] = useState(false)
-  const [consolidatedView, setConsolidatedView] = useState<{
-    title: string
-    text: string
-    structuredData?: any
-  } | null>(null)
+  const [consolidatedView, setConsolidatedView] = useState<ConsolidatedView | null>(null)
   const [movingItem, setMovingItem] = useState<PractiseFrameworkItem | null>(null)
   const [confirmation, setConfirmation] = useState<{
     title: string
@@ -233,14 +240,14 @@ const PracticeFramework: React.FC = () => {
     ...customRecords.flatMap((r) => r.framework?.items || [])
   ]
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
       // Fetch everything, but don't let one fail the whole page
       const [coreRes, personaRes, customRes, proposalRes] = await Promise.allSettled([
         api.get<PractiseFramework>('/api/framework/core'),
         api.get<Persona[]>('/api/framework/personas'),
-        api.get<any[]>('/api/framework/custom'),
+        api.get<CustomFrameworkRecord[]>('/api/framework/custom'),
         api.get<FrameworkProposal[]>('/api/framework/proposals?status=pending')
       ])
 
@@ -257,33 +264,50 @@ const PracticeFramework: React.FC = () => {
         }
       }
       if (proposalRes.status === 'fulfilled') setProposals(proposalRes.value)
-
-      setLoading(false)
-      if (customRes.status === 'rejected')
-        console.error('Failed to fetch custom frameworks:', customRes.reason)
     } catch (err) {
-      console.error('Failed to fetch framework data:', err)
+      console.error('Failed to fetch summary data:', err)
+      toast.error('Failed to sync framework data.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedCustomRecord])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
+
+  const rejectAllProposals = useCallback(async (): Promise<void> => {
+    setConfirmation({
+      title: 'Reject All Proposals?',
+      message: `Are you sure you want to reject all ${proposals.length} pending proposals?`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.post('/api/framework/proposals/reject-all', {})
+          setProposals([])
+          toast.success('All proposals rejected.')
+          setConfirmation(null)
+          fetchData()
+        } catch (err) {
+          console.error('Failed to reject all:', err)
+          toast.error('Failed to reject proposals.')
+        }
+      }
+    })
+  }, [proposals.length, fetchData])
 
   useEffect(() => {
-    const handleWsMessage = (e: any) => {
-      const { event } = e.detail
+    const handleWsMessage = (e: Event): void => {
+      const { event } = (e as CustomEvent).detail
       if (event === 'framework_proposals_updated') {
         fetchData()
       }
     }
 
-    window.addEventListener('global-ws-message' as any, handleWsMessage)
+    window.addEventListener('global-ws-message', handleWsMessage as EventListener)
 
     // Update Navbar Actions based on active tab and state
-    const actions: any[] = []
+    const actions: { label: string; onClick: () => void; variant?: string }[] = []
     if (activeTab === 'personas' && !selectedPersonaId) {
       actions.push({ label: '+ Add New Persona', onClick: () => setShowCreatePersona(true) })
     } else if (activeTab === 'custom' && !selectedCustomRecord) {
@@ -295,12 +319,24 @@ const PracticeFramework: React.FC = () => {
     setNavActions(actions)
 
     return () => {
-      window.removeEventListener('global-ws-message' as any, handleWsMessage)
+      window.removeEventListener('global-ws-message', handleWsMessage as EventListener)
       setNavActions([])
     }
-  }, [activeTab, selectedPersonaId, selectedCustomRecord, proposals.length, setNavActions])
+  }, [
+    activeTab,
+    selectedPersonaId,
+    selectedCustomRecord,
+    proposals.length,
+    setNavActions,
+    fetchData,
+    rejectAllProposals
+  ])
 
-  const moveFrameworkItem = async (itemId: number, targetType: string, targetId?: number) => {
+  const moveFrameworkItem = async (
+    itemId: number,
+    targetType: string,
+    targetId?: number
+  ): Promise<void> => {
     try {
       await api.post(`/api/framework/items/${itemId}/move`, {
         target_type: targetType,
@@ -308,16 +344,17 @@ const PracticeFramework: React.FC = () => {
       })
       setMovingItem(null)
       fetchData()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to move item:', err)
-      toast.error(`Failed to move item: ${err.message || 'Unknown error'}`)
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      toast.error(`Failed to move item: ${message}`)
     }
   }
 
   const handleAddCustomOverride = async (target: {
     type: 'person' | 'group' | 'none'
     id?: number
-  }) => {
+  }): Promise<void> => {
     if (target.type === 'none' || !target.id) {
       setShowAddCustom(false)
       return
@@ -349,7 +386,7 @@ const PracticeFramework: React.FC = () => {
     isCore?: boolean,
     personId?: number,
     groupId?: number
-  ) => {
+  ): Promise<void> => {
     try {
       await api.post(`/api/framework/proposals/${id}/resolve`, {
         approved,
@@ -365,26 +402,11 @@ const PracticeFramework: React.FC = () => {
     }
   }
 
-  const rejectAllProposals = async () => {
-    setConfirmation({
-      title: 'Reject All Proposals?',
-      message: `Are you sure you want to reject all ${proposals.length} pending proposals?`,
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await api.post('/api/framework/proposals/reject-all', {})
-          setProposals([])
-          toast.success('All proposals rejected.')
-        } catch (err) {
-          console.error('Failed to reject all proposals:', err)
-          toast.error('Failed to reject all proposals.')
-        }
-        setConfirmation(null)
-      }
-    })
-  }
-
-  const createFrameworkItem = async (frameworkId: number, aspect: string, value: string) => {
+  const createFrameworkItem = async (
+    frameworkId: number,
+    aspect: string,
+    value: string
+  ): Promise<void> => {
     try {
       await api.post(`/api/framework/frameworks/${frameworkId}/items`, { aspect, value })
       fetchData()
@@ -393,7 +415,7 @@ const PracticeFramework: React.FC = () => {
     }
   }
 
-  const updateFrameworkItem = async (itemId: number, value: string) => {
+  const updateFrameworkItem = async (itemId: number, value: string): Promise<void> => {
     try {
       const item = allItems.find((i) => i.id === itemId)
       if (!item) return
@@ -404,7 +426,7 @@ const PracticeFramework: React.FC = () => {
     }
   }
 
-  const deleteFrameworkItem = async (itemId: number) => {
+  const deleteFrameworkItem = async (itemId: number): Promise<void> => {
     setConfirmation({
       title: 'Delete Rule',
       message: 'Are you sure you want to delete this rule?',
@@ -423,7 +445,7 @@ const PracticeFramework: React.FC = () => {
     })
   }
 
-  const handleCreatePersona = async (e: React.FormEvent) => {
+  const handleCreatePersona = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     try {
       await api.post('/api/framework/personas', {
@@ -441,7 +463,7 @@ const PracticeFramework: React.FC = () => {
     }
   }
 
-  const handleDeletePersona = async (id: number) => {
+  const handleDeletePersona = async (id: number): Promise<void> => {
     setConfirmation({
       title: 'Delete Persona',
       message:
@@ -810,7 +832,7 @@ const PracticeFramework: React.FC = () => {
                       Baseline Patterns
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {(p.framework as any)?.items?.slice(0, 3).map((item: any) => (
+                      {p.framework?.items?.slice(0, 3).map((item: PractiseFrameworkItem) => (
                         <div
                           key={item.id}
                           style={{
@@ -828,7 +850,7 @@ const PracticeFramework: React.FC = () => {
                           {(item.value || '').slice(0, 20)}...
                         </div>
                       ))}
-                      {((p.framework as any)?.items?.length || 0) > 3 && (
+                      {(p.framework?.items?.length || 0) > 3 && (
                         <div
                           style={{
                             fontSize: '0.75rem',
@@ -836,10 +858,10 @@ const PracticeFramework: React.FC = () => {
                             alignSelf: 'center'
                           }}
                         >
-                          +{((p.framework as any)?.items?.length || 0) - 3}
+                          +{(p.framework?.items?.length || 0) - 3}
                         </div>
                       )}
-                      {((p.framework as any)?.items?.length || 0) === 0 && (
+                      {(p.framework?.items?.length || 0) === 0 && (
                         <div
                           style={{
                             fontSize: '0.75rem',
@@ -873,7 +895,7 @@ const PracticeFramework: React.FC = () => {
                         api
                           .get<{
                             consolidated_text: string
-                            structured_data: any
+                            structured_data: ConsolidatedView['structuredData']
                           }>(`/api/framework/consolidated/persona/${p.id}`)
                           .then((res) => {
                             setConsolidatedView({
@@ -1045,7 +1067,7 @@ const PracticeFramework: React.FC = () => {
                       Custom Overrides
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {record.framework?.items?.slice(0, 3).map((item: any) => (
+                      {record.framework?.items?.slice(0, 3).map((item: PractiseFrameworkItem) => (
                         <div
                           key={item.id}
                           style={{
@@ -1110,7 +1132,10 @@ const PracticeFramework: React.FC = () => {
                             ? `/api/framework/consolidated/person/${record.id}`
                             : `/api/framework/consolidated/group/${record.id}`
                         api
-                          .get<{ consolidated_text: string; structured_data: any }>(path)
+                          .get<{
+                            consolidated_text: string
+                            structured_data: ConsolidatedView['structuredData']
+                          }>(path)
                           .then((res) => {
                             setConsolidatedView({
                               title: `${record.name} Styles`,
@@ -1313,7 +1338,8 @@ const PracticeFramework: React.FC = () => {
             ) : (
               <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
                 <p style={{ color: 'var(--text-muted)' }}>
-                  This persona doesn't have a linked framework record. This shouldn't happen.
+                  This persona doesn&apos;t have a linked framework record. This shouldn&apos;t
+                  happen.
                 </p>
                 <button
                   className="btn-primary"
@@ -1358,7 +1384,7 @@ const PracticeFramework: React.FC = () => {
                 const minWeight = Math.min(...weights)
                 const maxWeight = Math.max(...weights)
 
-                const getWeightColor = (weight: number) => {
+                const getWeightColor = (weight: number): string => {
                   if (maxWeight === minWeight) return 'var(--primary)'
                   const normalized = (weight - minWeight) / (maxWeight - minWeight)
                   // Hue: 120 (Green) to 0 (Red)
@@ -1542,18 +1568,18 @@ const PracticeFramework: React.FC = () => {
                                       return {
                                         ...p,
                                         is_core: true,
-                                        persona_id: null as any,
-                                        person_id: null as any,
-                                        group_id: null as any
+                                        persona_id: null as unknown as number,
+                                        person_id: null as unknown as number,
+                                        group_id: null as unknown as number
                                       }
                                     if (val.startsWith('person-')) {
                                       const id = parseInt(val.split('-')[1])
                                       return {
                                         ...p,
                                         is_core: false,
-                                        persona_id: null as any,
+                                        persona_id: null as unknown as number,
                                         person_id: id,
-                                        group_id: null as any
+                                        group_id: null as unknown as number
                                       }
                                     }
                                     if (val.startsWith('group-')) {
@@ -1565,8 +1591,8 @@ const PracticeFramework: React.FC = () => {
                                       return {
                                         ...p,
                                         is_core: false,
-                                        persona_id: null as any,
-                                        person_id: null as any,
+                                        persona_id: null as unknown as number,
+                                        person_id: null as unknown as number,
                                         group_id: id,
                                         group_name: gName || p.group_name
                                       }
@@ -1579,8 +1605,8 @@ const PracticeFramework: React.FC = () => {
                                       is_core: false,
                                       persona_id: pid,
                                       persona_name: persName || p.persona_name,
-                                      person_id: null as any,
-                                      group_id: null as any
+                                      person_id: null as unknown as number,
+                                      group_id: null as unknown as number
                                     }
                                   }
                                   return p
@@ -1717,10 +1743,12 @@ const PracticeFramework: React.FC = () => {
                         label: `Persona: ${consolidatedView.structuredData.persona?.name}`,
                         items: consolidatedView.structuredData.persona?.items || []
                       },
-                      ...(consolidatedView.structuredData.groups || []).map((g: any) => ({
-                        label: `Group: ${g.name}`,
-                        items: g.items || []
-                      })),
+                      ...(consolidatedView.structuredData.groups || []).map(
+                        (g: { name: string; items: PractiseFrameworkItem[] }) => ({
+                          label: `Group: ${g.name}`,
+                          items: g.items || []
+                        })
+                      ),
                       {
                         label: `Individual: ${consolidatedView.structuredData.person?.name}`,
                         items: consolidatedView.structuredData.person?.items || []
@@ -1772,7 +1800,7 @@ const PracticeFramework: React.FC = () => {
                             gap: '12px'
                           }}
                         >
-                          {level.items.map((item: any) => (
+                          {level.items.map((item: PractiseFrameworkItem) => (
                             <div
                               key={item.id}
                               style={{

@@ -19,14 +19,14 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i)
 
-  const getDayData = (day: number) => {
+  const getDayData = (day: number): CalendarDay | undefined => {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return data.find((d) => d.date === dateStr)
   }
 
   const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(viewDate)
 
-  const changeMonth = (offset: number) => {
+  const changeMonth = (offset: number): void => {
     const newDate = new Date(currentYear, currentMonth + offset, 1)
     setViewDate(newDate)
   }

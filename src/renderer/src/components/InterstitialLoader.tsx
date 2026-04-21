@@ -24,11 +24,14 @@ const InterstitialLoader: React.FC<InterstitialLoaderProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setIsVisible(true)
+      const vTimer = setTimeout(() => setIsVisible(true), 0)
       const interval = setInterval(() => {
         setCurrentTaskIndex((prev) => (prev + 1) % tasks.length)
       }, 2500)
-      return () => clearInterval(interval)
+      return () => {
+        clearTimeout(vTimer)
+        clearInterval(interval)
+      }
     } else {
       const timeout = setTimeout(() => setIsVisible(false), 500)
       return () => clearTimeout(timeout)

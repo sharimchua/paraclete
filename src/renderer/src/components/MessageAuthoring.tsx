@@ -47,7 +47,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    const loadContexts = async () => {
+    const loadContexts = async (): Promise<void> => {
       setLoading(true)
       try {
         let currentMessage = { ...message }
@@ -81,9 +81,9 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
       }
     }
     loadContexts()
-  }, [messageId, noteId, personId, groupId])
+  }, [messageId, noteId, personId, groupId, message])
 
-  const handleSave = React.useCallback(async () => {
+  const handleSave = React.useCallback(async (): Promise<void> => {
     setIsSaving(true)
     try {
       // Refine data to only send necessary fields, avoiding large nested objects
@@ -126,7 +126,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     setIsDirty
   ])
 
-  const handleDelete = React.useCallback(async () => {
+  const handleDelete = React.useCallback(async (): Promise<void> => {
     if (!message.id) return
 
     const confirmed = window.confirm(
@@ -144,7 +144,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     }
   }, [message.id, onComplete, setIsDirty])
 
-  const handleGenerateDraft = async () => {
+  const handleGenerateDraft = React.useCallback(async (): Promise<void> => {
     let msgId = message.id
     if (!msgId) {
       try {
@@ -181,9 +181,9 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     } finally {
       setIsIterating(false)
     }
-  }
+  }, [message, noteId, noteContext, personId, personContext, groupId, groupContext, setIsDirty])
 
-  const handleIterate = async () => {
+  const handleIterate = React.useCallback(async (): Promise<void> => {
     if (!message.id) {
       await handleSave()
       return
@@ -204,7 +204,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     } finally {
       setIsIterating(false)
     }
-  }
+  }, [message.id, handleSave, feedback, highlightedText, setIsDirty])
 
   const handleTextSelect = () => {
     const selection = window.getSelection()?.toString()
@@ -213,7 +213,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     }
   }
 
-  const copyFormattedMessage = async () => {
+  const copyFormattedMessage = async (): Promise<void> => {
     const text = message.draft_text || ''
     if (!text) return
 
@@ -224,7 +224,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
       .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^\- (.*$)/gim, '<li>$1</li>')
+      .replace(/^- (.*$)/gim, '<li>$1</li>')
       .trim()
 
     // Wrap lists
@@ -340,7 +340,8 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     setCustomContent,
     setNavActions,
     handleSave,
-    handleDelete
+    handleDelete,
+    setIsDirty
   ])
 
   if (loading) return <div className="loader" />
@@ -661,7 +662,9 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
               className="search-input"
               style={{ margin: 0, width: '100%', padding: '8px' }}
               value={message.status}
-              onChange={(e: any) => setMessage({ ...message, status: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setMessage({ ...message, status: e.target.value as Message['status'] })
+              }
             >
               <option value="draft">Draft</option>
               <option value="sent">Sent</option>

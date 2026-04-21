@@ -18,7 +18,7 @@ interface ParacletePanelProps {
 
 const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'jobs' | 'forensics' | 'chat'>('jobs')
-  const [events, setEvents] = useState<any[]>([])
+  const [events, setEvents] = useState<{ event: string; data: unknown; timestamp: string }[]>([])
   const [jobs, setJobs] = useState<BackgroundJob[]>([])
   const [isThinking, setIsThinking] = useState(false)
   const [isLlmReady, setIsLlmReady] = useState(false)
@@ -26,10 +26,12 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
   const [isClosing, setIsClosing] = useState(false)
   const [shouldRender, setShouldRender] = useState(isOpen)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
-  const [llmStatus, setLlmStatus] = useState<any>(null)
+  const [llmStatus, setLlmStatus] = useState<{ n_ctx?: number; active_use_case?: string } | null>(
+    null
+  )
   const [contextUsage, setContextUsage] = useState(0)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
@@ -38,7 +40,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     // Polling and one-off fetch removed in favor of WebSockets
   }, [])
 
-  const handleSendChat = async () => {
+  const handleSendChat = async (): Promise<void> => {
     if (!chatInput.trim() || isSending) return
 
     const newMsg = { role: 'user', content: chatInput }
@@ -92,7 +94,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     }
   }
 
-  const renderChat = () => {
+  const renderChat = (): JSX.Element => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div
@@ -180,26 +182,22 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
               ) : (
                 <ReactMarkdown
                   components={{
-                    p: ({ node, ...props }) => (
-                      <p style={{ margin: 0, marginBottom: '8px' }} {...props} />
-                    ),
-                    h1: ({ node, ...props }) => (
+                    p: (props) => <p style={{ margin: 0, marginBottom: '8px' }} {...props} />,
+                    h1: (props) => (
                       <h1 style={{ fontSize: '1.2rem', margin: '8px 0' }} {...props} />
                     ),
-                    h2: ({ node, ...props }) => (
+                    h2: (props) => (
                       <h2 style={{ fontSize: '1.1rem', margin: '8px 0' }} {...props} />
                     ),
-                    h3: ({ node, ...props }) => (
-                      <h3 style={{ fontSize: '1rem', margin: '8px 0' }} {...props} />
-                    ),
-                    ul: ({ node, ...props }) => (
+                    h3: (props) => <h3 style={{ fontSize: '1rem', margin: '8px 0' }} {...props} />,
+                    ul: (props) => (
                       <ul style={{ paddingLeft: '20px', margin: '8px 0' }} {...props} />
                     ),
-                    ol: ({ node, ...props }) => (
+                    ol: (props) => (
                       <ol style={{ paddingLeft: '20px', margin: '8px 0' }} {...props} />
                     ),
-                    li: ({ node, ...props }) => <li style={{ marginBottom: '4px' }} {...props} />,
-                    code: ({ node, ...props }) => (
+                    li: (props) => <li style={{ marginBottom: '4px' }} {...props} />,
+                    code: (props) => (
                       <code
                         style={{
                           background: 'rgba(0,0,0,0.2)',
@@ -281,22 +279,22 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen])
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     setIsClosing(true)
     setTimeout(onClose, 350)
   }
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async (): Promise<void> => {
     try {
       const data = await api.get<BackgroundJob[]>('/api/admin/jobs')
       setJobs(data)
     } catch (err) {
       console.error('Failed to fetch jobs', err)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    const handleWsMessage = (event: Event) => {
+    const handleWsMessage = (event: Event): void => {
       try {
         const data = (event as CustomEvent).detail
 
@@ -324,8 +322,8 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         if (data.event === 'background_jobs') {
           setJobs(data.data)
         }
-      } catch (e) {
-        console.error('WS Event Error:', e)
+      } catch (err: unknown) {
+        console.error(err)
       }
     }
 
@@ -335,7 +333,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     return () => {
       window.removeEventListener('global-ws-message', handleWsMessage)
     }
-  }, [])
+  }, [fetchJobs])
 
   // Effect to scroll chat to bottom
   useEffect(() => {
@@ -352,9 +350,9 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
         scrollRef.current.scrollTop = 0
       }
     }
-  }, [events, jobs])
+  }, [events, jobs, activeTab])
 
-  const renderJobs = () => {
+  const renderJobs = (): JSX.Element => {
     const pendingCount = jobs.filter((j) => j.status === 'pending' || j.status === 'running').length
 
     return (
@@ -438,7 +436,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     )
   }
 
-  const renderForensics = () => (
+  const renderForensics = (): JSX.Element => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {events.length === 0 && (
         <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '40px' }}>
@@ -738,7 +736,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {(() => {
-              const handleClear = async () => {
+              const handleClear = async (): Promise<void> => {
                 if (activeTab === 'forensics') {
                   setEvents([])
                 } else if (activeTab === 'jobs') {

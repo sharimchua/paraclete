@@ -36,8 +36,7 @@ const GroupProfile: React.FC<Props> = ({
   const [showAddMember, setShowAddMember] = useState(false)
   const [showTagModal, setShowTagModal] = useState(false)
 
-  const fetchData = () => {
-    setLoading(true)
+  const fetchData = useCallback((): void => {
     Promise.all([
       api.get<Group>(`/groups/${groupId}`),
       api.get<Person[]>('/persons/'),
@@ -61,7 +60,7 @@ const GroupProfile: React.FC<Props> = ({
         alert(`Error loading group profile: ${err instanceof Error ? err.message : String(err)}`)
         setLoading(false)
       })
-  }
+  }, [groupId])
 
   useEffect(() => {
     fetchData()
@@ -79,6 +78,41 @@ const GroupProfile: React.FC<Props> = ({
       setNavActions([])
     }
   }, [groupId])
+
+  const handleUpdate = useCallback(
+    async (e?: React.FormEvent): Promise<void> => {
+      if (e) e.preventDefault()
+      try {
+        await api.patch(`/groups/${groupId}`, {
+          name: editName,
+          description: editDesc,
+          avatar_logo: editAvatarLogo
+        })
+        setIsEditing(false)
+        fetchData()
+      } catch (err) {
+        console.error(err)
+        alert('Failed to update group')
+      }
+    },
+    [groupId, editName, editDesc, editAvatarLogo, fetchData]
+  )
+
+  const handleDelete = useCallback(async (): Promise<void> => {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this group? This will NOT delete the persons in it.'
+      )
+    ) {
+      try {
+        await api.delete(`/groups/${groupId}`)
+        onBack()
+      } catch (err) {
+        console.error(err)
+        alert('Failed to delete group')
+      }
+    }
+  }, [groupId, onBack])
 
   useEffect(() => {
     if (isEditing) {
@@ -99,41 +133,9 @@ const GroupProfile: React.FC<Props> = ({
         { label: '+ Add Member', onClick: () => setShowAddMember(true) }
       ])
     }
-  }, [isEditing, setNavActions, groupId, onStartNote, editName, editDesc, editAvatarLogo])
+  }, [isEditing, setNavActions, groupId, onStartNote, handleDelete, handleUpdate])
 
-  const handleUpdate = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    try {
-      await api.patch(`/groups/${groupId}`, {
-        name: editName,
-        description: editDesc,
-        avatar_logo: editAvatarLogo
-      })
-      setIsEditing(false)
-      fetchData()
-    } catch (err) {
-      console.error(err)
-      alert('Failed to update group')
-    }
-  }
-
-  const handleDelete = async () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this group? This will NOT delete the persons in it.'
-      )
-    ) {
-      try {
-        await api.delete(`/groups/${groupId}`)
-        onBack()
-      } catch (err) {
-        console.error(err)
-        alert('Failed to delete group')
-      }
-    }
-  }
-
-  const handleAddMember = async (personId: number) => {
+  const handleAddMember = async (personId: number): Promise<void> => {
     try {
       await api.post(`/groups/${groupId}/members/${personId}`, {})
       setShowAddMember(false)
@@ -144,7 +146,7 @@ const GroupProfile: React.FC<Props> = ({
     }
   }
 
-  const handleRemoveMember = async (personId: number) => {
+  const handleRemoveMember = async (personId: number): Promise<void> => {
     if (window.confirm('Remove this person from the group?')) {
       try {
         await api.delete(`/groups/${groupId}/members/${personId}`)
@@ -156,7 +158,7 @@ const GroupProfile: React.FC<Props> = ({
     }
   }
 
-  const handleSelectTag = async (tagId: number) => {
+  const handleSelectTag = async (tagId: number): Promise<void> => {
     try {
       await api.post('/tags/link', {
         entity_type: 'group',
@@ -184,7 +186,7 @@ const GroupProfile: React.FC<Props> = ({
     latest: group.latest_note_date ? String(group.latest_note_date) : null
   }
 
-  const calculateTenure = () => {
+  const calculateTenure = (): string => {
     if (!noteStats.earliest || !noteStats.latest) return 'N/A'
     const first = new Date(noteStats.earliest)
     const last = new Date(noteStats.latest)

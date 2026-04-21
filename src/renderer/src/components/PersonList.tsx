@@ -20,8 +20,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
   const [newAvatarLogo, setNewAvatarLogo] = useState('')
   const [filterText, setFilterText] = useState('')
 
-  const fetchPersons = () => {
-    setLoading(true)
+  const fetchPersons = useCallback((): void => {
     api
       .get<Person[]>('/persons/')
       .then((data) => {
@@ -34,7 +33,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
         setError(`Failed to fetch persons: ${err instanceof Error ? err.message : String(err)}`)
         setLoading(false)
       })
-  }
+  }, [])
 
   useEffect(() => {
     fetchPersons()
@@ -47,9 +46,9 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
     ])
 
     return () => setNavActions([])
-  }, [])
+  }, [fetchPersons, setNavActions])
 
-  const handleCreatePerson = async (e: React.FormEvent) => {
+  const handleCreatePerson = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     try {
       await api.post('/persons/', {
