@@ -48,20 +48,12 @@ async def get_reference_proposals(
 
 @router.get("/suggest", response_model=List[schemas.Reference])
 async def suggest_references_endpoint(
-    query: Optional[str] = None, 
-    note_id: Optional[int] = None, 
-    person_id: Optional[int] = None, 
-    group_id: Optional[int] = None,
-    limit: int = 5,
+    params: schemas.ReferenceSuggest = Depends(),
     db: Session = Depends(get_db)
 ):
     return await suggest_references(
         db=db,
-        query=query,
-        note_id=note_id,
-        person_id=person_id,
-        group_id=group_id,
-        limit=limit
+        params=params
     )
 
 @router.get("/", response_model=List[schemas.Reference])
@@ -230,11 +222,7 @@ async def reject_reference_proposal(proposal_id: int, db: Session = Depends(get_
 
 async def suggest_references(
     db: Session,
-    query: Optional[str] = None, 
-    note_id: Optional[int] = None, 
-    person_id: Optional[int] = None, 
-    group_id: Optional[int] = None,
-    limit: int = 5
+    params: schemas.ReferenceSuggest
 ):
     """
     Hybrid Suggestion Logic:
@@ -242,20 +230,20 @@ async def suggest_references(
     of shared Tags between the retrieved Reference and the current context.
     """
     context_tag_ids = set()
-    effective_query = query
+    effective_query = params.query
 
-    if note_id:
-        note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if params.note_id:
+        note = db.query(models.Note).filter(models.Note.id == params.note_id).first()
         if note:
             context_tag_ids.update([t.id for t in note.tags])
             if not effective_query:
                 effective_query = f"{note.title} {note.cleaned_text or note.raw_capture or ''}"
-    if person_id:
-        person = db.query(models.Person).filter(models.Person.id == person_id).first()
+    if params.person_id:
+        person = db.query(models.Person).filter(models.Person.id == params.person_id).first()
         if person:
             context_tag_ids.update([t.id for t in person.tags])
-    if group_id:
-        group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if params.group_id:
+        group = db.query(models.Group).filter(models.Group.id == params.group_id).first()
         if group:
             context_tag_ids.update([t.id for t in group.tags])
 
@@ -302,7 +290,7 @@ async def suggest_references(
             scored_refs.append((final_score, ref))
         
         scored_refs.sort(key=lambda x: x[0], reverse=True)
-        results = [r for score, r in scored_refs[:limit]]
+        results = [r for score, r in scored_refs[:params.limit]]
         await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion", "count": len(results)}})
         return results
     except Exception as e:
