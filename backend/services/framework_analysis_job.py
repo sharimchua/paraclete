@@ -205,8 +205,7 @@ async def run_item_analysis_task(
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "framework_analysis", "prompt": f"Extracting Patterns from {item_type.capitalize()}"}})
 
     try:
-        resp_text = await asyncio.to_thread(
-            llm.llm_manager.call,
+        resp_text = await llm.llm_manager.acall(
             prompt,
             system="You are an expert at identifying professional practice styles. Extract patterns into instructional directives."
         )

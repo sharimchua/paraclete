@@ -55,8 +55,7 @@ async def get_framework_audit(persona_id: Optional[int] = None, db: Session = De
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "framework_audit", "prompt": "Auditing Practice Framework"}})
     
     try:
-        resp = await asyncio.to_thread(
-            llm_manager.call, 
+        resp = await llm_manager.acall(
             prompt, 
             system="You are an expert professional practice auditor. Identify contradictions between Core and Persona levels."
         )
@@ -670,9 +669,7 @@ async def synthesize_all_proposals(db: Session = Depends(get_db)):
     try:
         print(f"DEBUG: Starting synthesis of {len(proposals)} proposals...")
         
-        # Offload to thread for safety
-        result_text = await asyncio.to_thread(
-            llm.llm_manager.call,
+        result_text = await llm.llm_manager.acall(
             prompt=llm.templates.synthesize_proposals(proposals_text)
         )
         
