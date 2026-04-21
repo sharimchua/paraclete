@@ -1,7 +1,7 @@
 export const API_BASE = 'http://127.0.0.1:8000'
 
 export interface Tag {
-  id: number
+  id?: number
   key?: string
   value: string
 }

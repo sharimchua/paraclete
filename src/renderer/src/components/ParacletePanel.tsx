@@ -18,7 +18,13 @@ interface ParacletePanelProps {
 
 const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'jobs' | 'forensics' | 'chat'>('jobs')
-  const [events, setEvents] = useState<{ event: string; data: unknown; timestamp: string }[]>([])
+  const [events, setEvents] = useState<
+    {
+      event: string
+      data: { prompt?: string; result?: string; type?: string }
+      timestamp: string
+    }[]
+  >([])
   const [jobs, setJobs] = useState<BackgroundJob[]>([])
   const [isThinking, setIsThinking] = useState(false)
   const [isLlmReady, setIsLlmReady] = useState(false)
@@ -477,12 +483,12 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
           </div>
           <div style={{ fontSize: '0.7rem', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
             {(() => {
-              if (ev.event === 'llm_start') return (ev.data as any).prompt || 'Thinking...'
+              if (ev.event === 'llm_start') return ev.data.prompt || 'Thinking...'
               if (ev.event === 'llm_finish')
-                return typeof (ev.data as any).result === 'string'
-                  ? (ev.data as any).result
-                  : (ev.data as any).type
-                    ? `Finished ${(ev.data as any).type}`
+                return typeof ev.data.result === 'string'
+                  ? ev.data.result
+                  : ev.data.type
+                    ? `Finished ${ev.data.type}`
                     : 'Process Complete'
 
               const displayData = ev.data

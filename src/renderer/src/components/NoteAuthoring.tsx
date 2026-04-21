@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { api, Person, Note, API_BASE, Group } from '../services/api'
+import { api, Person, Note, API_BASE, Group, Tag } from '../services/api'
 import ReactMarkdown from 'react-markdown'
 import ConfirmationModal from './ConfirmationModal'
 import { toast } from '../services/toastService'
@@ -41,9 +41,9 @@ const NoteAuthoring: React.FC<Props> = ({
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
-  const [suggestedTags, setSuggestedTags] = useState<any[]>([])
-  const [selectedTags, setSelectedTags] = useState<any[]>([])
-  const [existingTaxonomy, setExistingTaxonomy] = useState<any[]>([])
+  const [suggestedTags, setSuggestedTags] = useState<Tag[]>([])
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([])
+  const [existingTaxonomy, setExistingTaxonomy] = useState<Tag[]>([])
   const [sessionBrief, setSessionBrief] = useState<string>('')
   const [isBriefing, setIsBriefing] = useState(false)
   const [isLlmReady, setIsLlmReady] = useState(false)

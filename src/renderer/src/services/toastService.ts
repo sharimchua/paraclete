@@ -5,13 +5,9 @@ export const toast = {
     )
   },
   error: (message: string): void => {
-    window.dispatchEvent(
-      new CustomEvent('paraclete-toast', { detail: { message, type: 'error' } })
-    )
+    window.dispatchEvent(new CustomEvent('paraclete-toast', { detail: { message, type: 'error' } }))
   },
   info: (message: string): void => {
-    window.dispatchEvent(
-      new CustomEvent('paraclete-toast', { detail: { message, type: 'info' } })
-    )
+    window.dispatchEvent(new CustomEvent('paraclete-toast', { detail: { message, type: 'info' } }))
   }
 }
