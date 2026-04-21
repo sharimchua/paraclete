@@ -18,6 +18,14 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ value, onChange 
         }
     }, [value]);
 
+    // Sync mode if value changes from outside (e.g. after a save refresh)
+    useEffect(() => {
+        const newMode = value.startsWith('plant:') ? 'plant' : 'url';
+        if (newMode !== mode) {
+            setMode(newMode);
+        }
+    }, [value]);
+
     // Extract current plant state if applicable
     let currentPlantType = PLANT_TYPES[0];
     let currentPlantColor = PLANT_COLORS[0];
