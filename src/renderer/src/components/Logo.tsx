@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 
-const Logo: React.FC<{ 
-  className?: string; 
-  isThinking?: boolean; 
-  isLlmReady?: boolean;
-  isWarming?: boolean;
+const Logo: React.FC<{
+  className?: string
+  isThinking?: boolean
+  isLlmReady?: boolean
+  isWarming?: boolean
 }> = ({ className, isThinking, isLlmReady, isWarming }) => {
-  const [isRendered, setIsRendered] = useState(false);
+  const [isRendered, setIsRendered] = useState(false)
 
   useEffect(() => {
-    setIsRendered(true);
-  }, []);
+    setIsRendered(true)
+  }, [])
 
   return (
-    <svg 
-        width="32" 
-        height="32" 
-        viewBox="0 0 32 32" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-        className={className}
-        style={{
-            filter: isThinking ? 'drop-shadow(0 0 8px var(--primary))' : 'none',
-            transition: 'all 0.3s ease'
-        }}
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={{
+        filter: isThinking ? 'drop-shadow(0 0 8px var(--primary))' : 'none',
+        transition: 'all 0.3s ease'
+      }}
     >
       <defs>
         <linearGradient id="logo-grad-practitioner" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -35,25 +35,35 @@ const Logo: React.FC<{
           <stop offset="100%" stopColor="#6366f1" />
         </linearGradient>
       </defs>
-      <rect 
-          x="6" y="2" width="8" rx="4" 
-          fill="url(#logo-grad-practitioner)" 
-          style={{
-              height: isRendered ? 28 : 0,
-              transition: 'height 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              animation: isThinking ? 'pulse-stem 2s infinite ease-in-out' : 'none'
-          }}
+      <rect
+        x="6"
+        y="2"
+        width="8"
+        rx="4"
+        fill="url(#logo-grad-practitioner)"
+        style={{
+          height: isRendered ? 28 : 0,
+          transition: 'height 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          animation: isThinking ? 'pulse-stem 2s infinite ease-in-out' : 'none'
+        }}
       />
-      <rect 
-          x="18" y="2" width="8" rx="4" 
-          fill="url(#logo-grad-ai)" 
-          style={{
-              height: isLlmReady ? 15 : (isWarming ? 8 : 0),
-              transition: 'height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              animation: isWarming ? 'warmup-ai 1.8s infinite ease-in-out' : (isThinking ? 'bounce-ai 1.2s infinite ease-in-out' : 'none'),
-              opacity: (isLlmReady || isWarming) ? 1 : 0,
-              transformOrigin: 'top center'
-          }}
+      <rect
+        x="18"
+        y="2"
+        width="8"
+        rx="4"
+        fill="url(#logo-grad-ai)"
+        style={{
+          height: isLlmReady ? 15 : isWarming ? 8 : 0,
+          transition: 'height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          animation: isWarming
+            ? 'warmup-ai 1.8s infinite ease-in-out'
+            : isThinking
+              ? 'bounce-ai 1.2s infinite ease-in-out'
+              : 'none',
+          opacity: isLlmReady || isWarming ? 1 : 0,
+          transformOrigin: 'top center'
+        }}
       />
       <style>{`
           @keyframes pulse-stem {
@@ -70,7 +80,7 @@ const Logo: React.FC<{
           }
       `}</style>
     </svg>
-  );
-};
+  )
+}
 
-export default Logo;
+export default Logo

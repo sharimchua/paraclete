@@ -10,7 +10,7 @@ import os
 import json
 
 from . import models, schemas, database, llm
-from .routers import references, framework, messages, admin, paraclete
+from .routers import references, framework, messages, admin, paraclete, reflections, topics
 from datetime import datetime, timedelta
 import asyncio
 import numpy as np
@@ -105,6 +105,8 @@ app.include_router(framework.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(paraclete.router, prefix="/api")
+app.include_router(reflections.router, prefix="/api")
+app.include_router(topics.router, prefix="/api")
 # Also include without prefix for legacy compatibility if needed, 
 # but the plan specifies /api for new features.
 app.include_router(references.router)
@@ -112,6 +114,8 @@ app.include_router(framework.router)
 app.include_router(messages.router)
 app.include_router(admin.router)
 app.include_router(paraclete.router)
+app.include_router(reflections.router)
+app.include_router(topics.router)
 
 from .websockets_manager import ws_manager
 
@@ -281,9 +285,30 @@ async def process_dictate(file: UploadFile = File(...)):
     await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "dictation", "result": result}})
     return {"text": result}
 
+# --- CORS Configuration ---
+# Restrict origins to localhost for the desktop app and local IP for the companion app.
+allowed_origins = [
+    "http://localhost",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8000",
+]
+
+# Dynamically add the current local IP for the companion mobile app
+local_ip = get_local_ip()
+if local_ip and local_ip != "127.0.0.1":
+    allowed_origins.append(f"http://{local_ip}:8000")
+
+# Support additional origins via environment variable
+env_origins = os.getenv("ALLOWED_ORIGINS")
+if env_origins:
+    allowed_origins.extend([o.strip() for o in env_origins.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -534,7 +559,19 @@ async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_
 
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "session_brief", "prompt": "Synthesizing Session Brief"}})
     try:
-        brief = await llm.workflows.run_session_brief(person_name, history_text)
+        # Fetch active topics and recent reflections
+        active_topics = db.query(models.Topic).filter(
+            models.Topic.person_id == person_id,
+            models.Topic.state == models.TopicState.active
+        ).all()
+        topics_text = "\n".join([f"- {t.title}: {t.summary}" for t in active_topics]) if active_topics else ""
+
+        recent_reflections = db.query(models.Reflection).filter(
+            models.Reflection.person_id == person_id
+        ).order_by(models.Reflection.created_at.desc()).limit(3).all()
+        reflections_text = "\n".join([f"- {r.content}" for r in recent_reflections]) if recent_reflections else ""
+
+        brief = await llm.workflows.run_session_brief(person_name, history_text, topics_text, reflections_text)
         await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "session_brief", "result": brief}})
         return {"result": brief}
     except Exception as e:
@@ -807,10 +844,9 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
             history_text = "\n".join(hist)
 
     # 2. Semantic Search for Relevant References (RAG)
-    loop = asyncio.get_event_loop()
     relevant_refs = []
     query = db_note.raw_capture[:500] if db_note.raw_capture else db_note.title
-    query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+    query_embedding_resp = await llm.llm_manager.aembed(query)
     if query_embedding_resp:
         q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
         all_ref_embs = db.query(models.ReferenceEmbedding).all()
@@ -942,13 +978,12 @@ async def publish_note(note_id: int, db: Session = Depends(get_db)):
     
     try:
         # 2. Generate/Update Embedding based on FINAL text
-        loop = asyncio.get_event_loop()
         embed_text = llm.templates.embed_note(
             title=db_note.title, 
             text=db_note.cleaned_text or db_note.raw_capture
         )
         
-        embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+        embed_response = await llm.llm_manager.aembed(embed_text)
         if embed_response:
             vector = embed_response["data"][0]["embedding"]
             db_emb = db.query(models.NoteEmbedding).filter(models.NoteEmbedding.note_id == note_id).first()
@@ -972,8 +1007,7 @@ async def publish_note(note_id: int, db: Session = Depends(get_db)):
 async def semantic_search(query: str, db: Session = Depends(get_db)):
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "semantic_search", "prompt": "Searching through knowledge..."}})
     try:
-        loop = asyncio.get_event_loop()
-        query_embedding = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(query))
+        query_embedding = await llm.llm_manager.aembed(query)
         if not query_embedding:
             raise HTTPException(status_code=500, detail="Could not generate query embedding")
         

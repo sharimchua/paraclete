@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import json
@@ -266,8 +266,7 @@ async def suggest_references(
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "reference_suggestion", "prompt": "Finding relevant references"}})
     
     try:
-        loop = asyncio.get_event_loop()
-        query_embedding_resp = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(effective_query))
+        query_embedding_resp = await llm.llm_manager.aembed(effective_query)
         
         if not query_embedding_resp:
             await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion"}})
@@ -322,8 +321,7 @@ async def generate_reference_embedding(reference_id: int):
             return
             
         embed_text = f"{db_ref.title} {db_ref.body}"
-        loop = asyncio.get_event_loop()
-        embed_response = await loop.run_in_executor(None, lambda: llm.llm_manager.embed(embed_text))
+        embed_response = await llm.llm_manager.aembed(embed_text)
         
         if embed_response:
             vector = embed_response["data"][0]["embedding"]

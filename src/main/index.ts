@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
 
   // Start the window
   createWindow()
-  
+
   // Register setup handlers
   registerSetupHandlers(mainWindow)
 

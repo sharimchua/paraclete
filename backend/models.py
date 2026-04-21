@@ -30,6 +30,22 @@ reference_tags = Table('reference_tags', Base.metadata,
 )
 
 # Phase 2 Step 3: Core Entities Junction Tables
+
+topic_notes = Table('topic_notes', Base.metadata,
+    Column('topic_id', Integer, ForeignKey('topics.id', ondelete="CASCADE")),
+    Column('note_id', Integer, ForeignKey('notes.id', ondelete="CASCADE"))
+)
+
+topic_messages = Table('topic_messages', Base.metadata,
+    Column('topic_id', Integer, ForeignKey('topics.id', ondelete="CASCADE")),
+    Column('message_id', Integer, ForeignKey('messages.id', ondelete="CASCADE"))
+)
+
+topic_reflections = Table('topic_reflections', Base.metadata,
+    Column('topic_id', Integer, ForeignKey('topics.id', ondelete="CASCADE")),
+    Column('reflection_id', Integer, ForeignKey('reflections.id', ondelete="CASCADE"))
+)
+
 group_members = Table('group_members', Base.metadata,
     Column('group_id', Integer, ForeignKey('groups.id')),
     Column('person_id', Integer, ForeignKey('persons.id'))
@@ -70,6 +86,8 @@ class Person(Base):
     tags = relationship("Tag", secondary=person_tags, backref="persons")
     groups = relationship("Group", secondary=group_members, back_populates="members")
     notes = relationship("Note", back_populates="person")
+    reflections = relationship("Reflection", back_populates="person", cascade="all, delete-orphan")
+    topics = relationship("Topic", back_populates="person", cascade="all, delete-orphan")
     references = relationship("Reference", secondary=person_references, back_populates="persons")
     persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
     persona = relationship("Persona", backref="associated_persons")
@@ -89,9 +107,23 @@ class Group(Base):
     tags = relationship("Tag", secondary=group_tags, backref="groups")
     members = relationship("Person", secondary=group_members, back_populates="groups")
     notes = relationship("Note", back_populates="group")
+    reflections = relationship("Reflection", back_populates="group", cascade="all, delete-orphan")
+    topics = relationship("Topic", back_populates="group", cascade="all, delete-orphan")
     persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
     persona = relationship("Persona", backref="associated_groups")
     custom_framework = relationship("PractiseFramework")
+
+
+class TopicState(str, enum.Enum):
+    future = "future"
+    active = "active"
+    closed = "closed"
+
+class TopicOrigin(str, enum.Enum):
+    note = "note"
+    message = "message"
+    reflection = "reflection"
+    manual = "manual"
 
 class NoteStage(str, enum.Enum):
     PREPARE = "Prepare"
@@ -118,6 +150,7 @@ class Note(Base):
     person = relationship("Person", back_populates="notes")
     group = relationship("Group", back_populates="notes")
     tags = relationship("Tag", secondary=note_tags, backref="notes")
+    topics = relationship("Topic", secondary=topic_notes, back_populates="notes")
     actions = relationship("Action", back_populates="note", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="note", cascade="all, delete-orphan")
     references = relationship("Reference", secondary=note_references, back_populates="linked_notes")
@@ -191,6 +224,7 @@ class Message(Base):
 
     # Relationships
     note = relationship("Note", back_populates="messages")
+    topics = relationship("Topic", secondary=topic_messages, back_populates="messages")
     person = relationship("Person", backref="messages")
     group = relationship("Group", backref="messages")
     persona = relationship("Persona")
@@ -282,3 +316,47 @@ class Setting(Base):
     __tablename__ = "settings"
     key = Column(String, primary_key=True)
     value = Column(String)
+
+class Reflection(Base):
+    __tablename__ = "reflections"
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(Text, nullable=False)
+    person_id = Column(Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    person = relationship("Person", back_populates="reflections")
+    group = relationship("Group", back_populates="reflections")
+    topics = relationship("Topic", secondary=topic_reflections, back_populates="reflections")
+
+
+class Topic(Base):
+    __tablename__ = "topics"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    summary = Column(Text, nullable=True)
+    state = Column(Enum(TopicState), default=TopicState.future)
+
+    person_id = Column(Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=True)
+
+    origin = Column(Enum(TopicOrigin), default=TopicOrigin.manual)
+    source_note_id = Column(Integer, ForeignKey("notes.id", ondelete="SET NULL"), nullable=True)
+    source_message_id = Column(Integer, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
+    source_reflection_id = Column(Integer, ForeignKey("reflections.id", ondelete="SET NULL"), nullable=True)
+
+    opened_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+    closure_note = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    person = relationship("Person", back_populates="topics")
+    group = relationship("Group", back_populates="topics")
+    notes = relationship("Note", secondary=topic_notes, back_populates="topics")
+    messages = relationship("Message", secondary=topic_messages, back_populates="topics")
+    reflections = relationship("Reflection", secondary=topic_reflections, back_populates="topics")

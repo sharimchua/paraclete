@@ -19,6 +19,26 @@ class TagLink(BaseModel):
     entity_id: int
     tag_id: int
 
+
+class ReflectionBase(BaseModel):
+    content: str
+
+class ReflectionCreate(ReflectionBase):
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+
+class ReflectionUpdate(BaseModel):
+    content: Optional[str] = None
+
+class Reflection(ReflectionBase):
+    id: int
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 class PersonBase(BaseModel):
     name: str
     contact_method: Optional[str] = None
@@ -84,6 +104,55 @@ class Group(GroupBase):
     aggregated_message_count: Optional[int] = 0
     earliest_note_date: Optional[dt_date] = None
     latest_note_date: Optional[dt_date] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TopicState(str, Enum):
+    future = "future"
+    active = "active"
+    closed = "closed"
+
+class TopicOrigin(str, Enum):
+    note = "note"
+    message = "message"
+    reflection = "reflection"
+    manual = "manual"
+
+class TopicBase(BaseModel):
+    title: str
+    state: TopicState = TopicState.future
+    summary: Optional[str] = None
+    closure_note: Optional[str] = None
+
+class TopicCreate(TopicBase):
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    origin: TopicOrigin = TopicOrigin.manual
+    source_note_id: Optional[int] = None
+    source_message_id: Optional[int] = None
+    source_reflection_id: Optional[int] = None
+
+class TopicUpdate(BaseModel):
+    title: Optional[str] = None
+    state: Optional[TopicState] = None
+    summary: Optional[str] = None
+    closure_note: Optional[str] = None
+
+class Topic(TopicBase):
+    id: int
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    origin: TopicOrigin
+    opened_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    note_count: int = 0
+    message_count: int = 0
+    reflection_count: int = 0
+    last_active_date: Optional[datetime] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 class NoteStage(str, Enum):
@@ -261,6 +330,11 @@ class Persona(PersonaBase):
     id: int
     framework: Optional[PractiseFramework] = None
     model_config = ConfigDict(from_attributes=True)
+
+class PersonaUpdate(BaseModel):
+    name: Optional[str] = None
+    avatar_logo: Optional[str] = None
+    description: Optional[str] = None
 
 class FrameworkProposalStatus(str, Enum):
     PENDING = "PENDING"
