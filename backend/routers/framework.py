@@ -318,7 +318,10 @@ def create_persona(persona: schemas.PersonaCreate, db: Session = Depends(get_db)
 
 @router.get("/personas", response_model=List[schemas.Persona])
 def read_personas(db: Session = Depends(get_db)):
-    personas = db.query(models.Persona).all()
+    from sqlalchemy.orm import joinedload
+    personas = db.query(models.Persona).options(
+        joinedload(models.Persona.framework).joinedload(models.PractiseFramework.items)
+    ).all()
     for p in personas:
         if p.framework:
             stitch_framework(p.framework)
@@ -359,7 +362,12 @@ def delete_persona(persona_id: int, db: Session = Depends(get_db)):
 # --- Proposals ---
 @router.get("/proposals", response_model=List[schemas.FrameworkProposal])
 def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
-    query = db.query(models.FrameworkProposal)
+    from sqlalchemy.orm import joinedload
+    query = db.query(models.FrameworkProposal).options(
+        joinedload(models.FrameworkProposal.persona),
+        joinedload(models.FrameworkProposal.person),
+        joinedload(models.FrameworkProposal.group)
+    )
     if status:
         # Handle case-insensitive status filtering to match DB Enum names
         s = status.upper()
@@ -370,6 +378,38 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
     query = query.order_by(models.FrameworkProposal.created_at.desc())
     proposals = query.all()
     
+    # Bulk fetch sources to avoid N+1 queries
+    note_ids = {p.source_id for p in proposals if p.source_type == "Note"}
+    message_ids = {p.source_id for p in proposals if p.source_type == "Message"}
+    reference_ids = {p.source_id for p in proposals if p.source_type == "Reference"}
+
+    notes = {}
+    if note_ids:
+        note_list = db.query(models.Note).options(
+            joinedload(models.Note.person).joinedload(models.Person.groups),
+            joinedload(models.Note.person).joinedload(models.Person.persona),
+            joinedload(models.Note.group).joinedload(models.Group.persona)
+        ).filter(models.Note.id.in_(note_ids)).all()
+        notes = {n.id: n for n in note_list}
+
+    messages = {}
+    if message_ids:
+        message_list = db.query(models.Message).options(
+            joinedload(models.Message.note).joinedload(models.Note.person).joinedload(models.Person.groups),
+            joinedload(models.Message.note).joinedload(models.Note.person).joinedload(models.Person.persona),
+            joinedload(models.Message.note).joinedload(models.Note.group).joinedload(models.Group.persona)
+        ).filter(models.Message.id.in_(message_ids)).all()
+        messages = {m.id: m for m in message_list}
+
+    references = {}
+    if reference_ids:
+        reference_list = db.query(models.Reference).options(
+            joinedload(models.Reference.source_note).joinedload(models.Note.person).joinedload(models.Person.groups),
+            joinedload(models.Reference.source_note).joinedload(models.Note.person).joinedload(models.Person.persona),
+            joinedload(models.Reference.source_note).joinedload(models.Note.group).joinedload(models.Group.persona)
+        ).filter(models.Reference.id.in_(reference_ids)).all()
+        references = {r.id: r for r in reference_list}
+
     # Hydrate on the fly
     # Convert to Pydantic objects for hydration
     output = []
@@ -377,18 +417,18 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
         p_out = schemas.FrameworkProposal.model_validate(p)
         source_note = None
         if p.source_type == "Note":
-            source_note = db.query(models.Note).filter(models.Note.id == p.source_id).first()
+            source_note = notes.get(p.source_id)
             if source_note:
                 p_out.source_context = f"Note: {source_note.title}"
         elif p.source_type == "Message":
-            msg = db.query(models.Message).filter(models.Message.id == p.source_id).first()
+            msg = messages.get(p.source_id)
             if msg and msg.note:
                 source_note = msg.note
                 p_out.source_context = f"Message for: {source_note.title}"
             else:
                 p_out.source_context = "Draft Message"
         elif p.source_type == "Reference":
-            ref = db.query(models.Reference).filter(models.Reference.id == p.source_id).first()
+            ref = references.get(p.source_id)
             if ref:
                 p_out.source_context = f"Reference: {ref.title}"
                 source_note = ref.source_note
@@ -436,15 +476,13 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
             p_out.group_name = p.group.name
             
         # Fallback hydration just in case relationships aren't loaded or IDs were manually set
-        if p_out.persona_id and not p_out.persona_name:
-            persona = db.query(models.Persona).filter(models.Persona.id == p_out.persona_id).first()
-            if persona: p_out.persona_name = persona.name
-        if p_out.group_id and not p_out.group_name:
-            group = db.query(models.Group).filter(models.Group.id == p_out.group_id).first()
-            if group: p_out.group_name = group.name
-        if p_out.person_id and not p_out.person_name:
-            person = db.query(models.Person).filter(models.Person.id == p_out.person_id).first()
-            if person: p_out.person_name = person.name
+        # Using pre-hydrated relationships first
+        if not p_out.persona_name and p.persona:
+            p_out.persona_name = p.persona.name
+        if not p_out.group_name and p.group:
+            p_out.group_name = p.group.name
+        if not p_out.person_name and p.person:
+            p_out.person_name = p.person.name
 
         output.append(p_out)
             
@@ -540,8 +578,14 @@ async def reject_all_pending_proposals(db: Session = Depends(get_db)):
 @router.get("/custom")
 def read_custom_frameworks(db: Session = Depends(get_db)):
     """Returns Persons and Groups that have custom frameworks."""
-    persons = db.query(models.Person).filter(models.Person.custom_framework_id != None).all()
-    groups = db.query(models.Group).filter(models.Group.custom_framework_id != None).all()
+    from sqlalchemy.orm import joinedload
+    persons = db.query(models.Person).options(
+        joinedload(models.Person.custom_framework).joinedload(models.PractiseFramework.items)
+    ).filter(models.Person.custom_framework_id != None).all()
+
+    groups = db.query(models.Group).options(
+        joinedload(models.Group.custom_framework).joinedload(models.PractiseFramework.items)
+    ).filter(models.Group.custom_framework_id != None).all()
     
     result = []
     for p in persons:
