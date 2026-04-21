@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { CalendarDay } from '../services/api'
 
 interface Props {
@@ -19,9 +19,19 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i)
 
+  // ⚡ Bolt: Cache calendar data to a map by date string to prevent O(N) lookup on every day render
+  // Reduces complexity from O(N * daysInMonth) to O(N + daysInMonth)
+  const dataMap = useMemo(() => {
+    const map: Record<string, CalendarDay> = {}
+    data.forEach((d) => {
+      map[d.date] = d
+    })
+    return map
+  }, [data])
+
   const getDayData = (day: number): CalendarDay | undefined => {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return data.find((d) => d.date === dateStr)
+    return dataMap[dateStr]
   }
 
   const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(viewDate)
