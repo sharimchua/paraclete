@@ -84,7 +84,11 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
                   alignItems: 'center',
                   fontSize: '0.9rem'
                 }}
-                onClick={() => tag.id !== undefined && onSelect(tag.id)}
+                onClick={() => {
+                  if (tag.id !== undefined) {
+                    onSelect(tag.id)
+                  }
+                }}
               >
                 <span>
                   {tag.key && (
