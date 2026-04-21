@@ -55,18 +55,18 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
   useEffect(() => {
     fetchData()
 
-    const handleWsMessage = (e: any) => {
-      const { event } = e.detail
+    const handleWsMessage = (e: Event) => {
+      const { event } = (e as CustomEvent).detail
       if (event === 'framework_proposals_updated') {
         fetchData()
       }
     }
 
     window.addEventListener('refresh-profile', fetchData)
-    window.addEventListener('global-ws-message' as any, handleWsMessage)
+    window.addEventListener('global-ws-message', handleWsMessage as EventListener)
     return () => {
       window.removeEventListener('refresh-profile', fetchData)
-      window.removeEventListener('global-ws-message' as any, handleWsMessage)
+      window.removeEventListener('global-ws-message', handleWsMessage as EventListener)
       setNavActions([])
     }
   }, [fetchData, setNavActions])
@@ -98,7 +98,16 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         { label: 'Delete', variant: 'danger', onClick: handleDelete }
       ])
     }
-  }, [isEditing, person, editName, editContact, editAvatarLogo, setNavActions, personId, onStartNote])
+  }, [
+    isEditing,
+    person,
+    editName,
+    editContact,
+    editAvatarLogo,
+    setNavActions,
+    personId,
+    onStartNote
+  ])
 
   const handleUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()

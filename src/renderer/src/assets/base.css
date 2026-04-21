@@ -4,23 +4,23 @@
   --bg-surface: #0f172a;
   --bg-surface-elevated: #1e293b;
   --bg-card: #0f172a;
-  
+
   --primary: #38bdf8;
   --primary-hover: #7dd3fc;
   --primary-faded: rgba(56, 189, 248, 0.15);
-  
+
   --secondary: #818cf8;
   --accent: #f472b6;
   --error: #ef4444;
   --error-faded: rgba(239, 68, 68, 0.15);
-  
+
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  
+
   --border: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(56, 189, 248, 0.5);
-  
+
   --glass: rgba(15, 23, 42, 0.7);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-blur: blur(12px);
@@ -55,7 +55,9 @@ ul {
   list-style: none;
 }
 
-button, input, textarea {
+button,
+input,
+textarea {
   font-family: inherit;
 }
 

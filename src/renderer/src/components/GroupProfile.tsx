@@ -65,41 +65,41 @@ const GroupProfile: React.FC<Props> = ({
 
   useEffect(() => {
     fetchData()
-    const handleWsMessage = (e: any) => {
-      const { event } = e.detail
+    const handleWsMessage = (e: Event) => {
+      const { event } = (e as CustomEvent).detail
       if (event === 'framework_proposals_updated') {
         fetchData()
       }
     }
     window.addEventListener('refresh-profile', fetchData)
-    window.addEventListener('global-ws-message' as any, handleWsMessage)
+    window.addEventListener('global-ws-message', handleWsMessage as EventListener)
     return () => {
       window.removeEventListener('refresh-profile', fetchData)
-      window.removeEventListener('global-ws-message' as any, handleWsMessage)
+      window.removeEventListener('global-ws-message', handleWsMessage as EventListener)
       setNavActions([])
     }
   }, [groupId])
 
-    useEffect(() => {
-        if (isEditing) {
-            setNavActions([
-                { label: 'Save Changes', onClick: () => handleUpdate() },
-                { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
-            ]);
-        } else {
-            setNavActions([
-                {
-                    label: '+ Create Session Note',
-                    onClick: () => onStartNote(null, groupId)
-                },
-                { isSeparator: true },
-                { label: 'Edit Group', onClick: () => setIsEditing(true) },
-                { label: 'Delete', variant: 'danger', onClick: handleDelete },
-                { isSeparator: true },
-                { label: '+ Add Member', onClick: () => setShowAddMember(true) }
-            ]);
-        }
-    }, [isEditing, setNavActions, groupId, onStartNote, editName, editDesc, editAvatarLogo]);
+  useEffect(() => {
+    if (isEditing) {
+      setNavActions([
+        { label: 'Save Changes', onClick: () => handleUpdate() },
+        { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
+      ])
+    } else {
+      setNavActions([
+        {
+          label: '+ Create Session Note',
+          onClick: () => onStartNote(null, groupId)
+        },
+        { isSeparator: true },
+        { label: 'Edit Group', onClick: () => setIsEditing(true) },
+        { label: 'Delete', variant: 'danger', onClick: handleDelete },
+        { isSeparator: true },
+        { label: '+ Add Member', onClick: () => setShowAddMember(true) }
+      ])
+    }
+  }, [isEditing, setNavActions, groupId, onStartNote, editName, editDesc, editAvatarLogo])
 
   const handleUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()

@@ -296,9 +296,9 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
   }
 
   useEffect(() => {
-    const handleWsMessage = (event: any) => {
+    const handleWsMessage = (event: Event) => {
       try {
-        const data = event.detail
+        const data = (event as CustomEvent).detail
 
         if (data.event?.startsWith('llm_')) {
           setEvents((prev) => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }])

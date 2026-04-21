@@ -40,11 +40,12 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [isExiting])
 
   useEffect(() => {
-    const handleToast = (e: any) => {
-      addToast(e.detail.message, e.detail.type)
+    const handleToast = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      addToast(detail.message, detail.type)
     }
-    window.addEventListener('paraclete-toast' as any, handleToast)
-    return () => window.removeEventListener('paraclete-toast' as any, handleToast)
+    window.addEventListener('paraclete-toast', handleToast as EventListener)
+    return () => window.removeEventListener('paraclete-toast', handleToast as EventListener)
   }, [addToast])
 
   return (

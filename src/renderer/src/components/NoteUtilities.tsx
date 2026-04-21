@@ -45,8 +45,8 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
 
     fetchSuggestions()
 
-    const handleWebSocketMessage = (e: any) => {
-      const { event, data } = e.detail
+    const handleWebSocketMessage = (e: Event) => {
+      const { event, data } = (e as CustomEvent).detail
 
       // Check if this message relates to extraction for THIS specific note
       if (event === 'llm_start' && data?.type === 'reference_extraction') {
@@ -61,8 +61,9 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
       }
     }
 
-    window.addEventListener('global-ws-message' as any, handleWebSocketMessage)
-    return () => window.removeEventListener('global-ws-message' as any, handleWebSocketMessage)
+    window.addEventListener('global-ws-message', handleWebSocketMessage as EventListener)
+    return () =>
+      window.removeEventListener('global-ws-message', handleWebSocketMessage as EventListener)
   }, [note.id])
 
   const extractConcepts = async () => {
@@ -70,14 +71,18 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
       setIsExtracting(true)
       await api.post(`/api/references/extract-from-note/${note.id}`, {})
       toast.success(`Concept extraction queued in background.`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      toast.error(err.response?.data?.detail || 'Failed to trigger extraction')
+      const detail =
+        err && typeof err === 'object' && 'response' in err
+          ? (err.response as any)?.data?.detail
+          : 'Failed to trigger extraction'
+      toast.error(detail || 'Failed to trigger extraction')
       setIsExtracting(false)
     }
   }
 
-  const acceptProposal = async (prop: any) => {
+  const acceptProposal = async (prop: { id: number }) => {
     try {
       await api.post(`/api/references/proposals/${prop.id}/accept`, {})
       toast.success('Added to Reference Library')
@@ -92,7 +97,7 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
     }
   }
 
-  const rejectProposal = async (prop: any) => {
+  const rejectProposal = async (prop: { id: number }) => {
     try {
       await api.post(`/api/references/proposals/${prop.id}/reject`, {})
       setProposals((prev) => prev.filter((p) => p.id !== prop.id))

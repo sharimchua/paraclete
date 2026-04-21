@@ -2,13 +2,13 @@
 
 ## Product Requirements Document
 
-|||
-|---|---|
-|**Version**|v0.3 — Reference Mapping & Tagging|
-|**Date**|April 2026|
-|**Author**|Sharim|()
-|**Status**|Draft — For Iteration|
-|**Platform**|Web Application (React / PWA)|
+|              |                                    |
+| ------------ | ---------------------------------- | --- |
+| **Version**  | v0.3 — Reference Mapping & Tagging |
+| **Date**     | April 2026                         |
+| **Author**   | Sharim                             | ()  |
+| **Status**   | Draft — For Iteration              |
+| **Platform** | Web Application (React / PWA)      |
 
 ---
 
@@ -98,10 +98,10 @@ A Group represents a cohort, class, ensemble, or workshop — any context where 
 
 ### 2.3 Entity Capabilities
 
-|Entity|Has Notes|Has References|Has Messages|Has Members|
-|---|---|---|---|---|
-|Person|✓|✓|✓|—|
-|Group|✓|✓|— (individual only)|✓ (Persons)|
+| Entity | Has Notes | Has References | Has Messages        | Has Members |
+| ------ | --------- | -------------- | ------------------- | ----------- |
+| Person | ✓         | ✓              | ✓                   | —           |
+| Group  | ✓         | ✓              | — (individual only) | ✓ (Persons) |
 
 ---
 
@@ -163,18 +163,18 @@ Notes are never deleted — they are archived. Archived notes remain searchable 
 
 A published Note contains the following fields:
 
-|Field|Type|Description|
-|---|---|---|
-|Title|Auto-generated / editable|AI-generated summary title; practitioner can override|
-|Date|Date|Session date (defaults to today)|
-|Person / Group|Relation|The entity this note is attached to|
-|Stage|Enum|Prepare / Capture / Clean / Published / Archived|
-|Raw capture|Text|Unedited dictation, OCR output, or scratchpad|
-|Cleaned note|Rich text|Structured, AI-cleaned version of the capture|
-|Topics / Tags|Multi-select|Practitioner-defined or AI-suggested themes|
-|Actions|List|Commitments or next-steps flagged in the session|
-|References|Relations|References created from or linked to this Note|
-|Message|Relation|The outbound Message drafted from this Note|
+| Field          | Type                      | Description                                           |
+| -------------- | ------------------------- | ----------------------------------------------------- |
+| Title          | Auto-generated / editable | AI-generated summary title; practitioner can override |
+| Date           | Date                      | Session date (defaults to today)                      |
+| Person / Group | Relation                  | The entity this note is attached to                   |
+| Stage          | Enum                      | Prepare / Capture / Clean / Published / Archived      |
+| Raw capture    | Text                      | Unedited dictation, OCR output, or scratchpad         |
+| Cleaned note   | Rich text                 | Structured, AI-cleaned version of the capture         |
+| Topics / Tags  | Multi-select              | Practitioner-defined or AI-suggested themes           |
+| Actions        | List                      | Commitments or next-steps flagged in the session      |
+| References     | Relations                 | References created from or linked to this Note        |
+| Message        | Relation                  | The outbound Message drafted from this Note           |
 
 ---
 
@@ -194,14 +194,14 @@ References are the practitioner's accumulating knowledge asset. Over time, they 
 
 ### 5.2 Reference Structure
 
-|Field|Description|
-|---|---|
-|Title|Name of the concept or resource|
-|Type|Concept / Resource / Technique / Pattern / Template|
-|Body|Description, notes, or content of the reference|
-|Source Note|The note it was first created from (if applicable)|
-|Linked Notes|All notes where this reference has been used or cited|
-|Tags|Themes or domains — the primary vocabulary for relevance matching (see 5.3)|
+| Field        | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| Title        | Name of the concept or resource                                             |
+| Type         | Concept / Resource / Technique / Pattern / Template                         |
+| Body         | Description, notes, or content of the reference                             |
+| Source Note  | The note it was first created from (if applicable)                          |
+| Linked Notes | All notes where this reference has been used or cited                       |
+| Tags         | Themes or domains — the primary vocabulary for relevance matching (see 5.3) |
 
 References are internal to the practitioner's workspace. There is no shareable link or client-facing access. A future content publishing workflow (e.g. converting a Reference into an article or social post) is noted as a later-stage feature but is out of scope for now.
 
@@ -228,10 +228,10 @@ Design principles for tagging:
 
 Beyond note-level linking, References can be mapped directly to People and Groups. This mapping has a distinct meaning from a note link:
 
-|Link type|Meaning|
-|---|---|
-|Note link|"I used or discussed this Reference in this session"|
-|Direct mapping|"This Reference is relevant to this person" — prospective, observational, or retrospective|
+| Link type      | Meaning                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------ |
+| Note link      | "I used or discussed this Reference in this session"                                       |
+| Direct mapping | "This Reference is relevant to this person" — prospective, observational, or retrospective |
 
 Direct mappings can be established in two ways:
 
@@ -408,32 +408,32 @@ A minimal mobile interface — tap to open, speak or type, tap to save. Designed
 
 The MVP is scoped to validate the core workflow loop: **prepare → capture → clean → message**. Everything else builds on this foundation.
 
-|Feature|MVP|v2|Later|
-|---|---|---|---|
-|Person entity + profile|✓|||
-|Custom person fields (admin-defined)|✓|||
-|Note lifecycle (all 5 stages)|✓|||
-|Typed scratchpad capture|✓|||
-|OCR capture|✓|||
-|Dictation capture|✓|||
-|AI note cleaning|✓|||
-|Message drafting|✓|||
-|Practitioner voice profile (learned)|✓|||
-|Message import (voice profile seed)|✓|||
-|References (create & link)|✓|||
-|Reference library|✓|||
-|Note filtering & search|✓|||
-|Multi-user tenancy|✓|||
-|Admin screen|✓|||
-|Group entity||✓||
-|Calendar view||✓||
-|Practice overview dashboard||✓||
-|Email send integration||✓||
-|Scheduling / booking||✓||
-|AI natural language query|||✓|
-|Mobile quick capture|||✓|
-|Engagement heatmap|||✓|
-|Content publishing (articles, social)|||✓|
+| Feature                               | MVP | v2  | Later |
+| ------------------------------------- | --- | --- | ----- |
+| Person entity + profile               | ✓   |     |       |
+| Custom person fields (admin-defined)  | ✓   |     |       |
+| Note lifecycle (all 5 stages)         | ✓   |     |       |
+| Typed scratchpad capture              | ✓   |     |       |
+| OCR capture                           | ✓   |     |       |
+| Dictation capture                     | ✓   |     |       |
+| AI note cleaning                      | ✓   |     |       |
+| Message drafting                      | ✓   |     |       |
+| Practitioner voice profile (learned)  | ✓   |     |       |
+| Message import (voice profile seed)   | ✓   |     |       |
+| References (create & link)            | ✓   |     |       |
+| Reference library                     | ✓   |     |       |
+| Note filtering & search               | ✓   |     |       |
+| Multi-user tenancy                    | ✓   |     |       |
+| Admin screen                          | ✓   |     |       |
+| Group entity                          |     | ✓   |       |
+| Calendar view                         |     | ✓   |       |
+| Practice overview dashboard           |     | ✓   |       |
+| Email send integration                |     | ✓   |       |
+| Scheduling / booking                  |     | ✓   |       |
+| AI natural language query             |     |     | ✓     |
+| Mobile quick capture                  |     |     | ✓     |
+| Engagement heatmap                    |     |     | ✓     |
+| Content publishing (articles, social) |     |     | ✓     |
 
 ---
 
@@ -441,17 +441,17 @@ The MVP is scoped to validate the core workflow loop: **prepare → capture → 
 
 ### 11.1 Recommended Stack
 
-|Layer|Technology|
-|---|---|
-|Frontend|React 18 + TypeScript|
-|Styling|Tailwind CSS|
-|State|Zustand|
-|Database|Supabase (Postgres + Auth)|
-|AI / LLM|Claude Sonnet via Anthropic API|
-|OCR|Claude Vision (image → text)|
-|Dictation|Web Speech API (MVP); Whisper API (v2)|
-|Hosting|Vercel|
-|File storage|Supabase Storage (for OCR image uploads)|
+| Layer        | Technology                               |
+| ------------ | ---------------------------------------- |
+| Frontend     | React 18 + TypeScript                    |
+| Styling      | Tailwind CSS                             |
+| State        | Zustand                                  |
+| Database     | Supabase (Postgres + Auth)               |
+| AI / LLM     | Claude Sonnet via Anthropic API          |
+| OCR          | Claude Vision (image → text)             |
+| Dictation    | Web Speech API (MVP); Whisper API (v2)   |
+| Hosting      | Vercel                                   |
+| File storage | Supabase Storage (for OCR image uploads) |
 
 ### 11.2 Data Model Overview
 
@@ -479,16 +479,16 @@ Core tables:
 
 ### 11.3 AI Integration Points
 
-|Feature|Prompt type|Model|
-|---|---|---|
-|Session brief (Prepare)|Retrieval + synthesis|Claude Sonnet|
-|Note cleaning (Clean)|Transformation|Claude Sonnet|
-|Reference suggestions|Extraction|Claude Sonnet|
-|Reference–Person mapping inference|Signal analysis + ranking|Claude Sonnet|
-|Message drafting|Generation with context + voice profile|Claude Sonnet|
-|Voice profile inference|Style analysis from message history|Claude Sonnet|
-|OCR|Vision + transcription|Claude Sonnet (vision)|
-|AI query (v2)|RAG over notes|Claude Sonnet + embeddings|
+| Feature                            | Prompt type                             | Model                      |
+| ---------------------------------- | --------------------------------------- | -------------------------- |
+| Session brief (Prepare)            | Retrieval + synthesis                   | Claude Sonnet              |
+| Note cleaning (Clean)              | Transformation                          | Claude Sonnet              |
+| Reference suggestions              | Extraction                              | Claude Sonnet              |
+| Reference–Person mapping inference | Signal analysis + ranking               | Claude Sonnet              |
+| Message drafting                   | Generation with context + voice profile | Claude Sonnet              |
+| Voice profile inference            | Style analysis from message history     | Claude Sonnet              |
+| OCR                                | Vision + transcription                  | Claude Sonnet (vision)     |
+| AI query (v2)                      | RAG over notes                          | Claude Sonnet + embeddings |
 
 ### 11.4 Privacy & Data
 
@@ -505,14 +505,14 @@ Client data is sensitive. Key considerations:
 
 The following questions were raised during initial drafting and have been resolved.
 
-|#|Question|Decision|
-|---|---|---|
-|1|Scheduling / booking feature?|Out of MVP scope. Noted as a v2 candidate; the calendar view will support manual session entry in the interim.|
-|2|Practitioner voice model — explicit or learned?|Learned from sent message history, refined through edit feedback. Practitioner can import existing messages to seed the profile. Editable as a plain-language summary in Admin.|
-|3|Domain-specific Person fields — how managed?|Practitioner-defined via Admin screen. Supports categorical (e.g. Instrument: Guitar) and numerical (e.g. Grade: 1–8) field types.|
-|4|References — shareable with clients?|Internal only for now. A content publishing workflow (Reference → article / social post) is a future feature, not current scope.|
-|5|B2B / multi-user?|Multi-user tenancy built in from the start. Each workspace is a tenant; multiple practitioners can share a workspace. B2B product packaging to be considered later.|
-|6|Invoicing / payment tracking?|Out of scope. Paraclete is a knowledge and relationship tool, not a practice management suite.|
+| #   | Question                                        | Decision                                                                                                                                                                        |
+| --- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Scheduling / booking feature?                   | Out of MVP scope. Noted as a v2 candidate; the calendar view will support manual session entry in the interim.                                                                  |
+| 2   | Practitioner voice model — explicit or learned? | Learned from sent message history, refined through edit feedback. Practitioner can import existing messages to seed the profile. Editable as a plain-language summary in Admin. |
+| 3   | Domain-specific Person fields — how managed?    | Practitioner-defined via Admin screen. Supports categorical (e.g. Instrument: Guitar) and numerical (e.g. Grade: 1–8) field types.                                              |
+| 4   | References — shareable with clients?            | Internal only for now. A content publishing workflow (Reference → article / social post) is a future feature, not current scope.                                                |
+| 5   | B2B / multi-user?                               | Multi-user tenancy built in from the start. Each workspace is a tenant; multiple practitioners can share a workspace. B2B product packaging to be considered later.             |
+| 6   | Invoicing / payment tracking?                   | Out of scope. Paraclete is a knowledge and relationship tool, not a practice management suite.                                                                                  |
 
 ---
 
@@ -543,12 +543,12 @@ A schema builder for custom fields that appear on every Person profile. The prac
 
 Example fields for a music coaching practice:
 
-|Field name|Type|Values / Range|
-|---|---|---|
-|Instrument|Categorical|Guitar, Piano, Voice, Bass, Drums|
-|Grade|Number|1–8|
-|Exam board|Categorical|AMEB, ABRSM, Trinity|
-|Lesson duration|Number|30, 45, 60 (minutes)|
+| Field name      | Type        | Values / Range                    |
+| --------------- | ----------- | --------------------------------- |
+| Instrument      | Categorical | Guitar, Piano, Voice, Bass, Drums |
+| Grade           | Number      | 1–8                               |
+| Exam board      | Categorical | AMEB, ABRSM, Trinity              |
+| Lesson duration | Number      | 30, 45, 60 (minutes)              |
 
 ### 14.2 Voice Profile
 
