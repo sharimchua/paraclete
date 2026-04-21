@@ -11,7 +11,7 @@ on:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
 
   frontend-checks:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
