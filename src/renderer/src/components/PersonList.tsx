@@ -3,7 +3,7 @@ import { Avatar } from './Avatar'
 import { AvatarSelector } from './AvatarSelector'
 
 import { api, Person } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface Props {
   onSelectPerson: (id: number) => void

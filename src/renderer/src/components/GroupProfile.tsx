@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Avatar } from './Avatar'
 import { AvatarSelector } from './AvatarSelector'
 import { api, Group, Person, Note, Message } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 import TagSelectionModal from './TagSelectionModal'
 import ReactMarkdown from 'react-markdown'
 import FrameworkAnalysisControls from './FrameworkAnalysisControls'
@@ -64,7 +64,7 @@ const GroupProfile: React.FC<Props> = ({
 
   useEffect(() => {
     fetchData()
-    const handleWsMessage = (e: Event) => {
+    const handleWsMessage = (e: Event): void => {
       const { event } = (e as CustomEvent).detail
       if (event === 'framework_proposals_updated') {
         fetchData()
@@ -77,7 +77,7 @@ const GroupProfile: React.FC<Props> = ({
       window.removeEventListener('global-ws-message', handleWsMessage as EventListener)
       setNavActions([])
     }
-  }, [groupId])
+  }, [groupId, fetchData, setNavActions])
 
   const handleUpdate = useCallback(
     async (e?: React.FormEvent): Promise<void> => {

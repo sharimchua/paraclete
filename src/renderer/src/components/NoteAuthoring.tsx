@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import ConfirmationModal from './ConfirmationModal'
 import { toast } from './ToastProvider'
 import InterstitialLoader from './InterstitialLoader'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface Props {
   personId?: number
@@ -36,7 +36,7 @@ const NoteAuthoring: React.FC<Props> = ({
   const [isRefining, setIsRefining] = useState(false)
   const [isSuggestingTitle, setIsSuggestingTitle] = useState(false)
 
-  const [sessionDate, setSessionDate] = useState<string>(() => {
+  const [sessionDate, setSessionDate] = useState<string>((): string => {
     if (initialDate) return initialDate
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -120,7 +120,7 @@ const NoteAuthoring: React.FC<Props> = ({
   useEffect(() => {
     if (!companionSessionId) return
     const socket = new WebSocket(`${API_BASE.replace('http', 'ws')}/ws`)
-    socket.onmessage = (event) => {
+    socket.onmessage = (event: MessageEvent): void => {
       try {
         const data = JSON.parse(event.data)
         if (data.event === 'companion_image' && data.data.session_id === companionSessionId) {
@@ -130,7 +130,7 @@ const NoteAuthoring: React.FC<Props> = ({
         console.error(err)
       }
     }
-    return () => socket.close()
+    return (): void => socket.close()
   }, [companionSessionId])
 
   useEffect(() => {
@@ -185,7 +185,7 @@ const NoteAuthoring: React.FC<Props> = ({
     } else {
       setLoading(false)
     }
-  }, [personId, groupId, noteId, currentNote?.id])
+  }, [personId, groupId, noteId, currentNote])
 
   const handleStartRefine = useCallback(
     async (force: boolean = false): Promise<void> => {
@@ -564,7 +564,7 @@ const NoteAuthoring: React.FC<Props> = ({
         : [])
     ])
 
-    return () => {
+    return (): void => {
       setNavbarTitle(null)
       setCustomContent(null)
       setNavActions([])

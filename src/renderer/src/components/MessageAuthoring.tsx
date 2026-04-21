@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { api, Note, Person, Group, Message } from '../services/api'
 import InterstitialLoader from './InterstitialLoader'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface MessageAuthoringProps {
   messageId?: number
@@ -83,7 +83,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     loadContexts()
   }, [messageId, noteId, personId, groupId, message])
 
-  const handleSave = React.useCallback(async (): Promise<void> => {
+  const handleSave = useCallback(async (): Promise<void> => {
     setIsSaving(true)
     try {
       // Refine data to only send necessary fields, avoiding large nested objects
@@ -126,7 +126,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     setIsDirty
   ])
 
-  const handleDelete = React.useCallback(async (): Promise<void> => {
+  const handleDelete = useCallback(async (): Promise<void> => {
     if (!message.id) return
 
     const confirmed = window.confirm(
@@ -144,7 +144,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     }
   }, [message.id, onComplete, setIsDirty])
 
-  const handleGenerateDraft = React.useCallback(async (): Promise<void> => {
+  const handleGenerateDraft = useCallback(async (): Promise<void> => {
     let msgId = message.id
     if (!msgId) {
       try {
@@ -183,7 +183,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     }
   }, [message, noteId, noteContext, personId, personContext, groupId, groupContext, setIsDirty])
 
-  const handleIterate = React.useCallback(async (): Promise<void> => {
+  const handleIterate = useCallback(async (): Promise<void> => {
     if (!message.id) {
       await handleSave()
       return
@@ -206,7 +206,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     }
   }, [message.id, handleSave, feedback, highlightedText, setIsDirty])
 
-  const handleTextSelect = () => {
+  const handleTextSelect = (): void => {
     const selection = window.getSelection()?.toString()
     if (selection) {
       setHighlightedText(selection)

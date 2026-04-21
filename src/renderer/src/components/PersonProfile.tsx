@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { api, Person, Note, Message } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 import TagSelectionModal from './TagSelectionModal'
 import ReactMarkdown from 'react-markdown'
 import { Avatar } from './Avatar'

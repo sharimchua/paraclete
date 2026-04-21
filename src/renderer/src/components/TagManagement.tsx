@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface Tag {
   id: number

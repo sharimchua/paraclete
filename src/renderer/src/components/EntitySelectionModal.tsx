@@ -24,7 +24,7 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const fetchTargets = async () => {
+    const fetchTargets = async (): Promise<void> => {
       setIsLoading(true)
       try {
         const [p, g] = await Promise.all([

@@ -2,18 +2,25 @@ import React, { useState, useEffect, useRef } from 'react'
 
 export interface LLMEvent {
   event: 'llm_start' | 'llm_finish' | 'llm_error'
-  data: any
+  data:
+    | {
+        type?: string
+        prompt?: string
+        result?: string | Record<string, unknown>
+      }
+    | string
+  timestamp?: string
 }
 
 const DeveloperPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [events, setEvents] = useState<any[]>([])
+  const [events, setEvents] = useState<LLMEvent[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const socket = new WebSocket('ws://127.0.0.1:8000/ws')
 
-    socket.onmessage = (event) => {
+    socket.onmessage = (event: MessageEvent): void => {
       try {
         const data = JSON.parse(event.data)
         if (data.event?.startsWith('llm_')) {
@@ -23,8 +30,7 @@ const DeveloperPanel: React.FC = () => {
         console.error('WS Error:', e)
       }
     }
-
-    return () => socket.close()
+    return (): void => socket.close()
   }, [])
 
   useEffect(() => {
@@ -150,7 +156,7 @@ const DeveloperPanel: React.FC = () => {
                 color: 'rgba(255,255,255,0.8)'
               }}
             >
-              {ev.event === 'llm_start' ? (
+              {ev.event === 'llm_start' && typeof ev.data !== 'string' ? (
                 <div>
                   <div style={{ color: 'var(--primary)', marginBottom: '4px' }}>
                     Type: {ev.data.type}
@@ -158,7 +164,7 @@ const DeveloperPanel: React.FC = () => {
                   <div style={{ opacity: 0.6 }}>PROMPT:</div>
                   {ev.data.prompt}
                 </div>
-              ) : ev.event === 'llm_finish' ? (
+              ) : ev.event === 'llm_finish' && typeof ev.data !== 'string' ? (
                 <div>
                   <div style={{ opacity: 0.6 }}>RESULT:</div>
                   {typeof ev.data.result === 'string'
@@ -166,7 +172,7 @@ const DeveloperPanel: React.FC = () => {
                     : JSON.stringify(ev.data.result, null, 2)}
                 </div>
               ) : (
-                <div style={{ color: '#fca5a5' }}>{ev.data}</div>
+                <div style={{ color: '#fca5a5' }}>{String(ev.data)}</div>
               )}
             </div>
           </div>

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Avatar } from './Avatar'
 import { AvatarSelector } from './AvatarSelector'
 
 import { api, Group } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface Props {
   onSelectGroup: (id: number) => void
@@ -19,8 +19,8 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
   const [newGroupDesc, setNewGroupDesc] = useState('')
   const [newAvatarLogo, setNewAvatarLogo] = useState('')
 
-  const fetchGroups = () => {
-    setLoading(true)
+  const fetchGroups = useCallback((): void => {
+    // setLoading(true) // Removed to avoid cascading render since it's already true initially
     api
       .get<Group[]>('/groups/')
       .then((data) => {
@@ -32,7 +32,7 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
         setError(`Failed to fetch groups: ${err instanceof Error ? err.message : String(err)}`)
         setLoading(false)
       })
-  }
+  }, [])
 
   useEffect(() => {
     fetchGroups()
@@ -40,14 +40,14 @@ const GroupList: React.FC<Props> = ({ onSelectGroup }) => {
     setNavActions([
       {
         label: '+ Add Group',
-        onClick: () => setShowCreateModal(true)
+        onClick: (): void => setShowCreateModal(true)
       }
     ])
 
-    return () => setNavActions([])
-  }, [])
+    return (): void => setNavActions([])
+  }, [fetchGroups, setNavActions])
 
-  const handleCreateGroup = async (e: React.FormEvent) => {
+  const handleCreateGroup = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     try {
       await api.post('/groups/', {

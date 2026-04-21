@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { api, Message } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface MessagesListProps {
   onSelectMessage: (id: number) => void
@@ -78,7 +78,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
               style={{ width: '180px', margin: 0 }}
               value={filter}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setFilter(e.target.value as any)
+                setFilter(e.target.value as 'all' | 'draft' | 'sent' | 'archived')
               }
             >
               <option value="all">All Status</option>

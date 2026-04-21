@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api, Note, Person, Group } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 import ReactMarkdown from 'react-markdown'
 import NoteAuthoring from './NoteAuthoring'
 import NoteUtilities from './NoteUtilities'

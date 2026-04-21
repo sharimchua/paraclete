@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import SetupScreen from './components/SetupScreen'
 import PersonList from './components/PersonList'
 import PersonProfile from './components/PersonProfile'
@@ -17,7 +17,7 @@ import PracticeFramework from './components/PracticeFramework'
 import Logo from './components/Logo'
 import ParacletePanel from './components/ParacletePanel'
 import StandardNavbar from './components/StandardNavbar'
-import { NavbarProvider } from './components/NavbarContext'
+import { NavbarProvider } from './components/NavbarProvider'
 import { api } from './services/api'
 import PersonaSelectionModal from './components/PersonaSelectionModal'
 import EntitySelectionModal from './components/EntitySelectionModal'
@@ -57,14 +57,111 @@ const App: React.FC = () => {
   } | null>(null)
   const [isReformatModalOpen, setIsReformatModalOpen] = useState(false)
 
-  const fetchProposalsCount = async () => {
+  const navigateTo = useCallback(
+    (
+      view: string,
+      personId: number | null = null,
+      groupId: number | null = null,
+      noteId: number | null = null,
+      date: string | null = null,
+      resetHistory: boolean = false,
+      messageId: number | null = null,
+      ignoreDirty: boolean = false
+    ): void => {
+      const performNavigation = (): void => {
+        setCurrentView(view)
+        setSelectedPersonId(personId)
+        setSelectedGroupId(groupId)
+        setSelectedNoteId(noteId)
+        setSelectedMessageId(messageId)
+        setInitialNoteDate(date)
+        setIsDirty(false)
+        setPendingNavigation(null)
+        setShowDiscardConfirm(false)
+
+        if (resetHistory) {
+          setViewHistory([view])
+        } else {
+          setViewHistory((prev) => {
+            if (prev[prev.length - 1] === view) return prev
+            return [...prev, view]
+          })
+        }
+      }
+
+      if (isDirty && !ignoreDirty && view !== currentView) {
+        setPendingNavigation(() => performNavigation)
+        setShowDiscardConfirm(true)
+      } else {
+        performNavigation()
+      }
+    },
+    [currentView, isDirty]
+  )
+
+  const goBack = useCallback(
+    (ignoreDirty: boolean = false): void => {
+      const performBack = (): void => {
+        setIsDirty(false)
+        setShowDiscardConfirm(false)
+        setPendingNavigation(null)
+
+        if (viewHistory.length <= 1) {
+          setCurrentView('dashboard')
+          setSelectedPersonId(null)
+          setSelectedGroupId(null)
+          setSelectedNoteId(null)
+          setViewHistory(['dashboard'])
+          return
+        }
+
+        const newHistory = [...viewHistory]
+        newHistory.pop()
+        const previousView = newHistory[newHistory.length - 1]
+
+        setViewHistory(newHistory)
+        setCurrentView(previousView)
+
+        if (
+          previousView === 'dashboard' ||
+          previousView === 'notes' ||
+          previousView === 'tags' ||
+          previousView === 'admin' ||
+          previousView === 'messages' ||
+          (previousView === 'persons' && !selectedPersonId) ||
+          (previousView === 'groups' && !selectedGroupId)
+        ) {
+          setSelectedPersonId(null)
+          setSelectedGroupId(null)
+          setSelectedNoteId(null)
+          setSelectedMessageId(null)
+          setInitialNoteDate(null)
+        }
+      }
+
+      if (isDirty && !ignoreDirty) {
+        setPendingNavigation(() => performBack)
+        setShowDiscardConfirm(true)
+      } else {
+        performBack()
+      }
+    },
+    [isDirty, viewHistory, selectedPersonId, selectedGroupId]
+  )
+
+  const fetchProposalsCount = useCallback(async (): Promise<void> => {
     try {
       const proposals = await api.get<unknown[]>('/api/framework/proposals?status=pending')
       setPendingProposalsCount(proposals.length)
     } catch (err) {
       console.error('Failed to fetch proposals count:', err)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProposalsCount()
+  }, [fetchProposalsCount])
 
   useEffect(() => {
     // Query if setup is complete
@@ -73,29 +170,29 @@ const App: React.FC = () => {
     })
 
     // Listener for setup completion
-    window.electron.ipcRenderer.on('setup-complete', () => {
+    window.electron.ipcRenderer.on('setup-complete', (): void => {
       setIsSetup(true)
     })
 
-    const handleLinkPersona = (e: Event) => {
+    const handleLinkPersona = (e: Event): void => {
       setPersonaLinkingTarget((e as CustomEvent).detail)
     }
     window.addEventListener('trigger-link-persona', handleLinkPersona as EventListener)
 
-    const handleNavigate = (e: Event) => {
+    const handleNavigate = (e: Event): void => {
       const { view, personId, groupId, noteId, date, messageId } = (e as CustomEvent).detail
       navigateTo(view, personId, groupId, noteId, date, false, messageId)
     }
     window.addEventListener('navigate', handleNavigate as EventListener)
 
-    const handleTriggerMessageModal = () => setShowContactSelection(true)
+    const handleTriggerMessageModal = (): void => setShowContactSelection(true)
     window.addEventListener('trigger-message-modal', handleTriggerMessageModal as EventListener)
 
-    const handleThinking = (e: Event) => setIsThinking((e as CustomEvent).detail)
+    const handleThinking = (e: Event): void => setIsThinking((e as CustomEvent).detail)
     window.addEventListener('paraclete-thinking', handleThinking as EventListener)
 
     const socket = new WebSocket('ws://127.0.0.1:8000/ws')
-    socket.onmessage = (event) => {
+    socket.onmessage = (event: MessageEvent): void => {
       try {
         const data = JSON.parse(event.data)
         if (data.event === 'llm_start') {
@@ -119,10 +216,14 @@ const App: React.FC = () => {
             )
           }
         } else if (data.event === 'background_jobs') {
-          const jobs = data.data || []
-          const isAnyJobRunning = jobs.some((j: { status: string }) => j.status === 'running')
+          interface JobData {
+            status: string
+            name: string
+          }
+          const jobs: JobData[] = data.data || []
+          const isAnyJobRunning = jobs.some((j: JobData) => j.status === 'running')
           const isAnalysisActive = jobs.some(
-            (j: { status: string; name: string }) =>
+            (j: JobData) =>
               (j.status === 'running' || j.status === 'pending') &&
               (j.name.includes('Analyze') || j.name.includes('Synthesis'))
           )
@@ -138,10 +239,7 @@ const App: React.FC = () => {
       }
     }
 
-    // Initial data fetch
-    fetchProposalsCount()
-
-    return () => {
+    return (): void => {
       window.removeEventListener('trigger-link-persona', handleLinkPersona as EventListener)
       window.removeEventListener('navigate', handleNavigate as EventListener)
       window.removeEventListener(
@@ -151,10 +249,10 @@ const App: React.FC = () => {
       window.removeEventListener('paraclete-thinking', handleThinking as EventListener)
       socket.close()
     }
-  }, [])
+  }, [navigateTo, fetchProposalsCount])
 
   useEffect(() => {
-    const handleSelection = (e?: Event) => {
+    const handleSelection = (e?: Event): void => {
       // If the modal is already open, don't change the context
       if (isReformatModalOpen) return
 
@@ -193,92 +291,6 @@ const App: React.FC = () => {
     }
   }, [isReformatModalOpen])
 
-  const navigateTo = (
-    view: string,
-    personId: number | null = null,
-    groupId: number | null = null,
-    noteId: number | null = null,
-    date: string | null = null,
-    resetHistory: boolean = false,
-    messageId: number | null = null,
-    ignoreDirty: boolean = false
-  ) => {
-    const performNavigation = () => {
-      setCurrentView(view)
-      setSelectedPersonId(personId)
-      setSelectedGroupId(groupId)
-      setSelectedNoteId(noteId)
-      setSelectedMessageId(messageId)
-      setInitialNoteDate(date)
-      setIsDirty(false)
-      setPendingNavigation(null)
-      setShowDiscardConfirm(false)
-
-      if (resetHistory) {
-        setViewHistory([view])
-      } else {
-        setViewHistory((prev) => {
-          if (prev[prev.length - 1] === view) return prev
-          return [...prev, view]
-        })
-      }
-    }
-
-    if (isDirty && !ignoreDirty && view !== currentView) {
-      setPendingNavigation(() => performNavigation)
-      setShowDiscardConfirm(true)
-    } else {
-      performNavigation()
-    }
-  }
-
-  const goBack = (ignoreDirty: boolean = false) => {
-    const performBack = () => {
-      setIsDirty(false)
-      setShowDiscardConfirm(false)
-      setPendingNavigation(null)
-
-      if (viewHistory.length <= 1) {
-        setCurrentView('dashboard')
-        setSelectedPersonId(null)
-        setSelectedGroupId(null)
-        setSelectedNoteId(null)
-        setViewHistory(['dashboard'])
-        return
-      }
-
-      const newHistory = [...viewHistory]
-      newHistory.pop()
-      const previousView = newHistory[newHistory.length - 1]
-
-      setViewHistory(newHistory)
-      setCurrentView(previousView)
-
-      if (
-        previousView === 'dashboard' ||
-        previousView === 'notes' ||
-        previousView === 'tags' ||
-        previousView === 'admin' ||
-        previousView === 'messages' ||
-        (previousView === 'persons' && !selectedPersonId) ||
-        (previousView === 'groups' && !selectedGroupId)
-      ) {
-        setSelectedPersonId(null)
-        setSelectedGroupId(null)
-        setSelectedNoteId(null)
-        setSelectedMessageId(null)
-        setInitialNoteDate(null)
-      }
-    }
-
-    if (isDirty && !ignoreDirty) {
-      setPendingNavigation(() => performBack)
-      setShowDiscardConfirm(true)
-    } else {
-      performBack()
-    }
-  }
-
   if (isSetup === null) {
     return (
       <div
@@ -300,11 +312,11 @@ const App: React.FC = () => {
     return <SetupScreen />
   }
 
-  const startNewNote = (personId?: number, groupId?: number, date?: string) => {
+  const startNewNote = (personId?: number, groupId?: number, date?: string): void => {
     navigateTo('new-note', personId || null, groupId || null, null, date || null)
   }
 
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     if (currentView === 'new-note') {
       return (
         <NoteAuthoring

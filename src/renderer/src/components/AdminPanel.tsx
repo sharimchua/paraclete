@@ -23,7 +23,7 @@ const AdminPanel: React.FC = () => {
     fetchSettings()
   }, [])
 
-  const fetchSettings = async () => {
+  const fetchSettings = async (): Promise<void> => {
     try {
       const res = await fetch('http://127.0.0.1:8000/api/admin/settings')
       const data = await res.json()
@@ -33,7 +33,7 @@ const AdminPanel: React.FC = () => {
     }
   }
 
-  const updateSetting = async (key: string, value: string) => {
+  const updateSetting = async (key: string, value: string): Promise<void> => {
     setIsSavingSetting(key)
     try {
       await fetch(
@@ -51,7 +51,7 @@ const AdminPanel: React.FC = () => {
     }
   }
 
-  const handleExport = async () => {
+  const handleExport = async (): Promise<void> => {
     setIsExporting(true)
     try {
       const response = await fetch('http://127.0.0.1:8000/export/')
@@ -76,7 +76,7 @@ const AdminPanel: React.FC = () => {
     }
   }
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -93,7 +93,7 @@ const AdminPanel: React.FC = () => {
     event.target.value = ''
   }
 
-  const executeImport = async (file: File) => {
+  const executeImport = async (file: File): Promise<void> => {
     setIsImporting(true)
     setImportStatus({ type: 'idle', message: 'Importing...' })
 
@@ -121,15 +121,21 @@ const AdminPanel: React.FC = () => {
             type: 'success',
             message: 'Data imported successfully! Please restart or refresh the application.'
           })
-        } catch (err: any) {
-          setImportStatus({ type: 'error', message: `Import failed: ${err.message}` })
+        } catch (err: unknown) {
+          setImportStatus({
+            type: 'error',
+            message: `Import failed: ${err instanceof Error ? err.message : String(err)}`
+          })
         } finally {
           setIsImporting(false)
         }
       }
       reader.readAsText(file)
-    } catch (error: any) {
-      setImportStatus({ type: 'error', message: `File reading failed: ${error.message}` })
+    } catch (error: unknown) {
+      setImportStatus({
+        type: 'error',
+        message: `File reading failed: ${error instanceof Error ? error.message : String(error)}`
+      })
       setIsImporting(false)
     }
   }
@@ -871,8 +877,8 @@ const AdminPanel: React.FC = () => {
                   marginBottom: '16px'
                 }}
               >
-                Clears the "analyzed" flag for all content AND deletes all pending AI proposals.
-                Forces a complete re-analysis of your content.
+                Clears the &quot;analyzed&quot; flag for all content AND deletes all pending AI
+                proposals. Forces a complete re-analysis of your content.
               </p>
               <button
                 className="btn-secondary"
@@ -882,11 +888,14 @@ const AdminPanel: React.FC = () => {
                     title: 'Reset Analytics?',
                     message:
                       'Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.',
-                    onConfirm: async () => {
+                    onConfirm: async (): Promise<void> => {
                       try {
-                        const data = await api.post<any>('/admin/reset-framework-analysis', {})
+                        const data = await api.post<{ reset_count: number }>(
+                          '/admin/reset-framework-analysis',
+                          {}
+                        )
                         toast.success(`Reset flags for ${data.reset_count} items.`)
-                      } catch (err) {
+                      } catch {
                         toast.error('Failed to reset analysis flags.')
                       }
                       setConfirmation(null)
@@ -929,11 +938,14 @@ const AdminPanel: React.FC = () => {
                     message:
                       'CRITICAL: This will PERMANENTLY DELETE all your framework rules and proposals. This cannot be undone. Are you absolutely sure?',
                     variant: 'danger',
-                    onConfirm: async () => {
+                    onConfirm: async (): Promise<void> => {
                       try {
-                        const data = await api.post<any>('/admin/wipe-framework', {})
+                        const data = await api.post<{ deleted_items: number }>(
+                          '/admin/wipe-framework',
+                          {}
+                        )
                         toast.success(`Wiped ${data.deleted_items} rules.`)
-                      } catch (err) {
+                      } catch {
                         toast.error('Failed to wipe framework.')
                       }
                       setConfirmation(null)

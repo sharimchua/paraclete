@@ -10,7 +10,7 @@ import {
 import FrameworkAnalysisControls from './FrameworkAnalysisControls'
 import ConfirmationModal from './ConfirmationModal'
 import EntitySelectionModal from './EntitySelectionModal'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 import { toast } from './ToastProvider'
 
 const FrameworkAspectList: React.FC<{

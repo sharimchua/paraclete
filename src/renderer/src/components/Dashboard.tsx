@@ -25,7 +25,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
   const [dateMessages, setDateMessages] = useState<Message[]>([])
   const [pendingCount, setPendingCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
+  const [selectedDate, setSelectedDate] = useState<string>((): string => {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
@@ -34,7 +34,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
-    const fetchBaseData = async () => {
+    const fetchBaseData = async (): Promise<void> => {
       try {
         const [s, c, t, l, p] = await Promise.all([
           api.get<DashboardStats>('/dashboard/stats'),
@@ -59,7 +59,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
   }, [])
 
   useEffect(() => {
-    const fetchDayActivity = async () => {
+    const fetchDayActivity = async (): Promise<void> => {
       try {
         const [notes, messages] = await Promise.all([
           api.get<Note[]>(`/notes/by-date/${selectedDate}`),
@@ -75,7 +75,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
     fetchDayActivity()
   }, [selectedDate])
 
-  const handleOpenModal = () => {
+  const handleOpenModal = (): void => {
     setShowModal(true)
   }
 

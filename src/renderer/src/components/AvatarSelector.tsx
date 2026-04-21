@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Avatar } from './Avatar'
 import { PLANT_TYPES, PLANT_COLORS } from './avatarConstants'
 
@@ -8,23 +8,13 @@ interface AvatarSelectorProps {
 }
 
 export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ value, onChange }) => {
+  const [prevValue, setPrevValue] = useState(value)
   const [mode, setMode] = useState<'url' | 'plant'>(value.startsWith('plant:') ? 'plant' : 'url')
 
-  // Sync mode if value changes from outside (e.g. after a save refresh)
-  useEffect(() => {
-    const newMode = value.startsWith('plant:') ? 'plant' : 'url'
-    if (newMode !== mode) {
-      setMode(newMode)
-    }
-  }, [value])
-
-  // Sync mode if value changes from outside (e.g. after a save refresh)
-  useEffect(() => {
-    const newMode = value.startsWith('plant:') ? 'plant' : 'url'
-    if (newMode !== mode) {
-      setMode(newMode)
-    }
-  }, [value])
+  if (value !== prevValue) {
+    setPrevValue(value)
+    setMode(value.startsWith('plant:') ? 'plant' : 'url')
+  }
 
   // Extract current plant state if applicable
   let currentPlantType = PLANT_TYPES[0]
@@ -38,7 +28,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ value, onChange 
     }
   }
 
-  const handlePlantSelect = (type: string, color: string) => {
+  const handlePlantSelect = (type: string, color: string): void => {
     onChange(`plant:${type}:${color}`)
   }
 

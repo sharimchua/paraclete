@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { api, Reference, Tag } from '../services/api'
-import { useNavbar } from './NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface ReferenceProposal {
   id: number

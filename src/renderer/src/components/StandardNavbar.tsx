@@ -1,13 +1,6 @@
 import React from 'react'
-import { useNavbar } from './NavbarContext'
-
-export interface Action {
-  label?: string
-  onClick?: () => void
-  variant?: 'primary' | 'secondary' | 'danger'
-  disabled?: boolean
-  isSeparator?: boolean
-}
+import { Action } from '../contexts/NavbarContext'
+import { useNavbar } from '../hooks/useNavbar'
 
 interface StandardNavbarProps {
   title: string

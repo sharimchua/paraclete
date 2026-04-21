@@ -62,7 +62,7 @@ export const Avatar: React.FC<AvatarProps> = ({ avatarLogo, name, size = 150, st
 
   if (isBuiltIn) {
     // High quality deep plant SVG representations
-    const renderPlantSvg = () => {
+    const renderPlantSvg = (): React.ReactElement => {
       const svgProps = {
         width: '85%',
         height: '85%',
