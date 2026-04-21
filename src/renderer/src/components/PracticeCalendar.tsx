@@ -57,7 +57,6 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             onClick={() => changeMonth(-1)}
-            aria-label="Previous month"
             style={{
               background: 'none',
               border: 'none',
@@ -82,7 +81,6 @@ const PracticeCalendar: React.FC<Props> = ({ data, selectedDate, onSelectDate })
           </h4>
           <button
             onClick={() => changeMonth(1)}
-            aria-label="Next month"
             style={{
               background: 'none',
               border: 'none',

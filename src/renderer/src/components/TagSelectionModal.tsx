@@ -27,11 +27,7 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
   }, [])
 
   const filteredTags = allTags.filter((tag) => {
-<<<<<<< bolt-optimize-practice-calendar-lookup-7155225150331239072
     const isNotAlreadyUsed = !existingTagIds.includes(tag.id as number)
-=======
-    const isNotAlreadyUsed = tag.id !== undefined && !existingTagIds.includes(tag.id)
->>>>>>> main
     const matchesSearch =
       tag.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (tag.key && tag.key.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -88,15 +84,7 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
                   alignItems: 'center',
                   fontSize: '0.9rem'
                 }}
-<<<<<<< bolt-optimize-practice-calendar-lookup-7155225150331239072
                 onClick={() => onSelect(tag.id as number)}
-=======
-                onClick={() => {
-                  if (tag.id !== undefined) {
-                    onSelect(tag.id)
-                  }
-                }}
->>>>>>> main
               >
                 <span>
                   {tag.key && (
