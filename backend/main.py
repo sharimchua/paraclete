@@ -10,7 +10,7 @@ import os
 import json
 
 from . import models, schemas, database, llm
-from .routers import references, framework, messages, admin, paraclete
+from .routers import references, framework, messages, admin, paraclete, reflections, topics
 from datetime import datetime, timedelta
 import asyncio
 import numpy as np
@@ -105,6 +105,8 @@ app.include_router(framework.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(paraclete.router, prefix="/api")
+app.include_router(reflections.router, prefix="/api")
+app.include_router(topics.router, prefix="/api")
 # Also include without prefix for legacy compatibility if needed, 
 # but the plan specifies /api for new features.
 app.include_router(references.router)
@@ -112,6 +114,8 @@ app.include_router(framework.router)
 app.include_router(messages.router)
 app.include_router(admin.router)
 app.include_router(paraclete.router)
+app.include_router(reflections.router)
+app.include_router(topics.router)
 
 from .websockets_manager import ws_manager
 
@@ -534,7 +538,19 @@ async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_
 
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "session_brief", "prompt": "Synthesizing Session Brief"}})
     try:
-        brief = await llm.workflows.run_session_brief(person_name, history_text)
+        # Fetch active topics and recent reflections
+        active_topics = db.query(models.Topic).filter(
+            models.Topic.person_id == person_id,
+            models.Topic.state == models.TopicState.active
+        ).all()
+        topics_text = "\n".join([f"- {t.title}: {t.summary}" for t in active_topics]) if active_topics else ""
+
+        recent_reflections = db.query(models.Reflection).filter(
+            models.Reflection.person_id == person_id
+        ).order_by(models.Reflection.created_at.desc()).limit(3).all()
+        reflections_text = "\n".join([f"- {r.content}" for r in recent_reflections]) if recent_reflections else ""
+
+        brief = await llm.workflows.run_session_brief(person_name, history_text, topics_text, reflections_text)
         await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "session_brief", "result": brief}})
         return {"result": brief}
     except Exception as e:
