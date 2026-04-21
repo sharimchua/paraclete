@@ -80,26 +80,26 @@ const GroupProfile: React.FC<Props> = ({
     }
   }, [groupId])
 
-  useEffect(() => {
-    if (isEditing) {
-      setNavActions([
-        { label: 'Save Changes', onClick: () => handleUpdate() },
-        { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
-      ])
-    } else {
-      setNavActions([
-        {
-          label: '+ Create Session Note',
-          onClick: () => onStartNote(null, groupId)
-        },
-        { isSeparator: true },
-        { label: 'Edit Group', onClick: () => setIsEditing(true) },
-        { label: 'Delete', variant: 'danger', onClick: handleDelete },
-        { isSeparator: true },
-        { label: '+ Add Member', onClick: () => setShowAddMember(true) }
-      ])
-    }
-  }, [isEditing, setNavActions, groupId, onStartNote])
+    useEffect(() => {
+        if (isEditing) {
+            setNavActions([
+                { label: 'Save Changes', onClick: () => handleUpdate() },
+                { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
+            ]);
+        } else {
+            setNavActions([
+                {
+                    label: '+ Create Session Note',
+                    onClick: () => onStartNote(null, groupId)
+                },
+                { isSeparator: true },
+                { label: 'Edit Group', onClick: () => setIsEditing(true) },
+                { label: 'Delete', variant: 'danger', onClick: handleDelete },
+                { isSeparator: true },
+                { label: '+ Add Member', onClick: () => setShowAddMember(true) }
+            ]);
+        }
+    }, [isEditing, setNavActions, groupId, onStartNote, editName, editDesc, editAvatarLogo]);
 
   const handleUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()

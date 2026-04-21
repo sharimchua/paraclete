@@ -14,8 +14,7 @@ async def run_ocr(image_paths: list[str]) -> str:
         
         for idx, path in enumerate(image_paths):
             print(f"DEBUG: Processing OCR for image {idx+1}/{len(image_paths)}: {path}")
-            result = await asyncio.to_thread(
-                llm_manager.call,
+            result = await llm_manager.acall(
                 prompt=prompt,
                 system="You are an expert data entry assistant for transcribing hand-written notes. Extract the requested text and any drawings or diagrams accurately, using the context of the image when needed.",
                 image_paths=[path], # Pass as single-item list
@@ -49,9 +48,8 @@ async def run_note_cleanse(text: str, context: dict) -> str:
     if context.get("practitioner_bio"):
         system_prompt += f" Background: {context.get('practitioner_bio')}"
 
-    # call() returns the cleaned string directly
-    result = await asyncio.to_thread(
-        llm_manager.call,
+    # acall() returns the cleaned string directly
+    result = await llm_manager.acall(
         prompt=prompt,
         system=system_prompt,
         max_tokens=2000
@@ -65,8 +63,7 @@ async def run_entity_extraction(text: str, context: str = "", grammar: str = Non
     """Extract structured data (tags, actions) from a note."""
     prompt = templates.extract_entities(text=text, context=context)
     
-    result = await asyncio.to_thread(
-        llm_manager.call,
+    result = await llm_manager.acall(
         prompt=prompt,
         system="Extract Tag, References, and Action Items as JSON.",
         grammar=grammar,
@@ -96,8 +93,7 @@ async def run_draft_message(context: dict) -> str:
     if context.get("practitioner_bio"):
         system_prompt += f" Background: {context.get('practitioner_bio')}"
 
-    return await asyncio.to_thread(
-        llm_manager.call,
+    return await llm_manager.acall(
         prompt=prompt,
         system=system_prompt,
         max_tokens=1024
@@ -113,8 +109,7 @@ async def run_persona_draft(note_content: str, persona_name: str, persona_bio: s
         references=references
     )
     
-    return await asyncio.to_thread(
-        llm_manager.call,
+    return await llm_manager.acall(
         prompt=prompt,
         system=f"You are writing a follow-up message as {persona_name}. Style: {persona_bio[:200]}...",
         max_tokens=1500
@@ -124,8 +119,7 @@ async def run_persona_draft(note_content: str, persona_name: str, persona_bio: s
 async def run_dictation(audio_filename: str) -> str:
     """Clean up dictation text."""
     prompt = templates.dictation_capture(filename=audio_filename)
-    return await asyncio.to_thread(
-        llm_manager.call,
+    return await llm_manager.acall(
         prompt=prompt,
         system="Transcribe and clean up audio content.",
         max_tokens=1024
@@ -136,8 +130,7 @@ async def run_session_brief(person_name: str, previous_notes: str, active_topics
     """Generate a session briefing based on history."""
     prompt = templates.session_brief(person_name=person_name, previous_notes=previous_notes, active_topics=active_topics, recent_reflections=recent_reflections)
     
-    return await asyncio.to_thread(
-        llm_manager.call,
+    return await llm_manager.acall(
         prompt=prompt,
         system="You are an expert practice assistant providing a pre-session briefing.",
         max_tokens=1024
@@ -148,8 +141,7 @@ async def run_suggest_title(text: str) -> str:
     """Generate a short theme-based title for a note."""
     prompt = templates.suggest_title(text=text)
     
-    return await asyncio.to_thread(
-        llm_manager.call,
+    return await llm_manager.acall(
         prompt=prompt,
         system="You are an expert practitioner assistant.",
         max_tokens=100
@@ -164,8 +156,7 @@ async def run_reformat(selected_text: str, user_prompt: str, full_context: str, 
         framework_context=framework_context
     )
     
-    return await asyncio.to_thread(
-        llm_manager.call,
+    return await llm_manager.acall(
         prompt=prompt,
         system="You are an expert professional editor. Restructure the provided text accurately as requested.",
         max_tokens=1500
@@ -188,8 +179,7 @@ async def run_reference_extraction(text: str) -> list[dict]:
     
     prompt = templates.extract_references(text)
     
-    result = await asyncio.to_thread(
-        llm_manager.call,
+    result = await llm_manager.acall(
         prompt=prompt,
         system="You are a data extraction engine. Your ONLY output is an array of JSON objects. DO NOT include ANY other text, conversational preamble, or markdown code blocks (```). Start directly with '['.",
         grammar=grammar,

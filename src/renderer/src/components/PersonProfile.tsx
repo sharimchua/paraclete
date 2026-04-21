@@ -101,25 +101,41 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
     }
   }, [isEditing, person, editName, editContact, setNavActions])
 
-  const refreshPerson = () => {
-    api.get<Person>(`/persons/${personId}`).then((data) => setPerson(data))
-  }
+        window.addEventListener('refresh-profile', fetchAll);
+        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        return () => {
+            window.removeEventListener('refresh-profile', fetchAll);
+            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            setNavActions([]);
+        };
+    }, [personId, setNavActions]);
 
-  const handleUpdate = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    try {
-      await api.patch(`/persons/${personId}`, {
-        name: editName,
-        contact_method: editContact,
-        avatar_logo: editAvatarLogo
-      })
-      setIsEditing(false)
-      refreshPerson()
-    } catch (err) {
-      console.error(err)
-      alert('Failed to update person')
-    }
-  }
+    useEffect(() => {
+        if (isEditing) {
+            setNavActions([
+                { label: 'Save Changes', onClick: () => handleUpdate() },
+                { label: 'Cancel', variant: 'secondary', onClick: () => setIsEditing(false) }
+            ]);
+        } else {
+            setNavActions([
+                {
+                    label: '+ Create Session Note',
+                    onClick: () => onStartNote(personId)
+                },
+                { isSeparator: true },
+                { label: 'Edit Profile', onClick: () => {
+                   setIsEditing(true);
+                   // Reset edit values to current person data
+                   if (person) {
+                       setEditName(person.name);
+                       setEditContact(person.contact_method || '');
+                       setEditAvatarLogo(person.avatar_logo || '');
+                   }
+                }},
+                { label: 'Delete', variant: 'danger', onClick: handleDelete }
+            ]);
+        }
+    }, [isEditing, person, editName, editContact, editAvatarLogo, setNavActions, personId, onStartNote]);
 
   const handleDelete = async () => {
     if (

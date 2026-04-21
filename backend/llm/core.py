@@ -139,6 +139,10 @@ class LLMManager:
             "model_name": os.path.basename(self.active_config.get("path", "")) if self.active_config.get("path") else "None"
         }
 
+    async def agenerate(self, *args, **kwargs):
+        """Asynchronous low-level generation call."""
+        return await asyncio.to_thread(self.generate, *args, **kwargs)
+
     def generate(self, prompt: str, grammar: Optional[Any] = None, stream: bool = False, use_case="analysis", **kwargs):
         """Low-level generation call."""
         self.ensure_model(use_case)
@@ -191,6 +195,10 @@ class LLMManager:
             
         return new_messages
 
+    async def achat(self, *args, **kwargs):
+        """Asynchronous chat completion call."""
+        return await asyncio.to_thread(self.chat, *args, **kwargs)
+
     def chat(self, messages: List[Dict[str, Any]], use_case="analysis", **kwargs):
         """Chat completion call."""
         self.ensure_model(use_case)
@@ -203,6 +211,10 @@ class LLMManager:
             messages=messages,
             **kwargs
         )
+
+    async def acall(self, *args, **kwargs):
+        """Asynchronous high-level execution call."""
+        return await asyncio.to_thread(self.call, *args, **kwargs)
 
     def call(self, prompt: str, system: str = "You are a helpful assistant.", image_paths: Optional[List[str]] = None, grammar: Optional[Any] = None, use_case="analysis", **kwargs):
         """
@@ -303,6 +315,10 @@ class LLMManager:
         content = content.strip()
         
         return content
+
+    async def aembed(self, *args, **kwargs):
+        """Asynchronous embedding generation call."""
+        return await asyncio.to_thread(self.embed, *args, **kwargs)
 
     def embed(self, text: str, use_case="analysis"):
         """Generate embeddings."""
