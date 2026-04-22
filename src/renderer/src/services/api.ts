@@ -186,7 +186,7 @@ export const api = {
     return res.json()
   },
 
-  async post<T>(path: string, body: any): Promise<T> {
+  async post<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -196,7 +196,7 @@ export const api = {
     return res.json()
   },
 
-  async patch<T>(path: string, body: any): Promise<T> {
+  async patch<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -224,7 +224,7 @@ export const api = {
   },
 
   // Specific Domain Methods
-  getMessages: (params?: any) => {
+  getMessages: (params?: Record<string, string>) => {
     let qs = ''
     if (params) {
       qs = '?' + new URLSearchParams(params).toString()

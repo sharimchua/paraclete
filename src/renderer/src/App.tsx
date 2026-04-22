@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import SetupScreen from './components/SetupScreen'
 import PersonList from './components/PersonList'
 import PersonProfile from './components/PersonProfile'
@@ -163,16 +163,19 @@ const App: React.FC = () => {
     fetchProposalsCount()
 
     return () => {
-      window.removeEventListener('trigger-link-persona' as any, handleLinkPersona)
-      window.removeEventListener('navigate' as any, handleNavigate)
-      window.removeEventListener('trigger-message-modal' as any, handleTriggerMessageModal)
-      window.removeEventListener('paraclete-thinking' as any, handleThinking)
+      window.removeEventListener('trigger-link-persona', handleLinkPersona as EventListener)
+      window.removeEventListener('navigate', handleNavigate as EventListener)
+      window.removeEventListener(
+        'trigger-message-modal',
+        handleTriggerMessageModal as EventListener
+      )
+      window.removeEventListener('paraclete-thinking', handleThinking as EventListener)
       socket.close()
     }
-  }, [])
+  }, [navigateTo])
 
   useEffect(() => {
-    const handleSelection = (e?: any) => {
+    const handleSelection = (e?: Event): void => {
       // If the modal is already open, don't change the context
       if (isReformatModalOpen) return
 
@@ -211,47 +214,50 @@ const App: React.FC = () => {
     }
   }, [isReformatModalOpen])
 
-  const navigateTo = (
-    view: string,
-    personId: number | null = null,
-    groupId: number | null = null,
-    noteId: number | null = null,
-    date: string | null = null,
-    resetHistory: boolean = false,
-    messageId: number | null = null,
-    ignoreDirty: boolean = false
-  ): void => {
-    const performNavigation = () => {
-      setCurrentView(view)
-      setSelectedPersonId(personId)
-      setSelectedGroupId(groupId)
-      setSelectedNoteId(noteId)
-      setSelectedMessageId(messageId)
-      setInitialNoteDate(date)
-      setIsDirty(false)
-      setPendingNavigation(null)
-      setShowDiscardConfirm(false)
+  const navigateTo = useCallback(
+    (
+      view: string,
+      personId: number | null = null,
+      groupId: number | null = null,
+      noteId: number | null = null,
+      date: string | null = null,
+      resetHistory: boolean = false,
+      messageId: number | null = null,
+      ignoreDirty: boolean = false
+    ): void => {
+      const performNavigation = (): void => {
+        setCurrentView(view)
+        setSelectedPersonId(personId)
+        setSelectedGroupId(groupId)
+        setSelectedNoteId(noteId)
+        setSelectedMessageId(messageId)
+        setInitialNoteDate(date)
+        setIsDirty(false)
+        setPendingNavigation(null)
+        setShowDiscardConfirm(false)
 
-      if (resetHistory) {
-        setViewHistory([view])
-      } else {
-        setViewHistory((prev) => {
-          if (prev[prev.length - 1] === view) return prev
-          return [...prev, view]
-        })
+        if (resetHistory) {
+          setViewHistory([view])
+        } else {
+          setViewHistory((prev) => {
+            if (prev[prev.length - 1] === view) return prev
+            return [...prev, view]
+          })
+        }
       }
-    }
 
-    if (isDirty && !ignoreDirty && view !== currentView) {
-      setPendingNavigation(() => performNavigation)
-      setShowDiscardConfirm(true)
-    } else {
-      performNavigation()
-    }
-  }
+      if (isDirty && !ignoreDirty && view !== currentView) {
+        setPendingNavigation(() => performNavigation)
+        setShowDiscardConfirm(true)
+      } else {
+        performNavigation()
+      }
+    },
+    [isDirty, currentView]
+  )
 
   const goBack = (ignoreDirty: boolean = false): void => {
-    const performBack = () => {
+    const performBack = (): void => {
       setIsDirty(false)
       setShowDiscardConfirm(false)
       setPendingNavigation(null)
@@ -322,7 +328,7 @@ const App: React.FC = () => {
     navigateTo('new-note', personId || null, groupId || null, null, date || null)
   }
 
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     if (currentView === 'new-note') {
       return (
         <NoteAuthoring
@@ -441,7 +447,11 @@ const App: React.FC = () => {
     return <div>View {currentView} coming soon.</div>
   }
 
-  const getHeaderProps = () => {
+  const getHeaderProps = (): {
+    title: string
+    showBack: boolean
+    onBack: (ignoreDirty?: boolean) => void
+  } => {
     const showBack = viewHistory.length > 1
     let title = currentView.toUpperCase()
 
