@@ -26,7 +26,7 @@ export class PythonManager {
         }
         this.isSettingUp = true;
         try {
-            const sendStatus = (status: string, progress: number, log?: string) => {
+            const sendStatus = (status: string, progress: number, log?: string): void => {
                 window.webContents.send('setup-status', { status, progress, log });
             };
 
@@ -105,18 +105,18 @@ export class PythonManager {
                 }
             });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             this.isSettingUp = false;
             window.webContents.send('setup-status', { 
                 status: 'Error launching setup', 
                 progress: 0, 
-                log: `ERROR: ${error.message}` 
+                log: `ERROR: ${error instanceof Error ? error.message : String(error)}`
             });
         }
     }
 }
 
-export function registerSetupHandlers(mainWindow: BrowserWindow) {
+export function registerSetupHandlers(mainWindow: BrowserWindow): void {
     const manager = new PythonManager();
 
     ipcMain.handle('check-setup-status', async () => {

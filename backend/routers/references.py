@@ -39,13 +39,14 @@ async def get_reference_proposals(
         status_enum = models.FrameworkProposalStatus.PENDING
         
     query = db.query(models.ReferenceProposal).filter(models.ReferenceProposal.status == status_enum)
-    if note_id:
+    if params.note_id:
         query = query.filter(models.ReferenceProposal.source_note_id == note_id)
     
     proposals = query.all()
     print(f"FORENSIC: Fetched {len(proposals)} proposals for note_id={note_id}, status={status}")
     return proposals
 
+@router.get("/suggest", response_model=List[schemas.Reference])
 @router.get("/suggest", response_model=List[schemas.Reference])
 async def suggest_references_endpoint(
     params: schemas.ReferenceSuggest = Depends(), db: Session = Depends(get_db)
@@ -104,7 +105,7 @@ async def extract_references_task(note_id: int):
     
     db = SessionLocal()
     try:
-        db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+        db_note = db.query(models.Note).filter(models.Note.id == params.note_id).first()
         if not db_note:
             print(f"FORENSIC ERROR: Note #{note_id} not found in database.")
             return
@@ -169,7 +170,7 @@ async def extract_references_from_note(note_id: int, db: Session = Depends(get_d
     if any(j["name"] == job_name and j["status"] in ["pending", "running"] for j in active_jobs):
         raise HTTPException(status_code=400, detail="Extraction already in progress for this note.")
 
-    db_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    db_note = db.query(models.Note).filter(models.Note.id == params.note_id).first()
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
         
@@ -283,10 +284,8 @@ async def suggest_references(db: Session, params: schemas.ReferenceSuggest):
             scored_refs.append((final_score, ref))
         
         scored_refs.sort(key=lambda x: x[0], reverse=True)
-        results = [r for score, r in scored_refs[: params.limit]]
-        await ws_manager.broadcast(
-            {"event": "llm_finish", "data": {"type": "reference_suggestion", "count": len(results)}}
-        )
+        results = [r for score, r in scored_refs[:params.limit]]
+        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion", "count": len(results)}})
         return results
     except Exception as e:
         await ws_manager.broadcast({"event": "llm_error", "data": str(e)})

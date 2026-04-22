@@ -53,7 +53,7 @@ const App: React.FC = () => {
     } | null>(null);
     const [isReformatModalOpen, setIsReformatModalOpen] = useState(false);
 
-    const fetchProposalsCount = async () => {
+    const fetchProposalsCount = async (): Promise<void> => {
         try {
             const proposals = await api.get<any[]>('/api/framework/proposals?status=pending');
             setPendingProposalsCount(proposals.length);
@@ -73,21 +73,21 @@ const App: React.FC = () => {
             setIsSetup(true);
         });
 
-        const handleLinkPersona = (e: any) => {
-            setPersonaLinkingTarget(e.detail);
+        const handleLinkPersona = (e: Event): void => {
+            setPersonaLinkingTarget((e as CustomEvent).detail);
         };
         window.addEventListener('trigger-link-persona' as any, handleLinkPersona);
 
-        const handleNavigate = (e: any) => {
-            const { view, personId, groupId, noteId, date, messageId } = e.detail;
+        const handleNavigate = (e: Event): void => {
+            const { view, personId, groupId, noteId, date, messageId } = (e as CustomEvent).detail;
             navigateTo(view, personId, groupId, noteId, date, false, messageId);
         };
         window.addEventListener('navigate' as any, handleNavigate);
 
-        const handleTriggerMessageModal = () => setShowContactSelection(true);
+        const handleTriggerMessageModal = (): void => setShowContactSelection(true);
         window.addEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
 
-        const handleThinking = (e: any) => setIsThinking(e.detail);
+        const handleThinking = (e: Event): void => setIsThinking((e as CustomEvent).detail);
         window.addEventListener('paraclete-thinking' as any, handleThinking);
 
         const socket = new WebSocket('ws://127.0.0.1:8000/ws');
@@ -114,8 +114,8 @@ const App: React.FC = () => {
                     }
                 } else if (data.event === 'background_jobs') {
                     const jobs = data.data || [];
-                    const isAnyJobRunning = jobs.some((j: any) => j.status === 'running');
-                    const isAnalysisActive = jobs.some((j: any) => 
+                    const isAnyJobRunning = jobs.some((j: { status: string; name: string }) => j.status === 'running');
+                    const isAnalysisActive = jobs.some((j: { status: string; name: string }) =>
                         (j.status === 'running' || j.status === 'pending') && 
                         (j.name.includes('Analyze') || j.name.includes('Synthesis'))
                     );
@@ -144,7 +144,7 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleSelection = (e?: any) => {
+        const handleSelection = (e?: Event): void => {
             // If the modal is already open, don't change the context
             if (isReformatModalOpen) return;
 
