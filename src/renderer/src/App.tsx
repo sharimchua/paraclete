@@ -18,7 +18,7 @@ import Logo from './components/Logo';
 import ParacletePanel from './components/ParacletePanel';
 import StandardNavbar from './components/StandardNavbar';
 import { NavbarProvider } from './components/NavbarContext';
-import { api } from './services/api';
+import { api, FrameworkProposal } from './services/api';
 import PersonaSelectionModal from './components/PersonaSelectionModal';
 import EntitySelectionModal from './components/EntitySelectionModal';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -55,7 +55,7 @@ const App: React.FC = () => {
 
     const fetchProposalsCount = async (): Promise<void> => {
         try {
-            const proposals = await api.get<any[]>('/api/framework/proposals?status=pending');
+            const proposals = await api.get<FrameworkProposal[]>('/api/framework/proposals?status=pending');
             setPendingProposalsCount(proposals.length);
         } catch (err) {
             console.error('Failed to fetch proposals count:', err);
@@ -76,19 +76,19 @@ const App: React.FC = () => {
         const handleLinkPersona = (e: Event): void => {
             setPersonaLinkingTarget((e as CustomEvent).detail);
         };
-        window.addEventListener('trigger-link-persona' as any, handleLinkPersona);
+        window.addEventListener('trigger-link-persona' as keyof WindowEventMap, handleLinkPersona);
 
         const handleNavigate = (e: Event): void => {
             const { view, personId, groupId, noteId, date, messageId } = (e as CustomEvent).detail;
             navigateTo(view, personId, groupId, noteId, date, false, messageId);
         };
-        window.addEventListener('navigate' as any, handleNavigate);
+        window.addEventListener('navigate' as keyof WindowEventMap, handleNavigate);
 
         const handleTriggerMessageModal = (): void => setShowContactSelection(true);
-        window.addEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
+        window.addEventListener('trigger-message-modal' as keyof WindowEventMap, handleTriggerMessageModal);
 
         const handleThinking = (e: Event): void => setIsThinking((e as CustomEvent).detail);
-        window.addEventListener('paraclete-thinking' as any, handleThinking);
+        window.addEventListener('paraclete-thinking' as keyof WindowEventMap, handleThinking);
 
         const socket = new WebSocket('ws://127.0.0.1:8000/ws');
         socket.onmessage = (event) => {
@@ -135,10 +135,10 @@ const App: React.FC = () => {
         fetchProposalsCount();
 
         return () => {
-            window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
-            window.removeEventListener('navigate' as any, handleNavigate);
-            window.removeEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
-            window.removeEventListener('paraclete-thinking' as any, handleThinking);
+            window.removeEventListener('trigger-link-persona' as keyof WindowEventMap, handleLinkPersona);
+            window.removeEventListener('navigate' as keyof WindowEventMap, handleNavigate);
+            window.removeEventListener('trigger-message-modal' as keyof WindowEventMap, handleTriggerMessageModal);
+            window.removeEventListener('paraclete-thinking' as keyof WindowEventMap, handleThinking);
             socket.close();
         };
     }, []);

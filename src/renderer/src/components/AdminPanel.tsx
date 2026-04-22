@@ -107,14 +107,16 @@ const AdminPanel: React.FC = () => {
 
                     setImportStatus({ type: 'success', message: 'Data imported successfully! Please restart or refresh the application.' });
                 } catch (err: unknown) {
-                    setImportStatus({ type: 'error', message: `Import failed: ${err.message}` });
+                    const message = err instanceof Error ? err.message : String(err);
+                    setImportStatus({ type: 'error', message: `Import failed: ${message}` });
                 } finally {
                     setIsImporting(false);
                 }
             };
             reader.readAsText(file);
         } catch (error: unknown) {
-            setImportStatus({ type: 'error', message: `File reading failed: ${error.message}` });
+            const message = error instanceof Error ? error.message : String(error);
+            setImportStatus({ type: 'error', message: `File reading failed: ${message}` });
             setIsImporting(false);
         }
     };
@@ -478,7 +480,7 @@ const AdminPanel: React.FC = () => {
                                     message: 'Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.',
                                     onConfirm: async () => {
                 try {
-                    const data = await api.post<{ status: string }>('/admin/reset-framework-analysis', {});
+                    const data = await api.post<{ status: string; reset_count: number }>('/admin/reset-framework-analysis', {});
                     toast.success(`Reset flags for ${data.reset_count} items.`);
                 } catch (err) {
                     toast.error('Failed to reset analysis flags.');
@@ -506,7 +508,7 @@ const AdminPanel: React.FC = () => {
                                     variant: 'danger',
                                     onConfirm: async () => {
                 try {
-                    const data = await api.post<{ status: string }>('/admin/wipe-framework', {});
+                    const data = await api.post<{ status: string; deleted_items: number }>('/admin/wipe-framework', {});
                     toast.success(`Wiped ${data.deleted_items} rules.`);
                 } catch (err) {
                     toast.error('Failed to wipe framework.');
