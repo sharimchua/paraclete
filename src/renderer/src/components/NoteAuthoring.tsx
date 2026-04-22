@@ -495,7 +495,6 @@ const NoteAuthoring: React.FC<Props> = ({
               justifyContent: 'center'
             }}
             disabled={stage === 'Prepare'}
-            aria-label="Go to previous stage"
             onClick={() => {
               if (stage === 'Capture') setStage('Prepare')
               if (stage === 'Refine') setStage('Capture')
@@ -1217,7 +1216,6 @@ const NoteAuthoring: React.FC<Props> = ({
           >
             <button
               onClick={() => setIsCompanionModalOpen(false)}
-              aria-label="Close Companion Modal"
               style={{
                 position: 'absolute',
                 top: '20px',

@@ -662,9 +662,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
       {showTagModal && (
         <TagSelectionModal
           title={`Tag ${person.name}`}
-          existingTagIds={(person.tags || [])
-            .map((t) => t.id)
-            .filter((id): id is number => id !== undefined)}
+          existingTagIds={(person.tags || []).map((t) => t.id as number)}
           onClose={() => setShowTagModal(false)}
           onSelect={handleSelectTag}
         />

@@ -178,7 +178,6 @@ const TagManagement: React.FC = () => {
                       <span style={{ fontWeight: 500 }}>{tag.value}</span>
                       <button
                         onClick={() => handleDelete(tag.id)}
-                        aria-label={`Delete tag ${tag.value}`}
                         style={{
                           background: 'none',
                           border: 'none',
