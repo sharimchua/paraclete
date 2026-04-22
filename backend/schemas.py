@@ -313,12 +313,14 @@ class ReferenceProposal(ReferenceProposalBase):
     created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class ReferenceSuggest(BaseModel):
     query: Optional[str] = None
     note_id: Optional[int] = None
     person_id: Optional[int] = None
     group_id: Optional[int] = None
     limit: int = 5
+
 
 # For Atomic JSON Import/Export (Phase 2 Step 4.2)
 class FullExport(BaseModel):

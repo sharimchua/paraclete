@@ -48,13 +48,9 @@ async def get_reference_proposals(
 
 @router.get("/suggest", response_model=List[schemas.Reference])
 async def suggest_references_endpoint(
-    params: schemas.ReferenceSuggest = Depends(),
-    db: Session = Depends(get_db)
+    params: schemas.ReferenceSuggest = Depends(), db: Session = Depends(get_db)
 ):
-    return await suggest_references(
-        db=db,
-        params=params
-    )
+    return await suggest_references(db=db, params=params)
 
 @router.get("/", response_model=List[schemas.Reference])
 def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -220,10 +216,7 @@ async def reject_reference_proposal(proposal_id: int, db: Session = Depends(get_
     db.commit()
     return {"status": "rejected"}
 
-async def suggest_references(
-    db: Session,
-    params: schemas.ReferenceSuggest
-):
+async def suggest_references(db: Session, params: schemas.ReferenceSuggest):
     """
     Hybrid Suggestion Logic:
     Semantic vector search hybridized with an explicit multiplier boost for occurrences 
@@ -290,8 +283,10 @@ async def suggest_references(
             scored_refs.append((final_score, ref))
         
         scored_refs.sort(key=lambda x: x[0], reverse=True)
-        results = [r for score, r in scored_refs[:params.limit]]
-        await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion", "count": len(results)}})
+        results = [r for score, r in scored_refs[: params.limit]]
+        await ws_manager.broadcast(
+            {"event": "llm_finish", "data": {"type": "reference_suggestion", "count": len(results)}}
+        )
         return results
     except Exception as e:
         await ws_manager.broadcast({"event": "llm_error", "data": str(e)})
