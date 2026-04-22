@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   api,
   PractiseFramework,
@@ -234,11 +234,14 @@ const PracticeFramework: React.FC = () => {
   const [newPersonaName, setNewPersonaName] = useState('')
   const [newPersonaDesc, setNewPersonaDesc] = useState('')
 
-  const allItems = [
-    ...(core?.items || []),
-    ...personas.flatMap((p) => p.framework?.items || []),
-    ...customRecords.flatMap((r) => r.framework?.items || [])
-  ]
+  const allItems = useMemo(
+    () => [
+      ...(core?.items || []),
+      ...personas.flatMap((p) => p.framework?.items || []),
+      ...customRecords.flatMap((r) => r.framework?.items || [])
+    ],
+    [core, personas, customRecords]
+  )
 
   const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true)
@@ -484,11 +487,11 @@ const PracticeFramework: React.FC = () => {
     })
   }
 
-  if (loading) return <div className="loader" />
+  const selectedPersona = useMemo(() => {
+    return selectedPersonaId ? personas.find((p) => p.id === selectedPersonaId) : null
+  }, [selectedPersonaId, personas])
 
-  const selectedPersona = selectedPersonaId
-    ? personas.find((p) => p.id === selectedPersonaId)
-    : null
+  if (loading) return <div className="loader" />
 
   return (
     <div style={{ padding: '24px' }}>
