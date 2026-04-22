@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, Note } from '../services/api';
+import { api, Note, ReferenceProposal, ReferenceSuggestion } from '../services/api';
 import { toast } from './ToastProvider';
 
 interface Props {
@@ -7,18 +7,18 @@ interface Props {
 }
 
 const NoteUtilities: React.FC<Props> = ({ note }) => {
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [proposals, setProposals] = useState<any[]>([]);
+    const [suggestions, setSuggestions] = useState<ReferenceSuggestion[]>([]);
+    const [proposals, setProposals] = useState<ReferenceProposal[]>([]);
     const [isExtracting, setIsExtracting] = useState(false);
 
-    const fetchProposals = async () => {
+    const fetchProposals = async (): Promise<void> => {
         try {
-            const propData = await api.get<any[]>(`/api/references/proposals?note_id=${note.id}&status=pending`);
+            const propData = await api.get<ReferenceProposal[]>(`/api/references/proposals?note_id=${note.id}&status=pending`);
             setProposals(propData);
             
             // If we're extracting and we find proposals, we might want to keep polling or stop 
             // based on job status, but for now we'll just check jobs too.
-            const jobs = await api.get<any[]>('/api/admin/jobs');
+            const jobs = await api.get<{ status: string; name: string }[]>('/api/admin/jobs');
             const myJob = jobs.find(j => j.name === `Extract Concepts: Note #${note.id}` && (j.status === 'pending' || j.status === 'running'));
             setIsExtracting(!!myJob);
         } catch (err) {
@@ -27,9 +27,9 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
     };
 
     useEffect(() => {
-        const fetchSuggestions = async () => {
+        const fetchSuggestions = async (): Promise<void> => {
             try {
-                const sugData = await api.get<any[]>(`/api/references/suggest?note_id=${note.id}`);
+                const sugData = await api.get<ReferenceSuggestion[]>(`/api/references/suggest?note_id=${note.id}`);
                 setSuggestions(sugData);
                 await fetchProposals();
             } catch (err) {
@@ -39,7 +39,7 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
 
         fetchSuggestions();
         
-        const handleWebSocketMessage = (e: any) => {
+        const handleWebSocketMessage = ((e: CustomEvent) => {
             const { event, data } = e.detail;
             
             // Check if this message relates to extraction for THIS specific note
@@ -50,32 +50,33 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
             if ((event === 'llm_finish' || event === 'llm_error') && data?.type === 'reference_extraction') {
                 fetchProposals();
             }
-        };
+        }) as EventListener;
 
-        window.addEventListener('global-ws-message' as any, handleWebSocketMessage);
-        return () => window.removeEventListener('global-ws-message' as any, handleWebSocketMessage);
+        window.addEventListener('global-ws-message', handleWebSocketMessage);
+        return () => window.removeEventListener('global-ws-message', handleWebSocketMessage);
     }, [note.id]);
 
-    const extractConcepts = async () => {
+    const extractConcepts = async (): Promise<void> => {
         try {
             setIsExtracting(true);
-            await api.post(`/api/references/extract-from-note/${note.id}`, {});
+            await api.post<unknown>(`/api/references/extract-from-note/${note.id}`, {});
             toast.success(`Concept extraction queued in background.`);
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.detail || 'Failed to trigger extraction');
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            toast.error(errorMessage || 'Failed to trigger extraction');
             setIsExtracting(false);
         }
     };
 
-    const acceptProposal = async (prop: any) => {
+    const acceptProposal = async (prop: ReferenceProposal): Promise<void> => {
         try {
-            await api.post(`/api/references/proposals/${prop.id}/accept`, {});
+            await api.post<unknown>(`/api/references/proposals/${prop.id}/accept`, {});
             toast.success('Added to Reference Library');
             
             // Move from proposals to suggestions (or just refresh)
             setProposals(prev => prev.filter(p => p.id !== prop.id));
-            const sugData = await api.get<any[]>(`/api/references/suggest?note_id=${note.id}`);
+            const sugData = await api.get<ReferenceSuggestion[]>(`/api/references/suggest?note_id=${note.id}`);
             setSuggestions(sugData);
         } catch (err) {
             console.error(err);
@@ -83,9 +84,9 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
         }
     };
 
-    const rejectProposal = async (prop: any) => {
+    const rejectProposal = async (prop: ReferenceProposal): Promise<void> => {
         try {
-            await api.post(`/api/references/proposals/${prop.id}/reject`, {});
+            await api.post<unknown>(`/api/references/proposals/${prop.id}/reject`, {});
             setProposals(prev => prev.filter(p => p.id !== prop.id));
             toast.success('Proposal dismissed');
         } catch (err) {

@@ -53,18 +53,18 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
 
         fetchAll();
 
-        const handleWsMessage = (e: any) => {
+        const handleWsMessage = ((e: CustomEvent) => {
             const { event } = e.detail;
             if (event === 'framework_proposals_updated') {
                 fetchAll();
             }
-        };
+        }) as EventListener;
 
         window.addEventListener('refresh-profile', fetchAll);
-        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        window.addEventListener('global-ws-message', handleWsMessage);
         return () => {
             window.removeEventListener('refresh-profile', fetchAll);
-            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            window.removeEventListener('global-ws-message', handleWsMessage);
             setNavActions([]);
         };
     }, [personId, setNavActions]);
@@ -100,7 +100,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         api.get<Person>(`/persons/${personId}`).then(data => setPerson(data));
     };
 
-    const handleUpdate = async (e?: React.FormEvent) => {
+    const handleUpdate = async (e?: React.FormEvent): Promise<void> => {
         if (e) e.preventDefault();
         try {
             await api.patch(`/persons/${personId}`, { name: editName, contact_method: editContact, avatar_logo: editAvatarLogo });
@@ -112,7 +112,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         }
     };
 
-    const handleDelete = async () => {
+    const handleDelete = async (): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this person? All their notes will remain but will be unlinked.')) {
             try {
                 await api.delete(`/persons/${personId}`);
@@ -124,7 +124,7 @@ const PersonProfile: React.FC<Props> = ({ personId, onBack, onSelectNote, onStar
         }
     };
 
-    const handleSelectTag = async (tagId: number) => {
+    const handleSelectTag = async (tagId: number): Promise<void> => {
         try {
             await api.post('/tags/link', {
                 entity_type: 'person',

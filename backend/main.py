@@ -1,9 +1,9 @@
-from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
+from fastapi import FastAPI, WebSocket, Depends, HTTPException, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from typing import List, Dict, Set
+from typing import List
 import uvicorn
 import socket
 import os
@@ -126,7 +126,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             await websocket.receive_text()
-    except:
+    except Exception:
         ws_manager.disconnect(websocket)
 
 # --- Companion & Upload Infrastructure ---
@@ -251,7 +251,7 @@ async def process_ocr(files: List[UploadFile] = File(...)):
         for tp in temp_paths:
             if os.path.exists(tp):
                 try: os.remove(tp)
-                except: pass
+                except Exception: pass
 
 @app.post("/process/ocr/companion")
 async def process_ocr_companion(sid: str):
@@ -817,7 +817,7 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
         prev_notes = db.query(models.Note).filter(
             models.Note.person_id == person.id,
             models.Note.id != note_id,
-            models.Note.cleaned_text != None
+            models.Note.cleaned_text is not None
         ).order_by(models.Note.date.desc()).limit(3).all()
         
         if prev_notes:
@@ -906,7 +906,7 @@ async def draft_note_message(note_id: int, db: Session = Depends(get_db)):
     prev_notes = db.query(models.Note).filter(
         models.Note.person_id == db_note.person.id,
         models.Note.id != note_id,
-        models.Note.cleaned_text != None
+        models.Note.cleaned_text is not None
     ).order_by(models.Note.date.desc()).limit(2).all()
     
     history_text = "No previous session history available."
@@ -1384,7 +1384,7 @@ def get_calendar_data(db: Session = Depends(get_db)):
                 # Convert string YYYY-MM-DD back to date object for schema validation
                 d_obj = datetime.strptime(d_str, "%Y-%m-%d").date()
                 data_map[d_str] = {"date": d_obj, "count": 0, "message_count": r.m_count}
-            except:
+            except Exception:
                 continue
                 
     return list(data_map.values())

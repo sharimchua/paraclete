@@ -57,17 +57,17 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
 
     useEffect(() => {
         fetchData();
-        const handleWsMessage = (e: any) => {
+        const handleWsMessage = ((e: CustomEvent) => {
             const { event } = e.detail;
             if (event === 'framework_proposals_updated') {
                 fetchData();
             }
-        };
+        }) as EventListener;
         window.addEventListener('refresh-profile', fetchData);
-        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        window.addEventListener('global-ws-message', handleWsMessage);
         return () => {
             window.removeEventListener('refresh-profile', fetchData);
-            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            window.removeEventListener('global-ws-message', handleWsMessage);
             setNavActions([]);
         };
     }, [groupId]);
@@ -93,7 +93,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         }
     }, [isEditing, setNavActions, groupId, onStartNote, editName, editDesc, editAvatarLogo]);
 
-    const handleUpdate = async (e?: React.FormEvent) => {
+    const handleUpdate = async (e?: React.FormEvent): Promise<void> => {
         if (e) e.preventDefault();
         try {
             await api.patch(`/groups/${groupId}`, { name: editName, description: editDesc, avatar_logo: editAvatarLogo });
@@ -105,7 +105,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         }
     };
 
-    const handleDelete = async () => {
+    const handleDelete = async (): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this group? This will NOT delete the persons in it.')) {
             try {
                 await api.delete(`/groups/${groupId}`);
@@ -117,7 +117,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         }
     };
 
-    const handleAddMember = async (personId: number) => {
+    const handleAddMember = async (personId: number): Promise<void> => {
         try {
             await api.post(`/groups/${groupId}/members/${personId}`, {});
             setShowAddMember(false);
@@ -128,7 +128,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         }
     };
 
-    const handleRemoveMember = async (personId: number) => {
+    const handleRemoveMember = async (personId: number): Promise<void> => {
         if (window.confirm('Remove this person from the group?')) {
             try {
                 await api.delete(`/groups/${groupId}/members/${personId}`);
@@ -140,7 +140,7 @@ const GroupProfile: React.FC<Props> = ({ groupId, onBack, onSelectPerson, onSele
         }
     };
     
-    const handleSelectTag = async (tagId: number) => {
+    const handleSelectTag = async (tagId: number): Promise<void> => {
         try {
             await api.post('/tags/link', {
                 entity_type: 'group',

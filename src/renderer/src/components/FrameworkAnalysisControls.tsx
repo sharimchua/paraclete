@@ -17,7 +17,7 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
     const [isGlobalBusy, setIsGlobalBusy] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(Date.now());
 
-    const fetchCounts = async () => {
+    const fetchCounts = async (): Promise<void> => {
         setLoading(true);
         try {
             let url = '/api/framework/pending-count';
@@ -29,7 +29,7 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
             const queryString = params.toString();
             if (queryString) url += `?${queryString}`;
             
-            const data = await api.get<any>(url);
+            const data = await api.get<{ notes: number, messages: number, references: number, total: number }>(url);
             setCounts(data);
         } catch (err) {
             console.error('Failed to fetch pending counts:', err);
@@ -43,11 +43,11 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
     }, [personId, groupId, personaId, lastUpdated]);
 
     useEffect(() => {
-        const handleWsMessage = (e: any) => {
+        const handleWsMessage = ((e: CustomEvent) => {
             const { event, data } = e.detail;
             if (event === 'background_jobs') {
-                const jobs = data || [];
-                const isAnyAnalysisRunning = jobs.some((j: any) => 
+                const jobs = (data as { status: string; name: string }[]) || [];
+                const isAnyAnalysisRunning = jobs.some((j) =>
                     (j.status === 'running' || j.status === 'pending') && 
                     (j.name.includes('Analyze') || j.name.includes('Synthesis'))
                 );
@@ -56,13 +56,13 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
                 // If it was an analysis completion, we should refetch counts
                 setLastUpdated(Date.now());
             }
-        };
+        }) as EventListener;
 
-        window.addEventListener('global-ws-message' as any, handleWsMessage);
-        return () => window.removeEventListener('global-ws-message' as any, handleWsMessage);
+        window.addEventListener('global-ws-message', handleWsMessage);
+        return () => window.removeEventListener('global-ws-message', handleWsMessage);
     }, []);
 
-    const handleAnalyze = async () => {
+    const handleAnalyze = async (): Promise<void> => {
         if (!counts || counts.total === 0 || busy || isGlobalBusy || disabled) return;
         
         setBusy(true);
@@ -76,7 +76,7 @@ const FrameworkAnalysisControls: React.FC<Props> = ({ personId, groupId, persona
             const queryString = params.toString();
             if (queryString) url += `?${queryString}`;
 
-            const resp = await api.post<any>(url, {});
+            const resp = await api.post<{ job_ids?: string[] }>(url, {});
             if (onStarted && resp.job_ids?.[0]) onStarted(resp.job_ids[0]);
             // Non-intrusive: reset count and let background worker handle it
             setCounts({ notes: 0, messages: 0, references: 0, total: 0 });

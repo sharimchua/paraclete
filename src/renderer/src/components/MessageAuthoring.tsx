@@ -47,7 +47,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
-        const loadContexts = async () => {
+        const loadContexts = async (): Promise<void> => {
             setLoading(true);
             try {
                 let currentMessage = { ...message };
@@ -83,7 +83,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         loadContexts();
     }, [messageId, noteId, personId, groupId]);
 
-    const handleSave = React.useCallback(async () => {
+    const handleSave = React.useCallback(async (): Promise<void> => {
         setIsSaving(true);
         try {
             // Refine data to only send necessary fields, avoiding large nested objects
@@ -116,7 +116,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         }
     }, [message, noteId, noteContext, personId, personContext, groupId, groupContext, onComplete, setIsDirty]);
 
-    const handleDelete = React.useCallback(async () => {
+    const handleDelete = React.useCallback(async (): Promise<void> => {
         if (!message.id) return;
         
         const confirmed = window.confirm("Are you sure you want to delete this message? This action cannot be undone.");
@@ -132,7 +132,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         }
     }, [message.id, onComplete, setIsDirty]);
 
-    const handleGenerateDraft = async () => {
+    const handleGenerateDraft = async (): Promise<void> => {
         let msgId = message.id;
         if (!msgId) {
             try {
@@ -169,7 +169,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         }
     };
 
-    const handleIterate = async () => {
+    const handleIterate = async (): Promise<void> => {
         if (!message.id) {
              await handleSave();
              return;
@@ -199,7 +199,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         }
     };
 
-    const copyFormattedMessage = async () => {
+    const copyFormattedMessage = async (): Promise<void> => {
         const text = message.draft_text || '';
         if (!text) return;
 
@@ -514,7 +514,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
                             className="search-input"
                             style={{ margin: 0, width: '100%', padding: '8px' }}
                             value={message.status}
-                            onChange={(e: any) => setMessage({ ...message, status: e.target.value })}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMessage({ ...message, status: e.target.value as Message['status'] })}
                         >
                             <option value="draft">Draft</option>
                             <option value="sent">Sent</option>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { api, Reference, Tag } from '../services/api';
+import { api, Reference, Tag, ReferenceProposal } from '../services/api';
 import { useNavbar } from './NavbarContext';
 
 const ReferenceLibrary: React.FC = () => {
     const { setNavActions } = useNavbar();
     const [references, setReferences] = useState<Reference[]>([]);
-    const [proposals, setProposals] = useState<any[]>([]);
+    const [proposals, setProposals] = useState<ReferenceProposal[]>([]);
     const [view, setView] = useState<'library' | 'proposals'>('library');
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ const ReferenceLibrary: React.FC = () => {
         tags: [] as Tag[]
     });
 
-    const fetchReferences = async () => {
+    const fetchReferences = async (): Promise<void> => {
         setLoading(true);
         try {
             const data = await api.get<Reference[]>(`/api/references/?search=${encodeURIComponent(searchTerm)}`);
@@ -32,10 +32,10 @@ const ReferenceLibrary: React.FC = () => {
         }
     };
 
-    const fetchProposals = async () => {
+    const fetchProposals = async (): Promise<void> => {
         setLoading(true);
         try {
-            const data = await api.get<any[]>('/api/references/proposals?status=PENDING');
+            const data = await api.get<ReferenceProposal[]>('/api/references/proposals?status=PENDING');
             setProposals(data);
         } catch (err) {
             console.error('Failed to fetch proposals:', err);
@@ -70,7 +70,7 @@ const ReferenceLibrary: React.FC = () => {
         }
     }, [searchTerm, view, setNavActions]);
 
-    const handleAdd = async () => {
+    const handleAdd = async (): Promise<void> => {
         try {
             await api.post('/api/references/', {
                 ...newRef,
@@ -84,7 +84,7 @@ const ReferenceLibrary: React.FC = () => {
         }
     };
 
-    const handleUpdate = async () => {
+    const handleUpdate = async (): Promise<void> => {
         if (!editingRef) return;
         try {
             await api.patch(`/api/references/${editingRef.id}`, {
@@ -100,7 +100,7 @@ const ReferenceLibrary: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: number): Promise<void> => {
         if (!window.confirm('Are you sure you want to delete this reference?')) return;
         try {
             await api.delete(`/api/references/${id}`);
@@ -110,7 +110,7 @@ const ReferenceLibrary: React.FC = () => {
         }
     };
 
-    const acceptProposal = async (propId: number) => {
+    const acceptProposal = async (propId: number): Promise<void> => {
         try {
             await api.post(`/api/references/proposals/${propId}/accept`, {});
             fetchProposals();
@@ -119,7 +119,7 @@ const ReferenceLibrary: React.FC = () => {
         }
     };
 
-    const rejectProposal = async (propId: number) => {
+    const rejectProposal = async (propId: number): Promise<void> => {
         try {
             await api.post(`/api/references/proposals/${propId}/reject`, {});
             fetchProposals();
@@ -322,7 +322,7 @@ const ReferenceLibrary: React.FC = () => {
                             />
                             <select 
                                 value={newRef.type}
-                                onChange={e => setNewRef({...newRef, type: e.target.value as any})}
+                                onChange={e => setNewRef({...newRef, type: e.target.value as Reference['type']})}
                                 className="input-field"
                             >
                                 <option value="CONCEPT">CONCEPT</option>
@@ -369,7 +369,7 @@ const ReferenceLibrary: React.FC = () => {
                             />
                             <select 
                                 value={editingRef.type}
-                                onChange={e => setEditingRef({...editingRef, type: e.target.value as any})}
+                                onChange={e => setEditingRef({...editingRef, type: e.target.value as Reference['type']})}
                                 className="input-field"
                             >
                                 <option value="CONCEPT">CONCEPT</option>

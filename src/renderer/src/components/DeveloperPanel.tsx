@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 
 export interface LLMEvent {
     event: 'llm_start' | 'llm_finish' | 'llm_error';
-    data: any;
+    data: unknown;
 }
 
 const DeveloperPanel: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<LLMEvent[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

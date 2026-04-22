@@ -6,7 +6,6 @@ def test_get_local_ip_fallback():
     """
     Test that get_local_ip returns '127.0.0.1' when all methods fail.
     """
-    # Patching where it's used in backend.main
     with patch("backend.main.socket.socket") as mock_socket, \
          patch("backend.main.socket.gethostname") as mock_gethostname, \
          patch("backend.main.socket.getaddrinfo") as mock_getaddrinfo:

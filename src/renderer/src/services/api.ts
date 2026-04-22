@@ -8,6 +8,11 @@ export interface Tag {
 
 export interface Person {
     id: number;
+export interface LLMStatus {
+    is_ready: boolean;
+    current_model?: string;
+    device?: string;
+}
     name: string;
     contact_method?: string;
     avatar_logo?: string;
@@ -152,6 +157,22 @@ export interface TrendPoint {
     stacks: TrendStack[];
 }
 
+export interface ReferenceProposal {
+    id: number;
+    title: string;
+    body: string;
+    type: string;
+    status: string;
+    note_id: number;
+}
+
+export interface ReferenceSuggestion {
+    title: string;
+    body: string;
+    type: string;
+    reason: string;
+}
+
 export interface LeaderboardEntry {
     id: number;
     name: string;
@@ -186,7 +207,7 @@ export const api = {
         return res.json();
     },
 
-    async post<T>(path: string, body: any): Promise<T> {
+    async post<T>(path: string, body: unknown): Promise<T> {
         const res = await fetch(`${API_BASE}${path}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -196,7 +217,7 @@ export const api = {
         return res.json();
     },
 
-    async patch<T>(path: string, body: any): Promise<T> {
+    async patch<T>(path: string, body: unknown): Promise<T> {
         const res = await fetch(`${API_BASE}${path}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -224,21 +245,21 @@ export const api = {
     },
 
     // Specific Domain Methods
-    getMessages: (params?: any) => {
+    getMessages: (params?: Record<string, string>): Promise<Message[]> => {
         let qs = '';
         if (params) {
             qs = '?' + new URLSearchParams(params).toString();
         }
         return api.get<Message[]>(`/api/messages/${qs}`);
     },
-    getMessage: (id: number) => api.get<Message>(`/api/messages/${id}`),
-    createMessage: (data: Partial<Message>) => api.post<Message>('/api/messages/', data),
-    updateMessage: (id: number, data: Partial<Message>) => api.patch<Message>(`/api/messages/${id}`, data),
-    iterateMessage: (id: number, feedback: string, highlight?: string) => 
+    getMessage: (id: number): Promise<Message> => api.get<Message>(`/api/messages/${id}`),
+    createMessage: (data: Partial<Message>): Promise<Message> => api.post<Message>('/api/messages/', data),
+    updateMessage: (id: number, data: Partial<Message>): Promise<Message> => api.patch<Message>(`/api/messages/${id}`, data),
+    iterateMessage: (id: number, feedback: string, highlight?: string): Promise<{draft_text: string}> =>
         api.post<{draft_text: string}>(`/api/messages/${id}/iterate`, { feedback, highlight_text: highlight }),
-    getMessagesByDate: (date: string) => api.get<Message[]>(`/api/messages/by-date/${date}`),
+    getMessagesByDate: (date: string): Promise<Message[]> => api.get<Message[]>(`/api/messages/by-date/${date}`),
     
     // Legacy mapping (to be moved/updated)
-    getNotesByDate: (date: string) => api.get<Note[]>(`/api/notes/by-date/${date}`),
-    draftNoteMessage: (noteId: number) => api.post<Message>(`/api/notes/${noteId}/draft-message`, {})
+    getNotesByDate: (date: string): Promise<Note[]> => api.get<Note[]>(`/api/notes/by-date/${date}`),
+    draftNoteMessage: (noteId: number): Promise<Message> => api.post<Message>(`/api/notes/${noteId}/draft-message`, {})
 };

@@ -13,7 +13,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'draft' | 'sent' | 'archived'>('all');
 
-    const fetchMessages = async () => {
+    const fetchMessages = async (): Promise<void> => {
         setIsLoading(true);
         try {
             const result = await api.getMessages();
@@ -65,7 +65,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
                             className="search-input" 
                             style={{ width: '180px', margin: 0 }}
                             value={filter}
-                            onChange={(e: any) => setFilter(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilter(e.target.value)}
                         >
                             <option value="all">All Status</option>
                             <option value="draft">Drafts</option>

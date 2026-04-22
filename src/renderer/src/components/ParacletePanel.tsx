@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { api } from '../services/api';
+import { api, LLMStatus } from '../services/api';
+import { LLMEvent } from './DeveloperPanel';
 import Logo from './Logo';
 
 interface BackgroundJob {
@@ -18,7 +19,7 @@ interface ParacletePanelProps {
 
 const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<'jobs' | 'forensics' | 'chat'>('jobs');
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<(LLMEvent & { timestamp: string })[]>([]);
     const [jobs, setJobs] = useState<BackgroundJob[]>([]);
     const [isThinking, setIsThinking] = useState(false);
     const [isLlmReady, setIsLlmReady] = useState(false);
@@ -26,10 +27,10 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [shouldRender, setShouldRender] = useState(isOpen);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [llmStatus, setLlmStatus] = useState<any>(null);
+    const [llmStatus, setLlmStatus] = useState<LLMStatus | null>(null);
     const [contextUsage, setContextUsage] = useState(0);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -213,7 +214,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
     };
 
     useEffect(() => {
-        const handleWsMessage = (event: any) => {
+        const handleWsMessage = ((event: CustomEvent) => {
             try {
                 const data = event.detail;
                 

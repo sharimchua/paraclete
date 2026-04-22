@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api, Person, Note, API_BASE } from '../services/api';
+import { api, Person, Note, API_BASE, Group, Tag } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from './ToastProvider';
@@ -21,7 +21,7 @@ type Stage = 'Prepare' | 'Capture' | 'Refine';
 const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId, onComplete, setIsDirty }) => {
     const [stage, setStage] = useState<Stage>('Prepare');
     const [person, setPerson] = useState<Person | null>(null);
-    const [group, setGroup] = useState<any | null>(null);
+    const [group, setGroup] = useState<Group | null>(null);
     const [recentNotes, setRecentNotes] = useState<Note[]>([]);
     const [rawText, setRawText] = useState('');
     const [title, setTitle] = useState('');
@@ -36,8 +36,8 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     });
     const [suggestedTags, setSuggestedTags] = useState<{ key: string, value: string }[]>([]);
-    const [selectedTags, setSelectedTags] = useState<any[]>([]);
-    const [existingTaxonomy, setExistingTaxonomy] = useState<any[]>([]);
+    const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+    const [existingTaxonomy, setExistingTaxonomy] = useState<Tag[]>([]);
     const [sessionBrief, setSessionBrief] = useState<string>('');
     const [isBriefing, setIsBriefing] = useState(false);
     const [isLlmReady, setIsLlmReady] = useState(false);
@@ -49,7 +49,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
     // Companion State
     const [companionSessionId, setCompanionSessionId] = useState<string | null>(null);
     const [companionUrl, setCompanionUrl] = useState<string | null>(null);
-    const [companionImages, setCompanionImages] = useState<any[]>([]);
+    const [companionImages, setCompanionImages] = useState<{ filename: string; url: string }[]>([]);
     const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [interstitial, setInterstitial] = useState<{ title: string, subtitle: string, tasks?: string[] } | null>(null);
@@ -126,14 +126,14 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                     const p = await api.get<Person>(`/persons/${personId}`);
                     setPerson(p);
                 } else if (groupId) {
-                    const g = await api.get<any>(`/groups/${groupId}`);
+                    const g = await api.get<Group>(`/groups/${groupId}`);
                     setGroup(g);
                 } else if (noteId && currentNote) {
                     if (currentNote.person_id) {
                          const p = await api.get<Person>(`/persons/${currentNote.person_id}`);
                          setPerson(p);
                     } else if (currentNote.group_id) {
-                         const g = await api.get<any>(`/groups/${currentNote.group_id}`);
+                         const g = await api.get<Group>(`/groups/${currentNote.group_id}`);
                          setGroup(g);
                     }
                 }
@@ -148,7 +148,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             try {
                 const [notes, tags] = await Promise.all([
                     api.get<Note[]>(`/notes/`),
-                    api.get<any[]>('/tags/')
+                    api.get<Tag[]>('/tags/')
                 ]);
                 setExistingTaxonomy(tags);
                 
@@ -207,11 +207,11 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
                 stage: 'Clean',
                 date: sessionDate,
                 tags: selectedTags
-            } as any);
+            });
             if (setIsDirty) setIsDirty(true);
 
             // Extract entities (Transient)
-            const metadata = await api.post<any>('/analysis/extract', {
+            const metadata = await api.post<{ tags: { key: string; value: string }[] }>('/analysis/extract', {
                 raw_text: rawText,
                 person_id: personId || currentNote?.person_id,
                 group_id: groupId || currentNote?.group_id
@@ -306,7 +306,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
             // In a real app we'd need a way to clear them. For now, let's just add new ones.
             // Better: api.post('/tags/link') already handles duplicates gracefully in backend if we implement it.
             for (const tagObj of selectedTags) {
-                const tag = await api.post<any>('/tags/', { 
+                const tag = await api.post<Tag>('/tags/', {
                     key: tagObj.key, 
                     value: tagObj.value 
                 });
@@ -373,7 +373,7 @@ const NoteAuthoring: React.FC<Props> = ({ personId, groupId, initialDate, noteId
 
     const handleStartCompanion = async () => {
         try {
-            const data = await api.post<any>('/companion/session', {});
+            const data = await api.post<{ session_id: string, url: string }>('/companion/session', {});
             setCompanionSessionId(data.session_id);
             setCompanionUrl(data.url);
             setIsCompanionModalOpen(true);

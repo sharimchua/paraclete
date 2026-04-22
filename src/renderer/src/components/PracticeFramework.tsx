@@ -109,7 +109,7 @@ const PracticeFramework: React.FC = () => {
     const [selectedCustomRecord, setSelectedCustomRecord] = useState<CustomFrameworkRecord | null>(null);
     const [loading, setLoading] = useState(true);
     const [showCreatePersona, setShowCreatePersona] = useState(false);
-    const [consolidatedView, setConsolidatedView] = useState<{title: string, text: string, structuredData?: any} | null>(null);
+    const [consolidatedView, setConsolidatedView] = useState<{title: string, text: string, structuredData?: unknown} | null>(null);
     const [movingItem, setMovingItem] = useState<PractiseFrameworkItem | null>(null);
     const [confirmation, setConfirmation] = useState<{ title: string, message: string, variant?: 'danger' | 'primary', onConfirm: () => void } | null>(null);
     const [showAddCustom, setShowAddCustom] = useState(false);
@@ -131,7 +131,7 @@ const PracticeFramework: React.FC = () => {
             const [coreRes, personaRes, customRes, proposalRes] = await Promise.allSettled([
                 api.get<PractiseFramework>('/api/framework/core'),
                 api.get<Persona[]>('/api/framework/personas'),
-                api.get<any[]>('/api/framework/custom'),
+                api.get<unknown[]>('/api/framework/custom'),
                 api.get<FrameworkProposal[]>('/api/framework/proposals?status=pending')
             ]);
 
@@ -161,17 +161,17 @@ const PracticeFramework: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleWsMessage = (e: any) => {
+        const handleWsMessage = (e: CustomEvent) => {
             const { event } = e.detail;
             if (event === 'framework_proposals_updated') {
                 fetchData();
             }
         };
 
-        window.addEventListener('global-ws-message' as any, handleWsMessage);
+        window.addEventListener('global-ws-message' , handleWsMessage);
         
         // Update Navbar Actions based on active tab and state
-        let actions: any[] = [];
+        let actions: unknown[] = [];
         if (activeTab === 'personas' && !selectedPersonaId) {
             actions.push({ label: '+ Add New Persona', onClick: () => setShowCreatePersona(true) });
         } else if (activeTab === 'custom' && !selectedCustomRecord) {
@@ -183,7 +183,7 @@ const PracticeFramework: React.FC = () => {
         setNavActions(actions);
 
         return () => {
-            window.removeEventListener('global-ws-message' as any, handleWsMessage);
+            window.removeEventListener('global-ws-message' , handleWsMessage);
             setNavActions([]);
         };
     }, [activeTab, selectedPersonaId, selectedCustomRecord, proposals.length, setNavActions]);
@@ -194,7 +194,7 @@ const PracticeFramework: React.FC = () => {
             await api.post(`/api/framework/items/${itemId}/move`, { target_type: targetType, target_id: targetId });
             setMovingItem(null);
             fetchData();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to move item:', err);
             toast.error(`Failed to move item: ${err.message || 'Unknown error'}`);
         }
@@ -257,34 +257,34 @@ const PracticeFramework: React.FC = () => {
         });
     };
 
-    const createFrameworkItem = async (frameworkId: number, aspect: string, value: string) => {
+    const createFrameworkItem = async (frameworkId: number, aspect: string, value: string): Promise<void> => {
         try {
-            await api.post(`/api/framework/frameworks/${frameworkId}/items`, { aspect, value });
+            await api.post<unknown>(`/api/framework/frameworks/${frameworkId}/items`, { aspect, value });
             fetchData();
         } catch (err) {
             console.error('Failed to create item:', err);
         }
     };
 
-    const updateFrameworkItem = async (itemId: number, value: string) => {
+    const updateFrameworkItem = async (itemId: number, value: string): Promise<void> => {
         try {
             const item = allItems.find(i => i.id === itemId);
             if (!item) return;
-            await api.patch(`/api/framework/items/${itemId}`, { aspect: item.aspect, value });
+            await api.patch<unknown>(`/api/framework/items/${itemId}`, { aspect: item.aspect, value });
             fetchData();
         } catch (err) {
             console.error('Failed to update item:', err);
         }
     };
 
-    const deleteFrameworkItem = async (itemId: number) => {
+    const deleteFrameworkItem = async (itemId: number): Promise<void> => {
         setConfirmation({
             title: 'Delete Rule',
             message: 'Are you sure you want to delete this rule?',
             variant: 'danger',
             onConfirm: async () => {
                 try {
-                    await api.delete(`/api/framework/items/${itemId}`);
+                    await api.delete<unknown>(`/api/framework/items/${itemId}`);
                     fetchData();
                     toast.success('Rule deleted.');
                 } catch (err) {
@@ -314,14 +314,14 @@ const PracticeFramework: React.FC = () => {
         }
     };
 
-    const handleDeletePersona = async (id: number) => {
+    const handleDeletePersona = async (id: number): Promise<void> => {
         setConfirmation({
             title: 'Delete Persona',
             message: 'Are you sure you want to delete this persona? All associated core rules will be unlinked (but remain in global core).',
             variant: 'danger',
             onConfirm: async () => {
                 try {
-                    await api.delete(`/api/framework/personas/${id}`);
+                    await api.delete<unknown>(`/api/framework/personas/${id}`);
                     if (selectedPersonaId === id) setSelectedPersonaId(null);
                     fetchData();
                     toast.success('Persona deleted.');
@@ -482,17 +482,17 @@ const PracticeFramework: React.FC = () => {
                                     <div style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '20px' }}>
                                         <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Baseline Patterns</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                            {(p.framework as any)?.items?.slice(0, 3).map((item: any) => (
+                                            {p.framework?.items?.slice(0, 3).map((item) => (
                                                 <div key={item.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
                                                     <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{item.aspect}:</span> {(item.value || '').slice(0, 20)}...
                                                 </div>
                                             ))}
-                                            {((p.framework as any)?.items?.length || 0) > 3 && (
+                                            {(p.framework?.items?.length || 0) > 3 && (
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
-                                                    +{((p.framework as any)?.items?.length || 0) - 3}
+                                                    +{(p.framework?.items?.length || 0) - 3}
                                                 </div>
                                             )}
-                                            {((p.framework as any)?.items?.length || 0) === 0 && (
+                                            {(p.framework?.items?.length || 0) === 0 && (
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Use core defaults</div>
                                             )}
                                         </div>
@@ -506,7 +506,7 @@ const PracticeFramework: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setConsolidatedView({ title: `${p.name} Consolidated`, text: "Loading..." });
-                                                api.get<{consolidated_text: string, structured_data: any}>(`/api/framework/consolidated/persona/${p.id}`).then(res => {
+                                                api.get<{consolidated_text: string, structured_data: unknown}>(`/api/framework/consolidated/persona/${p.id}`).then(res => {
                                                     setConsolidatedView({ title: `${p.name} Practice Style`, text: res.consolidated_text, structuredData: res.structured_data });
                                                 });
                                             }}
@@ -571,7 +571,7 @@ const PracticeFramework: React.FC = () => {
                                     <div style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '20px' }}>
                                         <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Custom Overrides</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                            {record.framework?.items?.slice(0, 3).map((item: any) => (
+                                            {record.framework?.items?.slice(0, 3).map((item) => (
                                                 <div key={item.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
                                                     <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{item.aspect}:</span> {item.value.slice(0, 20)}...
                                                 </div>
@@ -596,7 +596,7 @@ const PracticeFramework: React.FC = () => {
                                                 e.stopPropagation();
                                                 setConsolidatedView({ title: `${record.name} View`, text: "Loading..." });
                                                 const path = record.type === 'person' ? `/api/framework/consolidated/person/${record.id}` : `/api/framework/consolidated/group/${record.id}`;
-                                                api.get<{consolidated_text: string, structured_data: any}>(path).then(res => {
+                                                api.get<{consolidated_text: string, structured_data: unknown}>(path).then(res => {
                                                     setConsolidatedView({ title: `${record.name} Styles`, text: res.consolidated_text, structuredData: res.structured_data });
                                                 });
                                             }}
@@ -836,21 +836,21 @@ const PracticeFramework: React.FC = () => {
                                                         const val = e.target.value;
                                                         const updated = proposals.map(p => {
                                                             if (p.id === proposal.id) {
-                                                                if (val === 'core') return { ...p, is_core: true, persona_id: null as any, person_id: null as any, group_id: null as any };
+                                                                if (val === 'core') return { ...p, is_core: true, persona_id: null , person_id: null , group_id: null  };
                                                                 if (val.startsWith('person-')) {
                                                                     const id = parseInt(val.split('-')[1]);
-                                                                    return { ...p, is_core: false, persona_id: null as any, person_id: id, group_id: null as any };
+                                                                    return { ...p, is_core: false, persona_id: null , person_id: id, group_id: null  };
                                                                 }
                                                                 if (val.startsWith('group-')) {
                                                                     const id = parseInt(val.split('-')[1]);
                                                                     // Try to find group name from possibilities or personas
                                                                     const gName = p.possible_groups?.find(g => g.id === id)?.name;
-                                                                    return { ...p, is_core: false, persona_id: null as any, person_id: null as any, group_id: id, group_name: gName || p.group_name };
+                                                                    return { ...p, is_core: false, persona_id: null , person_id: null , group_id: id, group_name: gName || p.group_name };
                                                                 }
                                                                 // Assume it's a raw persona ID
                                                                 const pid = parseInt(val);
                                                                 const persName = personas.find(pers => pers.id === pid)?.name;
-                                                                return { ...p, is_core: false, persona_id: pid, persona_name: persName || p.persona_name, person_id: null as any, group_id: null as any };
+                                                                return { ...p, is_core: false, persona_id: pid, persona_name: persName || p.persona_name, person_id: null , group_id: null  };
                                                             }
                                                             return p;
                                                         });
@@ -916,7 +916,7 @@ const PracticeFramework: React.FC = () => {
                                         const levels = [
                                             { label: 'Global Core', items: consolidatedView.structuredData.core || [] },
                                             { label: `Persona: ${consolidatedView.structuredData.persona?.name}`, items: consolidatedView.structuredData.persona?.items || [] },
-                                            ...(consolidatedView.structuredData.groups || []).map((g: any) => ({ label: `Group: ${g.name}`, items: g.items || [] })),
+                                            ...(consolidatedView.structuredData.groups || []).map((g: { name: string; items: unknown[] }) => ({ label: `Group: ${g.name}`, items: g.items || [] })),
                                             { label: `Individual: ${consolidatedView.structuredData.person?.name}`, items: consolidatedView.structuredData.person?.items || [] }
                                         ].filter(l => l.items && l.items.length > 0);
 
@@ -928,7 +928,7 @@ const PracticeFramework: React.FC = () => {
                                                     {level.label}
                                                 </div>
                                                 <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                    {level.items.map((item: any) => (
+                                                    {level.items.map((item) => (
                                                         <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                                                             <div style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
                                                                 <span style={{ fontWeight: 700, color: 'var(--primary)', marginRight: '8px' }}>{item.aspect}:</span>

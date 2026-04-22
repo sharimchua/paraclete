@@ -15,7 +15,7 @@ const AdminPanel: React.FC = () => {
         fetchSettings();
     }, []);
 
-    const fetchSettings = async () => {
+    const fetchSettings = async (): Promise<void> => {
         try {
             const res = await fetch('http://127.0.0.1:8000/api/admin/settings');
             const data = await res.json();
@@ -25,7 +25,7 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    const updateSetting = async (key: string, value: string) => {
+    const updateSetting = async (key: string, value: string): Promise<void> => {
         setIsSavingSetting(key);
         try {
             await fetch(`http://127.0.0.1:8000/api/admin/settings/${key}?value=${encodeURIComponent(value)}`, {
@@ -40,7 +40,7 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    const handleExport = async () => {
+    const handleExport = async (): Promise<void> => {
         setIsExporting(true);
         try {
             const response = await fetch('http://127.0.0.1:8000/export/');
@@ -65,7 +65,7 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -81,7 +81,7 @@ const AdminPanel: React.FC = () => {
         event.target.value = '';
     };
 
-    const executeImport = async (file: File) => {
+    const executeImport = async (file: File): Promise<void> => {
         setIsImporting(true);
         setImportStatus({ type: 'idle', message: 'Importing...' });
 
@@ -106,15 +106,17 @@ const AdminPanel: React.FC = () => {
                     }
 
                     setImportStatus({ type: 'success', message: 'Data imported successfully! Please restart or refresh the application.' });
-                } catch (err: any) {
-                    setImportStatus({ type: 'error', message: `Import failed: ${err.message}` });
+                } catch (err) {
+                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    setImportStatus({ type: 'error', message: `Import failed: ${errorMessage}` });
                 } finally {
                     setIsImporting(false);
                 }
             };
             reader.readAsText(file);
-        } catch (error: any) {
-            setImportStatus({ type: 'error', message: `File reading failed: ${error.message}` });
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setImportStatus({ type: 'error', message: `File reading failed: ${errorMessage}` });
             setIsImporting(false);
         }
     };
@@ -478,7 +480,7 @@ const AdminPanel: React.FC = () => {
                                     message: 'Are you sure you want to reset all framework analysis? This will delete all pending suggestions and allow you to re-analyze everything from scratch.',
                                     onConfirm: async () => {
                 try {
-                    const data = await api.post<any>('/admin/reset-framework-analysis', {});
+                    const data = await api.post<{ reset_count: number }>('/admin/reset-framework-analysis', {});
                     toast.success(`Reset flags for ${data.reset_count} items.`);
                 } catch (err) {
                     toast.error('Failed to reset analysis flags.');
@@ -506,7 +508,7 @@ const AdminPanel: React.FC = () => {
                                     variant: 'danger',
                                     onConfirm: async () => {
                 try {
-                    const data = await api.post<any>('/admin/wipe-framework', {});
+                    const data = await api.post<{ deleted_items: number }>('/admin/wipe-framework', {});
                     toast.success(`Wiped ${data.deleted_items} rules.`);
                 } catch (err) {
                     toast.error('Failed to wipe framework.');

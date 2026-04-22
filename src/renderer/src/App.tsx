@@ -53,9 +53,9 @@ const App: React.FC = () => {
     } | null>(null);
     const [isReformatModalOpen, setIsReformatModalOpen] = useState(false);
 
-    const fetchProposalsCount = async () => {
+    const fetchProposalsCount = async (): Promise<void> => {
         try {
-            const proposals = await api.get<any[]>('/api/framework/proposals?status=pending');
+            const proposals = await api.get<unknown[]>('/api/framework/proposals?status=pending');
             setPendingProposalsCount(proposals.length);
         } catch (err) {
             console.error('Failed to fetch proposals count:', err);
@@ -73,25 +73,27 @@ const App: React.FC = () => {
             setIsSetup(true);
         });
 
-        const handleLinkPersona = (e: any) => {
+        const handleLinkPersona = ((e: CustomEvent) => {
             setPersonaLinkingTarget(e.detail);
-        };
-        window.addEventListener('trigger-link-persona' as any, handleLinkPersona);
+        }) as EventListener;
+        window.addEventListener('trigger-link-persona', handleLinkPersona);
 
-        const handleNavigate = (e: any) => {
+        const handleNavigate = ((e: CustomEvent) => {
             const { view, personId, groupId, noteId, date, messageId } = e.detail;
             navigateTo(view, personId, groupId, noteId, date, false, messageId);
-        };
-        window.addEventListener('navigate' as any, handleNavigate);
+        }) as EventListener;
+        window.addEventListener('navigate', handleNavigate);
 
         const handleTriggerMessageModal = () => setShowContactSelection(true);
-        window.addEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
+        window.addEventListener('trigger-message-modal', handleTriggerMessageModal as EventListener);
 
-        const handleThinking = (e: any) => setIsThinking(e.detail);
-        window.addEventListener('paraclete-thinking' as any, handleThinking);
+        const handleThinking = ((e: CustomEvent) => {
+            setIsThinking(e.detail);
+        }) as EventListener;
+        window.addEventListener('paraclete-thinking', handleThinking);
 
         const socket = new WebSocket('ws://127.0.0.1:8000/ws');
-        socket.onmessage = (event) => {
+        socket.onmessage = (event: MessageEvent): void => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.event === 'llm_start') {
@@ -113,9 +115,9 @@ const App: React.FC = () => {
                         }));
                     }
                 } else if (data.event === 'background_jobs') {
-                    const jobs = data.data || [];
-                    const isAnyJobRunning = jobs.some((j: any) => j.status === 'running');
-                    const isAnalysisActive = jobs.some((j: any) => 
+                    const jobs = (data.data as { status: string; name: string }[]) || [];
+                    const isAnyJobRunning = jobs.some((j) => j.status === 'running');
+                    const isAnalysisActive = jobs.some((j) =>
                         (j.status === 'running' || j.status === 'pending') && 
                         (j.name.includes('Analyze') || j.name.includes('Synthesis'))
                     );
@@ -135,16 +137,16 @@ const App: React.FC = () => {
         fetchProposalsCount();
 
         return () => {
-            window.removeEventListener('trigger-link-persona' as any, handleLinkPersona);
-            window.removeEventListener('navigate' as any, handleNavigate);
-            window.removeEventListener('trigger-message-modal' as any, handleTriggerMessageModal);
-            window.removeEventListener('paraclete-thinking' as any, handleThinking);
+            window.removeEventListener('trigger-link-persona', handleLinkPersona);
+            window.removeEventListener('navigate', handleNavigate);
+            window.removeEventListener('trigger-message-modal', handleTriggerMessageModal as EventListener);
+            window.removeEventListener('paraclete-thinking', handleThinking);
             socket.close();
         };
     }, []);
 
     useEffect(() => {
-        const handleSelection = (e?: any) => {
+        const handleSelection = (e?: Event): void => {
             // If the modal is already open, don't change the context
             if (isReformatModalOpen) return;
 
@@ -188,8 +190,8 @@ const App: React.FC = () => {
         resetHistory: boolean = false,
         messageId: number | null = null,
         ignoreDirty: boolean = false
-    ) => {
-        const performNavigation = () => {
+    ): void => {
+        const performNavigation = (): void => {
             setCurrentView(view);
             setSelectedPersonId(personId);
             setSelectedGroupId(groupId);
@@ -218,8 +220,8 @@ const App: React.FC = () => {
         }
     };
 
-    const goBack = (ignoreDirty: boolean = false) => {
-        const performBack = () => {
+    const goBack = (ignoreDirty: boolean = false): void => {
+        const performBack = (): void => {
             setIsDirty(false);
             setShowDiscardConfirm(false);
             setPendingNavigation(null);
@@ -277,12 +279,12 @@ const App: React.FC = () => {
         return <SetupScreen />;
     }
 
-    const startNewNote = (personId?: number, groupId?: number, date?: string) => {
+    const startNewNote = (personId?: number, groupId?: number, date?: string): void => {
         navigateTo('new-note', personId || null, groupId || null, null, date || null);
     };
 
 
-    const renderContent = () => {
+    const renderContent = (): React.ReactNode => {
         if (currentView === 'new-note') {
             return (
                 <NoteAuthoring 
@@ -400,7 +402,7 @@ const App: React.FC = () => {
         return <div>View {currentView} coming soon.</div>;
     };
 
-    const getHeaderProps = () => {
+    const getHeaderProps = (): { title: string; showBack: boolean; onBack: (ignoreDirty?: boolean) => void } => {
         const showBack = viewHistory.length > 1;
         let title = currentView.toUpperCase();
 
