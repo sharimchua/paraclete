@@ -1,7 +1,7 @@
 import json
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
@@ -318,7 +318,6 @@ def create_persona(persona: schemas.PersonaCreate, db: Session = Depends(get_db)
 
 @router.get("/personas", response_model=List[schemas.Persona])
 def read_personas(db: Session = Depends(get_db)):
-    from sqlalchemy.orm import joinedload
     personas = db.query(models.Persona).options(
         joinedload(models.Persona.framework).joinedload(models.PractiseFramework.items)
     ).all()
@@ -362,7 +361,6 @@ def delete_persona(persona_id: int, db: Session = Depends(get_db)):
 # --- Proposals ---
 @router.get("/proposals", response_model=List[schemas.FrameworkProposal])
 def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
-    from sqlalchemy.orm import joinedload
     query = db.query(models.FrameworkProposal).options(
         joinedload(models.FrameworkProposal.persona),
         joinedload(models.FrameworkProposal.person),
@@ -595,7 +593,6 @@ async def reject_all_pending_proposals(db: Session = Depends(get_db)):
 @router.get("/custom")
 def read_custom_frameworks(db: Session = Depends(get_db)):
     """Returns Persons and Groups that have custom frameworks."""
-    from sqlalchemy.orm import joinedload
     persons = db.query(models.Person).options(
         joinedload(models.Person.custom_framework).joinedload(models.PractiseFramework.items)
     ).filter(models.Person.custom_framework_id != None).all()
