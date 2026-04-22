@@ -560,16 +560,22 @@ async def get_session_brief(req: SessionBriefRequest, db: Session = Depends(get_
     await ws_manager.broadcast({"event": "llm_start", "data": {"type": "session_brief", "prompt": "Synthesizing Session Brief"}})
     try:
         # Fetch active topics and recent reflections
-        active_topics = db.query(models.Topic).filter(
-            models.Topic.person_id == person_id,
-            models.Topic.state == models.TopicState.active
-        ).all()
+        topic_query = db.query(models.Topic).filter(models.Topic.state == models.TopicState.active)
+        reflection_query = db.query(models.Reflection)
+
+        if req.person_id:
+            topic_query = topic_query.filter(models.Topic.person_id == req.person_id)
+            reflection_query = reflection_query.filter(models.Reflection.person_id == req.person_id)
+        elif req.group_id:
+            topic_query = topic_query.filter(models.Topic.group_id == req.group_id)
+            reflection_query = reflection_query.filter(models.Reflection.group_id == req.group_id)
+
+        active_topics = topic_query.all()
         topics_text = "\n".join([f"- {t.title}: {t.summary}" for t in active_topics]) if active_topics else ""
 
-        recent_reflections = db.query(models.Reflection).filter(
-            models.Reflection.person_id == person_id
-        ).order_by(models.Reflection.created_at.desc()).limit(3).all()
+        recent_reflections = reflection_query.order_by(models.Reflection.created_at.desc()).limit(3).all()
         reflections_text = "\n".join([f"- {r.content}" for r in recent_reflections]) if recent_reflections else ""
+
 
         brief = await llm.workflows.run_session_brief(person_name, history_text, topics_text, reflections_text)
         await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "session_brief", "result": brief}})
