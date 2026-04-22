@@ -475,14 +475,31 @@ def read_proposals(status: Optional[str] = None, db: Session = Depends(get_db)):
         if p.group and not p_out.group_name:
             p_out.group_name = p.group.name
             
-        # Fallback hydration just in case relationships aren't loaded or IDs were manually set
-        # Using pre-hydrated relationships first
-        if not p_out.persona_name and p.persona:
-            p_out.persona_name = p.persona.name
-        if not p_out.group_name and p.group:
-            p_out.group_name = p.group.name
-        if not p_out.person_name and p.person:
-            p_out.person_name = p.person.name
+        # Fallback hydration using pre-fetched source entities if IDs were inherited or manually set
+        if p_out.persona_id and not p_out.persona_name:
+            if p.persona:
+                p_out.persona_name = p.persona.name
+            elif source_note and source_note.person and source_note.person.persona_id == p_out.persona_id and source_note.person.persona:
+                p_out.persona_name = source_note.person.persona.name
+            elif source_note and source_note.group and source_note.group.persona_id == p_out.persona_id and source_note.group.persona:
+                p_out.persona_name = source_note.group.persona.name
+
+        if p_out.group_id and not p_out.group_name:
+            if p.group:
+                p_out.group_name = p.group.name
+            elif source_note and source_note.group and source_note.group.id == p_out.group_id:
+                p_out.group_name = source_note.group.name
+            elif source_note and source_note.person:
+                # Check if group is in person's groups
+                matching_group = next((g for g in source_note.person.groups if g.id == p_out.group_id), None)
+                if matching_group:
+                    p_out.group_name = matching_group.name
+
+        if p_out.person_id and not p_out.person_name:
+            if p.person:
+                p_out.person_name = p.person.name
+            elif source_note and source_note.person and source_note.person.id == p_out.person_id:
+                p_out.person_name = source_note.person.name
 
         output.append(p_out)
             
