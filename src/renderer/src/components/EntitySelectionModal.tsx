@@ -79,7 +79,12 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
               </p>
             )}
           </div>
-          <button onClick={onClose} className="btn-secondary" style={{ padding: '4px 8px' }}>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="btn-secondary"
+            style={{ padding: '4px 8px' }}
+          >
             &times;
           </button>
         </header>
