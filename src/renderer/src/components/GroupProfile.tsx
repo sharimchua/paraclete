@@ -596,6 +596,7 @@ const GroupProfile: React.FC<Props> = ({
                   </div>
                   <button
                     onClick={() => handleRemoveMember(member.id)}
+                    aria-label="Remove from group"
                     style={{
                       background: 'none',
                       border: 'none',

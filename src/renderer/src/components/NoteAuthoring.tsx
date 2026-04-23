@@ -970,6 +970,7 @@ const NoteAuthoring: React.FC<Props> = ({
                               <strong>{t.key}:</strong> {t.value}
                               <span
                                 style={{ cursor: 'pointer', opacity: 0.8 }}
+                                aria-label="Remove tag"
                                 onClick={() => {
                                   setSelectedTags((prev) =>
                                     prev.filter((v) => v.value !== t.value || v.key !== t.key)

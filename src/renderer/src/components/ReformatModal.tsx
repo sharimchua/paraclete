@@ -101,6 +101,7 @@ const ReformatModal: React.FC<ReformatModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             style={{
               background: 'none',
               border: 'none',

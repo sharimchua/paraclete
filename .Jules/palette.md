@@ -1,0 +1,1 @@
+## 2026-04-22 - App wide missing ARIA labels on icon-only close buttons\n**Learning:** Found multiple instances where close modal/panel buttons using just the `&times;` symbol lack `aria-label` attributes.\n**Action:** Add `aria-label="Close"` to these buttons across the app to improve accessibility.

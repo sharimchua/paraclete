@@ -212,6 +212,7 @@ const NoteUtilities: React.FC<Props> = ({ note }) => {
                       </button>
                       <button
                         onClick={() => rejectProposal(prop)}
+                        aria-label="Reject proposal"
                         style={{
                           fontSize: '0.65rem',
                           padding: '2px 6px',

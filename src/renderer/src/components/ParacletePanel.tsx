@@ -575,6 +575,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
           </div>
           <button
             onClick={handleClose}
+            aria-label="Close"
             style={{
               background: 'none',
               border: 'none',
