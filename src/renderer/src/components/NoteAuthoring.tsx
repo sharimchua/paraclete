@@ -485,6 +485,7 @@ const NoteAuthoring: React.FC<Props> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             className="btn-secondary"
+            aria-label="Previous stage"
             style={{
               padding: '0',
               borderRadius: '50%',
@@ -529,6 +530,7 @@ const NoteAuthoring: React.FC<Props> = ({
 
           <button
             className="btn-secondary"
+            aria-label="Next stage"
             style={{
               padding: '0',
               borderRadius: '50%',
