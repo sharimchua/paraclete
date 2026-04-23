@@ -796,7 +796,9 @@ const GroupProfile: React.FC<Props> = ({
       {showTagModal && (
         <TagSelectionModal
           title={`Tag ${group.name}`}
-          existingTagIds={(group.tags || []).map((t) => t.id as number)}
+          existingTagIds={(group.tags || [])
+            .map((t) => t.id)
+            .filter((id): id is number => id !== undefined)}
           onClose={() => setShowTagModal(false)}
           onSelect={handleSelectTag}
         />
