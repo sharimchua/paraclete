@@ -1,3 +1,4 @@
+import json
 from typing import List
 from fastapi import WebSocket
 
@@ -27,9 +28,9 @@ class ConnectionManager:
 
         for connection in self.active_connections:
             try:
-                await connection.send_json(message)
-            except:
-                pass
+                await connection.send_text(json.dumps(message))
+            except Exception as e:
+                print(f"Error broadcasting message: {e}")
 
 # Shared singleton instance
 ws_manager = ConnectionManager()
