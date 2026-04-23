@@ -27,7 +27,8 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
   }, [])
 
   const filteredTags = allTags.filter((tag) => {
-    const isNotAlreadyUsed = !existingTagIds.includes(tag.id as number)
+    if (tag.id === undefined) return false
+    const isNotAlreadyUsed = !existingTagIds.includes(tag.id)
     const matchesSearch =
       tag.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (tag.key && tag.key.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -72,31 +73,34 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
               {searchTerm ? 'No matching tags found.' : 'No available tags to add.'}
             </p>
           ) : (
-            filteredTags.map((tag) => (
-              <div
-                key={tag.id}
-                className="card"
-                style={{
-                  padding: '10px 14px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '0.9rem'
-                }}
-                onClick={() => onSelect(tag.id as number)}
-              >
-                <span>
-                  {tag.key && (
-                    <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>
-                      {tag.key}:
-                    </span>
-                  )}
-                  <span style={{ fontWeight: 500 }}>{tag.value}</span>
-                </span>
-                <span style={{ color: 'var(--primary)', fontSize: '0.8rem' }}>Add +</span>
-              </div>
-            ))
+            filteredTags.map((tag) => {
+              if (tag.id === undefined) return null
+              return (
+                <div
+                  key={tag.id}
+                  className="card"
+                  style={{
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '0.9rem'
+                  }}
+                  onClick={() => tag.id !== undefined && onSelect(tag.id)}
+                >
+                  <span>
+                    {tag.key && (
+                      <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>
+                        {tag.key}:
+                      </span>
+                    )}
+                    <span style={{ fontWeight: 500 }}>{tag.value}</span>
+                  </span>
+                  <span style={{ color: 'var(--primary)', fontSize: '0.8rem' }}>Add +</span>
+                </div>
+              )
+            })
           )}
         </div>
 
