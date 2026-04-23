@@ -416,6 +416,13 @@ class TrendPoint(BaseModel):
     count: int
     stacks: List[TrendStack] = []
 
+class ReferenceSuggestionRequest(BaseModel):
+    query: Optional[str] = None
+    note_id: Optional[int] = None
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    limit: int = 5
+
 class ReferenceUsage(BaseModel):
     id: int
     title: str
