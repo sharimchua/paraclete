@@ -818,7 +818,9 @@ async def draft_persona_message(
         
     # Get relevant refs for context
     from backend.routers.references import suggest_references
-    refs = await suggest_references(note_id=note_id, db=db, limit=3)
+    from backend import schemas
+    req = schemas.ReferenceSuggestionRequest(note_id=note_id, limit=3)
+    refs = await suggest_references(db=db, req=req)
     refs_text = "\n".join([f"- {r.title}: {r.body[:500]}" for r in refs])
     
     # Run LLM
