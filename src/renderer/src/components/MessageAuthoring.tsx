@@ -57,7 +57,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
       if (!personContext && !groupContext && !noteContext) {
         setLoading(true)
       }
-      
+
       try {
         let currentMessage = { ...message }
 
@@ -71,7 +71,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         const pid = personId || currentMessage.person_id
         const gid = groupId || currentMessage.group_id
 
-        const promises = []
+        const promises: Promise<void>[] = []
         if (nid && (!noteContext || noteContext.id !== nid)) {
           promises.push(api.get<Note>(`/notes/${nid}`).then(setNoteContext))
         }
@@ -85,7 +85,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         if (promises.length > 0) {
           await Promise.all(promises)
         }
-        
+
         contextsLoadedFor.current = identifier
       } catch (err) {
         console.error('Failed to load contexts:', err)
@@ -94,6 +94,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
       }
     }
     loadContexts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageId, noteId, personId, groupId])
 
   const handleSave = useCallback(async (): Promise<void> => {

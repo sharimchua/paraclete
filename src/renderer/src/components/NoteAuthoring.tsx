@@ -140,7 +140,7 @@ const NoteAuthoring: React.FC<Props> = ({
     // But we might need currentNote.person_id if props are missing
     const pid = personId || currentNote?.person_id
     const gid = groupId || currentNote?.group_id
-    
+
     // We need at least an entity ID or a note ID to justify loading
     if (!pid && !gid && !noteId) {
       if (!loading) setLoading(false)
@@ -179,7 +179,7 @@ const NoteAuthoring: React.FC<Props> = ({
         } else if (gid) {
           setRecentNotes(notes.filter((n) => n.group_id === gid && n.id !== noteId).slice(0, 3))
         }
-        
+
         backgroundsLoadedFor.current = identifier
       } catch (err) {
         console.error('Failed to load background data:', err)
@@ -188,6 +188,7 @@ const NoteAuthoring: React.FC<Props> = ({
 
     loadContexts()
     loadBackgroundData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, groupId, noteId, currentNote?.person_id, currentNote?.group_id])
 
   const handleStartRefine = useCallback(
