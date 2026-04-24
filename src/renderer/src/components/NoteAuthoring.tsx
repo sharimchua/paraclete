@@ -133,23 +133,31 @@ const NoteAuthoring: React.FC<Props> = ({
     return (): void => socket.close()
   }, [companionSessionId])
 
+  const backgroundsLoadedFor = useRef<string | null>(null)
+
   useEffect(() => {
+    // If we don't have enough info yet, don't try to load background data
+    // But we might need currentNote.person_id if props are missing
+    const pid = personId || currentNote?.person_id
+    const gid = groupId || currentNote?.group_id
+
+    // We need at least an entity ID or a note ID to justify loading
+    if (!pid && !gid && !noteId) {
+      if (!loading) setLoading(false)
+      return
+    }
+
+    const identifier = `${pid}-${gid}-${noteId}`
+    if (backgroundsLoadedFor.current === identifier) return
+
     const loadContexts = async (): Promise<void> => {
       try {
-        if (personId) {
-          const p = await api.get<Person>(`/persons/${personId}`)
+        if (pid && (!person || person.id !== pid)) {
+          const p = await api.get<Person>(`/persons/${pid}`)
           setPerson(p)
-        } else if (groupId) {
-          const g = await api.get<Group>(`/groups/${groupId}`)
+        } else if (gid && (!group || group.id !== gid)) {
+          const g = await api.get<Group>(`/groups/${gid}`)
           setGroup(g)
-        } else if (noteId && currentNote) {
-          if (currentNote.person_id) {
-            const p = await api.get<Person>(`/persons/${currentNote.person_id}`)
-            setPerson(p)
-          } else if (currentNote.group_id) {
-            const g = await api.get<Group>(`/groups/${currentNote.group_id}`)
-            setGroup(g)
-          }
         }
       } catch (err) {
         console.error('Failed to load entity:', err)
@@ -166,26 +174,22 @@ const NoteAuthoring: React.FC<Props> = ({
         ])
         setExistingTaxonomy(tags)
 
-        const pid = personId || currentNote?.person_id
-        const gid = groupId || currentNote?.group_id
-
         if (pid) {
           setRecentNotes(notes.filter((n) => n.person_id === pid && n.id !== noteId).slice(0, 3))
         } else if (gid) {
           setRecentNotes(notes.filter((n) => n.group_id === gid && n.id !== noteId).slice(0, 3))
         }
+
+        backgroundsLoadedFor.current = identifier
       } catch (err) {
         console.error('Failed to load background data:', err)
       }
     }
 
-    if (personId || groupId || noteId) {
-      loadContexts()
-      loadBackgroundData()
-    } else {
-      setLoading(false)
-    }
-  }, [personId, groupId, noteId, currentNote])
+    loadContexts()
+    loadBackgroundData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personId, groupId, noteId, currentNote?.person_id, currentNote?.group_id])
 
   const handleStartRefine = useCallback(
     async (force: boolean = false): Promise<void> => {
@@ -485,6 +489,7 @@ const NoteAuthoring: React.FC<Props> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             className="btn-secondary"
+            aria-label="Previous stage"
             style={{
               padding: '0',
               borderRadius: '50%',
@@ -529,6 +534,7 @@ const NoteAuthoring: React.FC<Props> = ({
 
           <button
             className="btn-secondary"
+            aria-label="Next stage"
             style={{
               padding: '0',
               borderRadius: '50%',

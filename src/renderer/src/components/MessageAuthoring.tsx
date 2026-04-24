@@ -46,9 +46,18 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const contextsLoadedFor = useRef<string | null>(null)
+
   useEffect(() => {
+    const identifier = `${messageId}-${noteId}-${personId}-${groupId}`
+    if (contextsLoadedFor.current === identifier) return
+
     const loadContexts = async (): Promise<void> => {
-      setLoading(true)
+      // Only set loading if we don't have basic context yet
+      if (!personContext && !groupContext && !noteContext) {
+        setLoading(true)
+      }
+
       try {
         let currentMessage = { ...message }
 
@@ -62,18 +71,22 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
         const pid = personId || currentMessage.person_id
         const gid = groupId || currentMessage.group_id
 
-        if (nid) {
-          const n = await api.get<Note>(`/notes/${nid}`)
-          setNoteContext(n)
+        const promises: Promise<void>[] = []
+        if (nid && (!noteContext || noteContext.id !== nid)) {
+          promises.push(api.get<Note>(`/notes/${nid}`).then(setNoteContext))
         }
 
-        if (pid) {
-          const p = await api.get<Person>(`/persons/${pid}`)
-          setPersonContext(p)
-        } else if (gid) {
-          const g = await api.get<Group>(`/groups/${gid}`)
-          setGroupContext(g)
+        if (pid && (!personContext || personContext.id !== pid)) {
+          promises.push(api.get<Person>(`/persons/${pid}`).then(setPersonContext))
+        } else if (gid && (!groupContext || groupContext.id !== gid)) {
+          promises.push(api.get<Group>(`/groups/${gid}`).then(setGroupContext))
         }
+
+        if (promises.length > 0) {
+          await Promise.all(promises)
+        }
+
+        contextsLoadedFor.current = identifier
       } catch (err) {
         console.error('Failed to load contexts:', err)
       } finally {
@@ -81,7 +94,8 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
       }
     }
     loadContexts()
-  }, [messageId, noteId, personId, groupId, message])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messageId, noteId, personId, groupId])
 
   const handleSave = useCallback(async (): Promise<void> => {
     setIsSaving(true)
