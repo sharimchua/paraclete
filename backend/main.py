@@ -2,7 +2,7 @@ from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, Up
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, desc, literal_column
 from typing import List, Dict, Set
 import uvicorn
 import socket
@@ -1987,13 +1987,50 @@ def get_trends(db: Session = Depends(get_db)):
 
 @app.get("/dashboard/reference-usage", response_model=List[schemas.ReferenceUsage])
 def get_reference_usage(db: Session = Depends(get_db)):
-    refs = db.query(models.Reference).all()
-    usage = []
-    for r in refs:
-        count = len(r.linked_notes) + len(r.persons)
-        usage.append({"id": r.id, "title": r.title, "usage_count": count})
-    usage.sort(key=lambda x: x["usage_count"], reverse=True)
-    return usage[:10]
+    # ⚡ Bolt optimization: Replaced O(N) Python iteration & N+1 relationship loads
+    # with a single optimized SQL query using outer joins and group_by counting.
+    # Impact: Reduces memory usage and database queries, extremely fast for large reference datasets.
+    note_count_subq = (
+        db.query(
+            models.note_references.c.reference_id,
+            func.count(models.note_references.c.note_id).label("note_count"),
+        )
+        .group_by(models.note_references.c.reference_id)
+        .subquery()
+    )
+
+    person_count_subq = (
+        db.query(
+            models.person_references.c.reference_id,
+            func.count(models.person_references.c.person_id).label("person_count"),
+        )
+        .group_by(models.person_references.c.reference_id)
+        .subquery()
+    )
+
+    query = (
+        db.query(
+            models.Reference.id,
+            models.Reference.title,
+            (
+                func.coalesce(note_count_subq.c.note_count, 0)
+                + func.coalesce(person_count_subq.c.person_count, 0)
+            ).label("usage_count"),
+        )
+        .outerjoin(
+            note_count_subq, models.Reference.id == note_count_subq.c.reference_id
+        )
+        .outerjoin(
+            person_count_subq, models.Reference.id == person_count_subq.c.reference_id
+        )
+        .order_by(desc(literal_column("usage_count")))
+        .limit(10)
+    )
+
+    return [
+        {"id": row.id, "title": row.title, "usage_count": row.usage_count}
+        for row in query.all()
+    ]
 
 
 # (Removed duplicate get_local_ip)
