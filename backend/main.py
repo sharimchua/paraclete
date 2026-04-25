@@ -568,15 +568,17 @@ def read_group(group_id: int, db: Session = Depends(get_db)):
             m.latest_note_date = None
 
     # explicit group activity
-    group_notes = db.query(models.Note).filter(models.Note.group_id == group_id).all()
-    group_messages = (
-        db.query(models.Message).filter(models.Message.group_id == group_id).all()
+    # ⚡ Bolt optimization: Fetch only the required date column for notes instead of all full objects
+    # and use .count() for messages to avoid O(N) memory allocation and N+1 full object parsing overhead.
+    group_notes_data = db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    group_messages_count = (
+        db.query(models.Message).filter(models.Message.group_id == group_id).count()
     )
 
-    group_note_dates = [n.date for n in group_notes if n.date]
+    group_note_dates = [n.date for n in group_notes_data if n.date]
 
-    db_group.aggregated_note_count = len(group_notes) + total_member_notes
-    db_group.aggregated_message_count = len(group_messages) + total_member_messages
+    db_group.aggregated_note_count = len(group_notes_data) + total_member_notes
+    db_group.aggregated_message_count = group_messages_count + total_member_messages
 
     all_dates = all_member_note_dates + group_note_dates
     if all_dates:
