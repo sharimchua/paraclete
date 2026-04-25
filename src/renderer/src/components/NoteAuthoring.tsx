@@ -1223,6 +1223,7 @@ const NoteAuthoring: React.FC<Props> = ({
           >
             <button
               onClick={() => setIsCompanionModalOpen(false)}
+              aria-label="Close"
               style={{
                 position: 'absolute',
                 top: '20px',
