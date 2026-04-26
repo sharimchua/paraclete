@@ -570,7 +570,9 @@ def read_group(group_id: int, db: Session = Depends(get_db)):
     # explicit group activity
     # ⚡ Bolt optimization: Fetch only the required date column for notes instead of all full objects
     # and use .count() for messages to avoid O(N) memory allocation and N+1 full object parsing overhead.
-    group_notes_data = db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    group_notes_data = (
+        db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    )
     group_messages_count = (
         db.query(models.Message).filter(models.Message.group_id == group_id).count()
     )
@@ -1868,52 +1870,82 @@ def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
 
 @app.get("/dashboard/trends", response_model=List[schemas.TrendPoint])
 def get_trends(db: Session = Depends(get_db)):
-    # 1. Fetch all notes with tags and entity tags in one go to avoid N+1
-    notes = (
-        db.query(models.Note)
-        .options(
-            joinedload(models.Note.tags),
-            joinedload(models.Note.person).joinedload(models.Person.tags),
-            joinedload(models.Note.group).joinedload(models.Group.tags),
-        )
+    # ⚡ Bolt optimization: Replaced full ORM object eager loading (`joinedload`) with
+    # lightweight tuple queries to prevent O(N) memory allocation and processing overhead.
+    # 1. Fetch only required Note fields
+    notes_data = db.query(
+        models.Note.id, models.Note.date, models.Note.person_id, models.Note.group_id
+    ).all()
+
+    if not notes_data:
+        return []
+
+    # 2. Fetch tags associated with notes, persons, and groups
+    note_tags_data = (
+        db.query(models.note_tags.c.note_id, models.Tag.key, models.Tag.value)
+        .join(models.Tag, models.note_tags.c.tag_id == models.Tag.id)
+        .all()
+    )
+    person_tags_data = (
+        db.query(models.person_tags.c.person_id, models.Tag.key, models.Tag.value)
+        .join(models.Tag, models.person_tags.c.tag_id == models.Tag.id)
+        .all()
+    )
+    group_tags_data = (
+        db.query(models.group_tags.c.group_id, models.Tag.key, models.Tag.value)
+        .join(models.Tag, models.group_tags.c.tag_id == models.Tag.id)
         .all()
     )
 
-    if not notes:
-        return []
+    # Group tags by entity for fast O(1) lookup
+    note_tag_map = {}
+    for nt in note_tags_data:
+        note_tag_map.setdefault(nt.note_id, []).append(
+            {"key": nt.key, "value": nt.value}
+        )
 
-    # 2. Analyze all available tag keys to find the "best" one for grouping
+    person_tag_map = {}
+    for pt in person_tags_data:
+        person_tag_map.setdefault(pt.person_id, []).append(
+            {"key": pt.key, "value": pt.value}
+        )
+
+    group_tag_map = {}
+    for gt in group_tags_data:
+        group_tag_map.setdefault(gt.group_id, []).append(
+            {"key": gt.key, "value": gt.value}
+        )
+
+    # 3. Analyze all available tag keys to find the "best" one for grouping
     # Metrics: Cardinality (fewer is better) and Coverage (more notes with the tag is better)
     key_metrics = {}  # key -> {"values": Set, "coverage": int}
 
-    for note in notes:
-        # Collect all unique keys for this note (from note, person, or group)
+    for n_id, n_date, p_id, g_id in notes_data:
         keys_in_this_note = set()
 
-        # Helper to process tags
         def process_tags(tags):
             for t in tags:
-                if t.key:
-                    keys_in_this_note.add(t.key)
-                    if t.key not in key_metrics:
-                        key_metrics[t.key] = {"values": set(), "coverage": 0}
-                    key_metrics[t.key]["values"].add(t.value)
+                if t["key"]:
+                    keys_in_this_note.add(t["key"])
+                    if t["key"] not in key_metrics:
+                        key_metrics[t["key"]] = {"values": set(), "coverage": 0}
+                    key_metrics[t["key"]]["values"].add(t["value"])
 
-        process_tags(note.tags)
-        if note.person:
-            process_tags(note.person.tags)
-        if note.group:
-            process_tags(note.group.tags)
+        process_tags(note_tag_map.get(n_id, []))
+        if p_id:
+            process_tags(person_tag_map.get(p_id, []))
+        if g_id:
+            process_tags(group_tag_map.get(g_id, []))
 
         # Increment coverage for each key present in this note
         for k in keys_in_this_note:
             key_metrics[k]["coverage"] += 1
 
-    # 3. Pick the best key
+    # 4. Pick the best key
     # Preference: High coverage (minimize "None") and Low cardinality (clearer chart)
     selected_key = None
     best_score = -999999
-    total_notes = len(notes)
+    total_notes = len(notes_data)
 
     for k, metrics in key_metrics.items():
         cardinality = len(metrics["values"])
@@ -1924,19 +1956,17 @@ def get_trends(db: Session = Depends(get_db)):
 
         # Score formula:
         # (coverage_percent) - (cardinality * penalty)
-        # This rewards keys that cover most notes but penalizes those with too many unique values.
-        # Penalty of 5 means we'd trade 5% coverage for 1 fewer unique value.
         score = (coverage / total_notes * 100) - (cardinality * 5)
 
         if score > best_score:
             best_score = score
             selected_key = k
 
-    # 4. Process trends by Month-Year (YYYY-MM)
+    # 5. Process trends by Month-Year (YYYY-MM)
     month_data = {}  # "YYYY-MM" -> {"count": int, "stacks": {val: count}}
 
-    for note in notes:
-        m_key = note.date.strftime("%Y-%m")
+    for n_id, n_date, p_id, g_id in notes_data:
+        m_key = n_date.strftime("%Y-%m")
         if m_key not in month_data:
             month_data[m_key] = {"count": 0, "stacks": {}}
 
@@ -1947,15 +1977,30 @@ def get_trends(db: Session = Depends(get_db)):
         if selected_key:
             # Priority: Note tags > Person tags > Group tags
             found_tag = next(
-                (t.value for t in note.tags if t.key == selected_key), None
+                (
+                    t["value"]
+                    for t in note_tag_map.get(n_id, [])
+                    if t["key"] == selected_key
+                ),
+                None,
             )
-            if not found_tag and note.person:
+            if not found_tag and p_id:
                 found_tag = next(
-                    (t.value for t in note.person.tags if t.key == selected_key), None
+                    (
+                        t["value"]
+                        for t in person_tag_map.get(p_id, [])
+                        if t["key"] == selected_key
+                    ),
+                    None,
                 )
-            if not found_tag and note.group:
+            if not found_tag and g_id:
                 found_tag = next(
-                    (t.value for t in note.group.tags if t.key == selected_key), None
+                    (
+                        t["value"]
+                        for t in group_tag_map.get(g_id, [])
+                        if t["key"] == selected_key
+                    ),
+                    None,
                 )
 
             if found_tag:
@@ -1965,7 +2010,7 @@ def get_trends(db: Session = Depends(get_db)):
             month_data[m_key]["stacks"].get(stack_val, 0) + 1
         )
 
-    # 5. Format result sorted chronologically
+    # 6. Format result sorted chronologically
     sorted_keys = sorted(month_data.keys())
     result = []
 
