@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   api,
   DashboardStats,
@@ -32,6 +32,39 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
 
   // Modal state
   const [showModal, setShowModal] = useState(false)
+
+  // ⚡ Bolt: Memoize expensive O(N) derived array operations to prevent recalculation on every render
+  const { filteredCategories, categoryColorMap } = useMemo(() => {
+    const colors = [
+      'var(--primary)',
+      'var(--secondary)',
+      '#8b5cf6',
+      '#ec4899',
+      '#f97316',
+      '#14b8a6'
+    ]
+
+    // Calculate unique sorted categories
+    const categories = Array.from(new Set(trends.flatMap((t) => t.stacks.map((s) => s.name)))).sort(
+      (a, b) => {
+        if (a === 'None') return 1
+        if (b === 'None') return -1
+        return a.localeCompare(b)
+      }
+    )
+
+    const filtered = categories.filter((c) => c !== 'None')
+
+    // Pre-compute color mapping for O(1) lookups
+    const colorMap: Record<string, string> = {
+      None: 'rgba(255, 255, 255, 0.4)'
+    }
+    filtered.forEach((cat, i) => {
+      colorMap[cat] = colors[i % colors.length]
+    })
+
+    return { filteredCategories: filtered, categoryColorMap: colorMap }
+  }, [trends])
 
   useEffect(() => {
     const fetchBaseData = async (): Promise<void> => {
@@ -212,27 +245,6 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
             ) : (
               (() => {
                 // Stable Color Mapping
-                const colors = [
-                  'var(--primary)',
-                  'var(--secondary)',
-                  '#8b5cf6',
-                  '#ec4899',
-                  '#f97316',
-                  '#14b8a6'
-                ]
-                const allCategories = Array.from(
-                  new Set(trends.flatMap((t) => t.stacks.map((s) => s.name)))
-                )
-                  .filter((c) => c !== 'None')
-                  .sort()
-
-                const categoryColorMap: Record<string, string> = {
-                  None: 'rgba(255, 255, 255, 0.4)'
-                }
-                allCategories.forEach((cat, i) => {
-                  categoryColorMap[cat] = colors[i % colors.length]
-                })
-
                 return trends.slice(-6).map((t) => {
                   // Last 6 months
                   const max = Math.max(...trends.map((x) => x.count), 1)
@@ -326,31 +338,6 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
           {/* Tiny Legend */}
           {trends.length > 0 &&
             (() => {
-              const colors = [
-                'var(--primary)',
-                'var(--secondary)',
-                '#8b5cf6',
-                '#ec4899',
-                '#f97316',
-                '#14b8a6'
-              ]
-              const allCategories = Array.from(
-                new Set(trends.flatMap((t) => t.stacks.map((s) => s.name)))
-              ).sort((a, b) => {
-                if (a === 'None') return 1
-                if (b === 'None') return -1
-                return a.localeCompare(b)
-              })
-
-              const categoryColorMap: Record<string, string> = {
-                None: 'rgba(255, 255, 255, 0.4)'
-              }
-              allCategories
-                .filter((c) => c !== 'None')
-                .forEach((cat, i) => {
-                  categoryColorMap[cat] = colors[i % colors.length]
-                })
-
               return (
                 <div
                   style={{
@@ -361,7 +348,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                     padding: '0 8px'
                   }}
                 >
-                  {allCategories.map((stackName) => (
+                  {filteredCategories.map((stackName) => (
                     <div
                       key={stackName}
                       style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
