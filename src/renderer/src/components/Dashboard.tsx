@@ -34,7 +34,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
   const [showModal, setShowModal] = useState(false)
 
   // ⚡ Bolt: Memoize expensive O(N) derived array operations to prevent recalculation on every render
-  const { allCategories, filteredCategories, categoryColorMap } = useMemo(() => {
+  const { filteredCategories, categoryColorMap } = useMemo(() => {
     const colors = [
       'var(--primary)',
       'var(--secondary)',
@@ -63,7 +63,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
       colorMap[cat] = colors[i % colors.length]
     })
 
-    return { allCategories: categories, filteredCategories: filtered, categoryColorMap: colorMap }
+    return { filteredCategories: filtered, categoryColorMap: colorMap }
   }, [trends])
 
   useEffect(() => {
