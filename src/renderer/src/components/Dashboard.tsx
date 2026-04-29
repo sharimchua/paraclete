@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   api,
   DashboardStats,
@@ -78,6 +78,37 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
   const handleOpenModal = (): void => {
     setShowModal(true)
   }
+
+  const { allCategories, categoryColorMap } = useMemo(() => {
+    const categories = Array.from(new Set(trends.flatMap((t) => t.stacks.map((s) => s.name)))).sort(
+      (a, b) => {
+        if (a === 'None') return 1
+        if (b === 'None') return -1
+        return a.localeCompare(b)
+      }
+    )
+
+    const colors = [
+      'var(--primary)',
+      'var(--secondary)',
+      '#8b5cf6',
+      '#ec4899',
+      '#f97316',
+      '#14b8a6'
+    ]
+
+    const colorMap: Record<string, string> = {
+      None: 'rgba(255, 255, 255, 0.4)'
+    }
+
+    categories
+      .filter((c) => c !== 'None')
+      .forEach((cat, i) => {
+        colorMap[cat] = colors[i % colors.length]
+      })
+
+    return { allCategories: categories, categoryColorMap: colorMap }
+  }, [trends])
 
   if (loading) return <div className="loader" />
 
@@ -210,179 +241,124 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                 No data yet
               </div>
             ) : (
-              (() => {
-                // Stable Color Mapping
-                const colors = [
-                  'var(--primary)',
-                  'var(--secondary)',
-                  '#8b5cf6',
-                  '#ec4899',
-                  '#f97316',
-                  '#14b8a6'
-                ]
-                const allCategories = Array.from(
-                  new Set(trends.flatMap((t) => t.stacks.map((s) => s.name)))
-                )
-                  .filter((c) => c !== 'None')
-                  .sort()
-
-                const categoryColorMap: Record<string, string> = {
-                  None: 'rgba(255, 255, 255, 0.4)'
-                }
-                allCategories.forEach((cat, i) => {
-                  categoryColorMap[cat] = colors[i % colors.length]
-                })
-
-                return trends.slice(-6).map((t) => {
-                  // Last 6 months
-                  const max = Math.max(...trends.map((x) => x.count), 1)
-                  return (
+              trends.slice(-6).map((t) => {
+                // Last 6 months
+                const max = Math.max(...trends.map((x) => x.count), 1)
+                return (
+                  <div
+                    key={t.label}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      height: '100%',
+                      position: 'relative'
+                    }}
+                  >
+                    {/* Dynamic Height Stack Wrapper */}
                     <div
-                      key={t.label}
                       style={{
-                        flex: 1,
+                        width: '100%',
+                        height: `${(t.count / max) * 100}%`,
                         display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        height: '100%',
-                        position: 'relative'
+                        flexDirection: 'column-reverse',
+                        position: 'relative',
+                        paddingBottom: '0px'
                       }}
                     >
-                      {/* Dynamic Height Stack Wrapper */}
+                      {/* Floating Total Count */}
                       <div
                         style={{
+                          position: 'absolute',
+                          top: '-18px',
                           width: '100%',
-                          height: `${(t.count / max) * 100}%`,
-                          display: 'flex',
-                          flexDirection: 'column-reverse',
-                          position: 'relative',
-                          paddingBottom: '0px'
-                        }}
-                      >
-                        {/* Floating Total Count */}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '-18px',
-                            width: '100%',
-                            textAlign: 'center',
-                            fontSize: '0.65rem',
-                            fontWeight: 700,
-                            color: 'var(--text-secondary)',
-                            opacity: 0.9
-                          }}
-                        >
-                          {t.count}
-                        </div>
-
-                        {[...t.stacks]
-                          .sort((a, b) => {
-                            if (a.name === 'None') return 1
-                            if (b.name === 'None') return -1
-                            return a.name.localeCompare(b.name)
-                          })
-                          .map((stack, idx, sortedStacks) => {
-                            // Calculate relative height inside this specific month's total
-                            const height = (stack.count / t.count) * 100
-                            return (
-                              <div
-                                key={stack.name}
-                                title={`${stack.name}: ${stack.count}`}
-                                style={{
-                                  width: '100%',
-                                  height: `${height}%`,
-                                  background: categoryColorMap[stack.name] || 'var(--text-muted)',
-                                  border:
-                                    stack.name === 'None' ? '1px solid var(--text-muted)' : 'none',
-                                  borderRadius:
-                                    idx === 0
-                                      ? '0 0 4px 4px'
-                                      : idx === sortedStacks.length - 1
-                                        ? '4px 4px 0 0'
-                                        : '0',
-                                  opacity: 0.85,
-                                  transition: 'all 0.4s ease'
-                                }}
-                              />
-                            )
-                          })}
-                      </div>
-                      <div
-                        style={{
+                          textAlign: 'center',
                           fontSize: '0.65rem',
-                          color: 'var(--text-muted)',
-                          marginTop: '8px'
+                          fontWeight: 700,
+                          color: 'var(--text-secondary)',
+                          opacity: 0.9
                         }}
                       >
-                        {t.label}
+                        {t.count}
                       </div>
+
+                      {[...t.stacks]
+                        .sort((a, b) => {
+                          if (a.name === 'None') return 1
+                          if (b.name === 'None') return -1
+                          return a.name.localeCompare(b.name)
+                        })
+                        .map((stack, idx, sortedStacks) => {
+                          // Calculate relative height inside this specific month's total
+                          const height = (stack.count / t.count) * 100
+                          return (
+                            <div
+                              key={stack.name}
+                              title={`${stack.name}: ${stack.count}`}
+                              style={{
+                                width: '100%',
+                                height: `${height}%`,
+                                background: categoryColorMap[stack.name] || 'var(--text-muted)',
+                                border:
+                                  stack.name === 'None' ? '1px solid var(--text-muted)' : 'none',
+                                borderRadius:
+                                  idx === 0
+                                    ? '0 0 4px 4px'
+                                    : idx === sortedStacks.length - 1
+                                      ? '4px 4px 0 0'
+                                      : '0',
+                                opacity: 0.85,
+                                transition: 'all 0.4s ease'
+                              }}
+                            />
+                          )
+                        })}
                     </div>
-                  )
-                })
-              })()
+                    <div
+                      style={{
+                        fontSize: '0.65rem',
+                        color: 'var(--text-muted)',
+                        marginTop: '8px'
+                      }}
+                    >
+                      {t.label}
+                    </div>
+                  </div>
+                )
+              })
             )}
           </div>
           {/* Tiny Legend */}
-          {trends.length > 0 &&
-            (() => {
-              const colors = [
-                'var(--primary)',
-                'var(--secondary)',
-                '#8b5cf6',
-                '#ec4899',
-                '#f97316',
-                '#14b8a6'
-              ]
-              const allCategories = Array.from(
-                new Set(trends.flatMap((t) => t.stacks.map((s) => s.name)))
-              ).sort((a, b) => {
-                if (a === 'None') return 1
-                if (b === 'None') return -1
-                return a.localeCompare(b)
-              })
-
-              const categoryColorMap: Record<string, string> = {
-                None: 'rgba(255, 255, 255, 0.4)'
-              }
-              allCategories
-                .filter((c) => c !== 'None')
-                .forEach((cat, i) => {
-                  categoryColorMap[cat] = colors[i % colors.length]
-                })
-
-              return (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                    marginTop: '14px',
-                    padding: '0 8px'
-                  }}
-                >
-                  {allCategories.map((stackName) => (
-                    <div
-                      key={stackName}
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <div
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '2px',
-                          background: categoryColorMap[stackName],
-                          border: stackName === 'None' ? '1px solid var(--text-muted)' : 'none'
-                        }}
-                      />
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                        {stackName === 'None' ? 'Untagged' : stackName}
-                      </span>
-                    </div>
-                  ))}
+          {trends.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '12px',
+                marginTop: '14px',
+                padding: '0 8px'
+              }}
+            >
+              {allCategories.map((stackName) => (
+                <div key={stackName} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '2px',
+                      background: categoryColorMap[stackName],
+                      border: stackName === 'None' ? '1px solid var(--text-muted)' : 'none'
+                    }}
+                  />
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                    {stackName === 'None' ? 'Untagged' : stackName}
+                  </span>
                 </div>
-              )
-            })()}
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
