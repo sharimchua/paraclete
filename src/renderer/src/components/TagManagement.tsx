@@ -192,6 +192,7 @@ const TagManagement: React.FC = () => {
                         onMouseOver={(e) => (e.currentTarget.style.color = '#ef4444')}
                         onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                         title="Delete tag"
+                        aria-label={`Delete tag ${tag.value}`}
                       >
                         ✕
                       </button>
