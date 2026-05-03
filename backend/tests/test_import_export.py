@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.fixture(autouse=True)
 def clean_db(client):
     data = {
@@ -11,9 +12,10 @@ def clean_db(client):
         "personas": [],
         "practise_frameworks": [],
         "actions": [],
-        "messages": []
+        "messages": [],
     }
     client.post("/import/", json=data)
+
 
 def test_export_empty(client):
     response = client.get("/export/")
@@ -22,6 +24,7 @@ def test_export_empty(client):
     assert data["persons"] == []
     assert data["groups"] == []
     assert data["notes"] == []
+
 
 def test_import_basic(client):
     data = {
@@ -40,7 +43,7 @@ def test_import_basic(client):
         "personas": [],
         "practise_frameworks": [],
         "actions": [],
-        "messages": []
+        "messages": [],
     }
     response = client.post("/import/", json=data)
     assert response.status_code == 200
@@ -50,6 +53,7 @@ def test_import_basic(client):
     persons = response.json()
     assert len(persons) == 1
     assert persons[0]["name"] == "Alice"
+
 
 def test_import_complex(client):
     data = {
@@ -66,12 +70,10 @@ def test_import_complex(client):
                 "id": 1,
                 "name": "Team A",
                 "members": [{"id": 1, "name": "Alice", "tags": [], "groups": []}],
-                "tags": []
+                "tags": [],
             }
         ],
-        "tags": [
-            {"id": 1, "value": "Developer", "key": "Role"}
-        ],
+        "tags": [{"id": 1, "value": "Developer", "key": "Role"}],
         "notes": [
             {
                 "id": 1,
@@ -82,14 +84,14 @@ def test_import_complex(client):
                 "group_id": 1,
                 "tags": [],
                 "actions": [],
-                "messages": []
+                "messages": [],
             }
         ],
         "references": [],
         "personas": [],
         "practise_frameworks": [],
         "actions": [],
-        "messages": []
+        "messages": [],
     }
     response = client.post("/import/", json=data)
     assert response.status_code == 200
@@ -102,6 +104,7 @@ def test_import_complex(client):
     group = response.json()
     assert len(group["members"]) == 1
     assert group["members"][0]["name"] == "Alice"
+
 
 def test_export_import_full_cycle(client):
     client.post("/persons/", json={"name": "Bob"})

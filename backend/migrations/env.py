@@ -7,7 +7,7 @@ import os
 # add your model's MetaData object here
 # for 'autogenerate' support
 from database import Base
-import models # imports the models to ensure they register on Base
+import models  # imports the models to ensure they register on Base
 
 config = context.config
 
@@ -17,6 +17,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
@@ -25,11 +26,12 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "pyformat"},
-        render_as_batch=True # Important for SQLite
+        render_as_batch=True,  # Important for SQLite
     )
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
@@ -41,13 +43,14 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True # Important for SQLite
+            render_as_batch=True,  # Important for SQLite
         )
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

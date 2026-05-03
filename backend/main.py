@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, desc, literal_column
 from typing import List, Dict, Set
 import uvicorn
@@ -570,7 +570,9 @@ def read_group(group_id: int, db: Session = Depends(get_db)):
     # explicit group activity
     # ⚡ Bolt optimization: Fetch only the required date column for notes instead of all full objects
     # and use .count() for messages to avoid O(N) memory allocation and N+1 full object parsing overhead.
-    group_notes_data = db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    group_notes_data = (
+        db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    )
     group_messages_count = (
         db.query(models.Message).filter(models.Message.group_id == group_id).count()
     )
@@ -1157,7 +1159,12 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     if query_embedding_resp:
         q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
         norm_q = np.linalg.norm(q_vec)
-        all_ref_embs = db.query(models.ReferenceEmbedding).all()
+        # BOLT OPTIMIZATION: Use selectinload to eagerly fetch relationships to prevent N+1 query loops.
+        all_ref_embs = (
+            db.query(models.ReferenceEmbedding)
+            .options(selectinload(models.ReferenceEmbedding.reference))
+            .all()
+        )
         scored_refs = []
         for re in all_ref_embs:
             r_vec = np.array(json.loads(re.vector))

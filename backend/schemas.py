@@ -3,16 +3,20 @@ from datetime import datetime, date as dt_date
 from typing import List, Optional
 from enum import Enum
 
+
 class TagBase(BaseModel):
     key: Optional[str] = None
     value: str
 
+
 class TagCreate(TagBase):
     pass
+
 
 class Tag(TagBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
 
 class TagLink(BaseModel):
     entity_type: str
@@ -23,12 +27,15 @@ class TagLink(BaseModel):
 class ReflectionBase(BaseModel):
     content: str
 
+
 class ReflectionCreate(ReflectionBase):
     person_id: Optional[int] = None
     group_id: Optional[int] = None
 
+
 class ReflectionUpdate(BaseModel):
     content: Optional[str] = None
+
 
 class Reflection(ReflectionBase):
     id: int
@@ -39,23 +46,28 @@ class Reflection(ReflectionBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class PersonBase(BaseModel):
     name: str
     contact_method: Optional[str] = None
     avatar_logo: Optional[str] = None
 
+
 class PersonCreate(PersonBase):
     pass
+
 
 class PersonUpdate(BaseModel):
     name: Optional[str] = None
     contact_method: Optional[str] = None
     avatar_logo: Optional[str] = None
 
+
 class GroupBase(BaseModel):
     name: str
     description: Optional[str] = None
     avatar_logo: Optional[str] = None
+
 
 class GroupBadge(BaseModel):
     id: int
@@ -63,10 +75,12 @@ class GroupBadge(BaseModel):
     avatar_logo: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class PersonBadge(BaseModel):
     id: int
     name: str
     model_config = ConfigDict(from_attributes=True)
+
 
 class Person(PersonBase):
     id: int
@@ -83,13 +97,16 @@ class Person(PersonBase):
     latest_note_date: Optional[dt_date] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class GroupCreate(GroupBase):
     pass
+
 
 class GroupUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     avatar_logo: Optional[str] = None
+
 
 class Group(GroupBase):
     id: int
@@ -112,17 +129,20 @@ class TopicState(str, Enum):
     active = "active"
     closed = "closed"
 
+
 class TopicOrigin(str, Enum):
     note = "note"
     message = "message"
     reflection = "reflection"
     manual = "manual"
 
+
 class TopicBase(BaseModel):
     title: str
     state: TopicState = TopicState.future
     summary: Optional[str] = None
     closure_note: Optional[str] = None
+
 
 class TopicCreate(TopicBase):
     person_id: Optional[int] = None
@@ -132,11 +152,13 @@ class TopicCreate(TopicBase):
     source_message_id: Optional[int] = None
     source_reflection_id: Optional[int] = None
 
+
 class TopicUpdate(BaseModel):
     title: Optional[str] = None
     state: Optional[TopicState] = None
     summary: Optional[str] = None
     closure_note: Optional[str] = None
+
 
 class Topic(TopicBase):
     id: int
@@ -155,6 +177,7 @@ class Topic(TopicBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class NoteStage(str, Enum):
     PREPARE = "Prepare"
     CAPTURE = "Capture"
@@ -162,41 +185,49 @@ class NoteStage(str, Enum):
     PUBLISHED = "Published"
     ARCHIVED = "Archived"
 
+
 class ActionBase(BaseModel):
     text: str
     resolved: bool = False
 
+
 class ActionCreate(ActionBase):
     note_id: int
+
 
 class Action(ActionBase):
     id: int
     note_id: int
     model_config = ConfigDict(from_attributes=True)
 
+
 class MessageStatus(str, Enum):
     DRAFT = "draft"
     SENT = "sent"
     ARCHIVED = "archived"
 
+
 class MessageSource(str, Enum):
     NATIVE = "native"
     IMPORTED = "imported"
+
 
 class MessageBase(BaseModel):
     draft_text: Optional[str] = None
     sent_text: Optional[str] = None
     status: MessageStatus = MessageStatus.DRAFT
     source: MessageSource = MessageSource.NATIVE
-    date: Optional[str] = None # YYYY-MM-DD
+    date: Optional[str] = None  # YYYY-MM-DD
     note_id: Optional[int] = None
     person_id: Optional[int] = None
     group_id: Optional[int] = None
     persona_id: Optional[int] = None
     is_inbound: bool = False
 
+
 class MessageCreate(MessageBase):
     pass
+
 
 class MessageUpdate(BaseModel):
     draft_text: Optional[str] = None
@@ -210,11 +241,13 @@ class MessageUpdate(BaseModel):
     persona_id: Optional[int] = None
     sent_at: Optional[datetime] = None
 
+
 class NoteBadge(BaseModel):
     id: int
     title: str
     date: dt_date
     model_config = ConfigDict(from_attributes=True)
+
 
 class Message(MessageBase):
     id: int
@@ -226,6 +259,7 @@ class Message(MessageBase):
     note: Optional[NoteBadge] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class NoteBase(BaseModel):
     title: str
     date: dt_date
@@ -236,8 +270,10 @@ class NoteBase(BaseModel):
     person_id: Optional[int] = None
     group_id: Optional[int] = None
 
+
 class NoteCreate(NoteBase):
     pass
+
 
 class NoteUpdate(BaseModel):
     title: Optional[str] = None
@@ -246,6 +282,7 @@ class NoteUpdate(BaseModel):
     cleaned_text: Optional[str] = None
     session_brief: Optional[str] = None
     date: Optional[dt_date] = None
+
 
 class Note(NoteBase):
     id: int
@@ -258,12 +295,14 @@ class Note(NoteBase):
     analyzed_for_framework: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 
+
 class ReferenceType(str, Enum):
     CONCEPT = "CONCEPT"
     RESOURCE = "RESOURCE"
     TECHNIQUE = "TECHNIQUE"
     PATTERN = "PATTERN"
     TEMPLATE = "TEMPLATE"
+
 
 class ReferenceBase(BaseModel):
     title: str
@@ -272,8 +311,10 @@ class ReferenceBase(BaseModel):
     source_note_id: Optional[int] = None
     url: Optional[str] = None
 
+
 class ReferenceCreate(ReferenceBase):
     pass
+
 
 class Reference(ReferenceBase):
     id: int
@@ -283,29 +324,36 @@ class Reference(ReferenceBase):
     analyzed_for_framework: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 
+
 # Phase 6 Schemas
+
 
 class PractiseFrameworkItemBase(BaseModel):
     aspect: str
     value: str
 
+
 class PractiseFrameworkItemCreate(PractiseFrameworkItemBase):
     pass
+
 
 class PractiseFrameworkItem(PractiseFrameworkItemBase):
     id: int
     created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class PractiseFrameworkBase(BaseModel):
     name: Optional[str] = None
     is_core: bool = False
+
 
 class PractiseFrameworkCreate(PractiseFrameworkBase):
     tone_idioms: Optional[str] = None
     formatting_preferences: Optional[str] = None
     common_phrasing: Optional[str] = None
     principles_tenets: Optional[str] = None
+
 
 class PractiseFramework(PractiseFrameworkBase):
     id: int
@@ -317,30 +365,36 @@ class PractiseFramework(PractiseFrameworkBase):
     principles_tenets: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class PersonaBase(BaseModel):
     name: str
     avatar_logo: Optional[str] = None
     description: Optional[str] = None
     framework_id: Optional[int] = None
 
+
 class PersonaCreate(PersonaBase):
     pass
+
 
 class Persona(PersonaBase):
     id: int
     framework: Optional[PractiseFramework] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class PersonaUpdate(BaseModel):
     name: Optional[str] = None
     avatar_logo: Optional[str] = None
     description: Optional[str] = None
+
 
 class FrameworkProposalStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
     SUPERSEDED = "SUPERSEDED"
+
 
 class FrameworkProposalBase(BaseModel):
     source_type: str
@@ -349,9 +403,9 @@ class FrameworkProposalBase(BaseModel):
     action: str
     value: str
     observation_count: Optional[int] = 1
-    source_context: Optional[str] = None # Hydrated dynamically
-    source_owner: Optional[str] = None # Hydrated dynamically
-    source_date: Optional[str] = None # Hydrated dynamically
+    source_context: Optional[str] = None  # Hydrated dynamically
+    source_owner: Optional[str] = None  # Hydrated dynamically
+    source_date: Optional[str] = None  # Hydrated dynamically
     persona_id: Optional[int] = None
     person_id: Optional[int] = None
     group_id: Optional[int] = None
@@ -362,10 +416,12 @@ class FrameworkProposalBase(BaseModel):
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
     possible_groups: List[GroupBadge] = []
 
+
 class FrameworkProposal(FrameworkProposalBase):
     id: int
     created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
 
 class ReferenceProposalBase(BaseModel):
     title: str
@@ -374,13 +430,16 @@ class ReferenceProposalBase(BaseModel):
     source_note_id: int
     status: FrameworkProposalStatus = FrameworkProposalStatus.PENDING
 
+
 class ReferenceProposalCreate(ReferenceProposalBase):
     pass
+
 
 class ReferenceProposal(ReferenceProposalBase):
     id: int
     created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
 
 # For Atomic JSON Import/Export (Phase 2 Step 4.2)
 class FullExport(BaseModel):
@@ -394,6 +453,7 @@ class FullExport(BaseModel):
     actions: List[Action] = []
     messages: List[Message] = []
 
+
 # Phase 4 Dashboard Schemas
 class DashboardStats(BaseModel):
     person_count: int
@@ -402,19 +462,23 @@ class DashboardStats(BaseModel):
     reference_count: int
     message_count: int
 
+
 class CalendarDay(BaseModel):
     date: dt_date
     count: int
     message_count: int = 0
 
+
 class TrendStack(BaseModel):
     name: str
     count: int
+
 
 class TrendPoint(BaseModel):
     label: str
     count: int
     stacks: List[TrendStack] = []
+
 
 class ReferenceSuggestionRequest(BaseModel):
     query: Optional[str] = None
@@ -423,15 +487,18 @@ class ReferenceSuggestionRequest(BaseModel):
     group_id: Optional[int] = None
     limit: int = 5
 
+
 class ReferenceUsage(BaseModel):
     id: int
     title: str
     usage_count: int
 
+
 class LeaderboardEntry(BaseModel):
     id: int
     name: str
     note_count: int
+
 
 # Rebuild models for circular references
 Person.model_rebuild()
