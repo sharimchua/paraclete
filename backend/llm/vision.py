@@ -1,6 +1,7 @@
 # backend/llm/vision.py
 from llama_cpp.llama_chat_format import Llava16ChatHandler
 
+
 class Gemma4VisionChatHandler(Llava16ChatHandler):
     # CHAT_FORMAT specifically tuned for Gemma 4 26B MoE multimodal instructions
     # This captures the learned best practices for role definitions and message boundaries

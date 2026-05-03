@@ -3,9 +3,10 @@ import threading
 import uuid
 from datetime import datetime
 
+
 class BackgroundTaskManager:
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(BackgroundTaskManager, cls).__new__(cls)
@@ -18,10 +19,10 @@ class BackgroundTaskManager:
     async def _broadcast_jobs(self):
         try:
             from ..websockets_manager import ws_manager
-            await ws_manager.broadcast({
-                "event": "background_jobs",
-                "data": self.list_jobs()
-            })
+
+            await ws_manager.broadcast(
+                {"event": "background_jobs", "data": self.list_jobs()}
+            )
         except Exception as e:
             print(f"DEBUG: Broadcast error: {e}")
 
@@ -33,21 +34,25 @@ class BackgroundTaskManager:
         print("DEBUG: Background Worker Loop Started.")
         while True:
             job_id, job_func, args, kwargs = await self.queue.get()
-            
+
             # Check if we should wait due to interrupt
             while self.interrupt_event.is_set():
-                print(f"DEBUG: Background worker paused due to interrupt. Job {job_id} waiting...")
+                print(
+                    f"DEBUG: Background worker paused due to interrupt. Job {job_id} waiting..."
+                )
                 await asyncio.sleep(0.5)
 
             self.jobs[job_id]["status"] = "running"
             await self._broadcast_jobs()
-            print(f"DEBUG: Starting background job: {self.jobs[job_id]['name']} ({job_id})")
-            
+            print(
+                f"DEBUG: Starting background job: {self.jobs[job_id]['name']} ({job_id})"
+            )
+
             try:
                 # Pass the interrupt event if requested
                 if "interrupt_event" in kwargs:
-                     kwargs["interrupt_event"] = self.interrupt_event
-                
+                    kwargs["interrupt_event"] = self.interrupt_event
+
                 # If the job takes job_id, pass it so it can update progress
                 if "job_id" in kwargs:
                     kwargs["job_id"] = job_id
@@ -73,11 +78,11 @@ class BackgroundTaskManager:
             "name": job_name,
             "status": "pending",
             "progress": 0,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.utcnow().isoformat(),
         }
         self.queue.put_nowait((job_id, job_func, args, kwargs))
         self.start_worker()
-        
+
         # Initial broadcast
         asyncio.create_task(self._broadcast_jobs())
         return job_id
@@ -101,27 +106,30 @@ class BackgroundTaskManager:
     def list_jobs(self):
         # Sort by created_at desc
         sorted_jobs = sorted(
-            self.jobs.items(), 
-            key=lambda x: x[1].get("created_at", ""), 
-            reverse=True
+            self.jobs.items(), key=lambda x: x[1].get("created_at", ""), reverse=True
         )
         return [
             {
-                "id": tid, 
-                "name": j["name"], 
-                "status": j["status"], 
+                "id": tid,
+                "name": j["name"],
+                "status": j["status"],
                 "progress": j["progress"],
                 "created_at": j.get("created_at"),
-                "error": j.get("error")
+                "error": j.get("error"),
             }
             for tid, j in sorted_jobs
         ]
 
     async def clear_completed_jobs(self):
         """Removes all non-active jobs from history."""
-        to_delete = [jid for jid, job in self.jobs.items() if job["status"] in ["completed", "error", "cancelled"]]
+        to_delete = [
+            jid
+            for jid, job in self.jobs.items()
+            if job["status"] in ["completed", "error", "cancelled"]
+        ]
         for jid in to_delete:
             del self.jobs[jid]
         await self._broadcast_jobs()
+
 
 background_manager = BackgroundTaskManager()

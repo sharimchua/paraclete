@@ -1,6 +1,7 @@
 # backend/llm/templates.py
 # High-fidelity prompt templates for Gemma 4 MoE
 
+
 def clean_note(text: str) -> str:
     """Basic transcription cleanup."""
     return f"""You are an expert transcription cleaner for practitioners.
@@ -12,7 +13,19 @@ RAW NOTE:
 
 CLEANED NOTE:"""
 
-def clean_session_note(text: str, person_name: str, person_tags: str, references: str, previous_notes: str, existing_tags: str, framework_expectations: str = "", practitioner_name: str = "the practitioner", practitioner_preferred_name: str = "the practitioner", practitioner_bio: str = "") -> str:
+
+def clean_session_note(
+    text: str,
+    person_name: str,
+    person_tags: str,
+    references: str,
+    previous_notes: str,
+    existing_tags: str,
+    framework_expectations: str = "",
+    practitioner_name: str = "the practitioner",
+    practitioner_preferred_name: str = "the practitioner",
+    practitioner_bio: str = "",
+) -> str:
     """Advanced RAG-based session expansion with framework adherence."""
     framework_section = ""
     if framework_expectations:
@@ -52,6 +65,7 @@ Person: {person_name} ({person_tags})
 
 ### High-Fidelity Draft:
 """
+
 
 def extract_entities(text: str, context: str = "") -> str:
     """Entity and Metadata extraction prompt."""
@@ -93,12 +107,21 @@ Return valid JSON only.
 
 ### STRUCTURAL JSON:"""
 
-def professional_draft(person_name: str, summary: str, history: str, framework_context: str = "", practitioner_name: str = "the practitioner", practitioner_preferred_name: str = "the practitioner", practitioner_bio: str = "") -> str:
+
+def professional_draft(
+    person_name: str,
+    summary: str,
+    history: str,
+    framework_context: str = "",
+    practitioner_name: str = "the practitioner",
+    practitioner_preferred_name: str = "the practitioner",
+    practitioner_bio: str = "",
+) -> str:
     """Consolidated professional message drafting template with granular framework adherence."""
     framework_section = ""
     if framework_context:
         framework_section = f"### Practice Framework Constraints (STRICT ADHERENCE)\n{framework_context}\n\n"
-        
+
     practitioner_context = f"From Practitioner: {practitioner_name} (Referred to as {practitioner_preferred_name})\n"
     if practitioner_bio:
         practitioner_context += f"Background: {practitioner_bio}\n"
@@ -120,16 +143,25 @@ Draft a warm, professional follow-up message to the person.
 
 ### Draft Message (Output ONLY the message):"""
 
-def iterate_professional_draft(current_draft: str, feedback: str, person_name: str, note_context: str = "", history: str = "", highlight_text: str = "", framework_context: str = "") -> str:
+
+def iterate_professional_draft(
+    current_draft: str,
+    feedback: str,
+    person_name: str,
+    note_context: str = "",
+    history: str = "",
+    highlight_text: str = "",
+    framework_context: str = "",
+) -> str:
     """Surgical refinement of an existing draft with framework persistence."""
     focus_context = ""
     if highlight_text:
         focus_context = f"\n### SPECIFIC FOCUS ON THIS SECTION:\n{highlight_text}\n"
-        
+
     framework_section = ""
     if framework_context:
         framework_section = f"### Practice Framework Style Constraints (STRICT ADHERENCE)\n{framework_context}\n\n"
-        
+
     return f"""{framework_section}You are an expert professional assistant refining a message to {person_name}.
 
 ### CONTEXT
@@ -151,9 +183,11 @@ Provide ONLY the updated message text.
 
 ### NEW DRAFT:"""
 
+
 def embed_note(title: str, text: str) -> str:
     """Text to be embedded for note search."""
     return f"{title} {text}"
+
 
 def ocr_capture(text: str = "[Vision Analysis Requested]") -> str:
     """OCR transcription and analysis."""
@@ -167,6 +201,7 @@ IMAGE CONTENT:
 
 TRANSCRIPTION:"""
 
+
 def dictation_capture(filename: str) -> str:
     """Audio cleanup prompt."""
     return f"""Transcribe the following audio content into clear, readable text.
@@ -177,7 +212,13 @@ AUDIO CONTENT:
 
 TRANSCRIPTION:"""
 
-def session_brief(person_name: str, previous_notes: str, active_topics: str = "", recent_reflections: str = "") -> str:
+
+def session_brief(
+    person_name: str,
+    previous_notes: str,
+    active_topics: str = "",
+    recent_reflections: str = "",
+) -> str:
     """Generate a brief for a new session based on history, topics, and reflections."""
 
     topics_section = ""
@@ -200,6 +241,7 @@ Provide a concise, professional briefing for the practitioner to read before sta
 
 ### AI Session Brief:"""
 
+
 def suggest_title(text: str) -> str:
     """Generate a short, scannable title for a note."""
     return f"""Analyze the following session note and provide a recommended short title (3-6 words) that captures the primary theme or focal point. 
@@ -211,7 +253,10 @@ SESSION NOTE:
 
 RECOMMENDED TITLE:"""
 
-def analyze_framework(content: str, persona_name: str, context: str = "", quantity: int = 5) -> str:
+
+def analyze_framework(
+    content: str, persona_name: str, context: str = "", quantity: int = 5
+) -> str:
     """Analyze content for thematic framework improvements."""
     return f"""You are a Strategic Practice Architect. 
 Your goal is to extract the high-level "Professional DNA" from the content below. 
@@ -250,6 +295,7 @@ Return valid JSON only.
 
 JSON:"""
 
+
 # Note: persona_draft preserved for older calls if necessary, but professional_draft is preferred.
 def synthesize_proposals(proposals_text: str) -> str:
     return f"""You are an expert at distilling professional practice insights. Your goal is to take a collection of potentially overlapping framework proposals and synthesize them into a lean, non-redundant set of high-impact principles.
@@ -268,7 +314,8 @@ def synthesize_proposals(proposals_text: str) -> str:
     Output 3-5 unique, high-fidelity items that truly define this practitioner's specific edge.
 
     JSON:"""
-    
+
+
 def audit_framework(core_items: str, persona_items: str, person_items: str = "") -> str:
     return f"""You are a professional practice auditor. Your goal is to identify direct contradictions or redundant overlaps in the practitioner's style framework across different hierarchical levels.
 
@@ -300,12 +347,15 @@ Format:
 
 JSON:"""
 
-def reformat_text(selected_text: str, prompt: str, full_context: str, framework_context: str = "") -> str:
+
+def reformat_text(
+    selected_text: str, prompt: str, full_context: str, framework_context: str = ""
+) -> str:
     """Prompt for restructuring a specific section of text."""
     framework_section = ""
     if framework_context:
         framework_section = f"### Practice Framework Constraints (STRICT ADHERENCE)\\n{framework_context}\\n\\n"
-        
+
     return f"""{framework_section}### Instruction
 The user wants to restructure a specific part of their text.
 
@@ -325,6 +375,7 @@ The user wants to restructure a specific part of their text.
 4. If the user asks for a specific format (e.g. bullets, professional tone), follow it precisely.
 
 ### RESTRUCTURED TEXT:"""
+
 
 def extract_references(text: str) -> str:
     return f"""Analyze the provided session note to extract universal professional concepts, techniques, resources or patterns that could be added to a Reference Library.
@@ -351,7 +402,6 @@ def extract_references(text: str) -> str:
 ]
 
 JSON:"""
-
 
 
 def topic_summary(topic_title: str, topic_content: str) -> str:

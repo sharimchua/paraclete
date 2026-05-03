@@ -5,14 +5,17 @@ from unittest.mock import AsyncMock, patch
 from fastapi import WebSocket
 from backend.websockets_manager import ConnectionManager
 
+
 @pytest.fixture
 def connection_manager():
     return ConnectionManager()
+
 
 @pytest.fixture
 def mock_websocket():
     ws = AsyncMock(spec=WebSocket)
     return ws
+
 
 @pytest.mark.asyncio
 async def test_broadcast_success(connection_manager, mock_websocket):
@@ -22,6 +25,7 @@ async def test_broadcast_success(connection_manager, mock_websocket):
     await connection_manager.broadcast(message)
 
     mock_websocket.send_text.assert_called_once_with(json.dumps(message))
+
 
 @pytest.mark.asyncio
 async def test_broadcast_exception_caught(connection_manager, mock_websocket):
@@ -40,4 +44,6 @@ async def test_broadcast_exception_caught(connection_manager, mock_websocket):
         mock_websocket.send_text.assert_called_once_with(json.dumps(message))
 
         # Verify the exception was caught and printed
-        mock_print.assert_called_once_with("Error broadcasting message: WebSocket Error")
+        mock_print.assert_called_once_with(
+            "Error broadcasting message: WebSocket Error"
+        )

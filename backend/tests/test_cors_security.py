@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import os
 
+
 def get_allowed_origins(local_ip_val, env_origins_val=None):
     # Logic extracted from backend/main.py
     allowed_origins = [
@@ -20,10 +21,13 @@ def get_allowed_origins(local_ip_val, env_origins_val=None):
         allowed_origins.extend([o.strip() for o in env_origins_val.split(",")])
     return allowed_origins
 
+
 class TestCORSConfiguration(unittest.TestCase):
     def test_cors_origins_logic(self):
         # Test with local IP and environment variable
-        origins = get_allowed_origins("192.168.1.50", "http://trusted.com, http://another.com")
+        origins = get_allowed_origins(
+            "192.168.1.50", "http://trusted.com, http://another.com"
+        )
 
         self.assertIn("http://localhost", origins)
         self.assertIn("http://127.0.0.1", origins)
@@ -37,6 +41,7 @@ class TestCORSConfiguration(unittest.TestCase):
         self.assertIn("http://localhost", origins_no_ip)
         self.assertIn("http://127.0.0.1:8000", origins_no_ip)
         self.assertEqual(len(origins_no_ip), 6)
+
 
 if __name__ == "__main__":
     unittest.main()

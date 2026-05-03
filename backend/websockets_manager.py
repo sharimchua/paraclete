@@ -2,6 +2,7 @@ import json
 from typing import List
 from fastapi import WebSocket
 
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -19,10 +20,13 @@ class ConnectionManager:
             try:
                 # Use local import to avoid circular dependency
                 from .models import Setting
+
                 setting_key = f"forensic_{event}"
-                visibility = db.query(Setting).filter(Setting.key == setting_key).first()
+                visibility = (
+                    db.query(Setting).filter(Setting.key == setting_key).first()
+                )
                 if visibility and visibility.value == "false":
-                    return # Skip broadcasting if disabled
+                    return  # Skip broadcasting if disabled
             except Exception as e:
                 print(f"Forensic filter error: {e}")
 
@@ -31,6 +35,7 @@ class ConnectionManager:
                 await connection.send_text(json.dumps(message))
             except Exception as e:
                 print(f"Error broadcasting message: {e}")
+
 
 # Shared singleton instance
 ws_manager = ConnectionManager()
