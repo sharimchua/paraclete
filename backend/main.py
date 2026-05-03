@@ -1156,11 +1156,11 @@ async def process_note(note_id: int, db: Session = Depends(get_db)):
     query_embedding_resp = await llm.llm_manager.aembed(query)
     if query_embedding_resp:
         q_vec = np.array(query_embedding_resp["data"][0]["embedding"])
+        norm_q = np.linalg.norm(q_vec)
         all_ref_embs = db.query(models.ReferenceEmbedding).all()
         scored_refs = []
         for re in all_ref_embs:
             r_vec = np.array(json.loads(re.vector))
-            norm_q = np.linalg.norm(q_vec)
             norm_r = np.linalg.norm(r_vec)
             if norm_q > 0 and norm_r > 0:
                 score = np.dot(q_vec, r_vec) / (norm_q * norm_r)
@@ -1388,6 +1388,7 @@ async def semantic_search(query: str, db: Session = Depends(get_db)):
             )
 
         q_vec = np.array(query_embedding["data"][0]["embedding"])
+        norm_q = np.linalg.norm(q_vec)
 
         note_embeddings = db.query(models.NoteEmbedding).all()
         results = []
@@ -1396,7 +1397,6 @@ async def semantic_search(query: str, db: Session = Depends(get_db)):
         for ne in note_embeddings:
             n_vec = np.array(json.loads(ne.vector))
             # Cosine similarity
-            norm_q = np.linalg.norm(q_vec)
             norm_n = np.linalg.norm(n_vec)
             if norm_q > 0 and norm_n > 0:
                 score = np.dot(q_vec, n_vec) / (norm_q * norm_n)
