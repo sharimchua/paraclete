@@ -892,6 +892,7 @@ const PracticeFramework: React.FC = () => {
                     <button
                       className="btn-secondary"
                       style={{ fontSize: '0.8rem', padding: '8px' }}
+                      aria-label={`View ${p.name} Practice Style`}
                       onClick={(e) => {
                         e.stopPropagation()
                         setConsolidatedView({ title: `${p.name} Consolidated`, text: 'Loading...' })
@@ -914,6 +915,7 @@ const PracticeFramework: React.FC = () => {
                     <button
                       className="btn-secondary"
                       style={{ color: '#ef4444', padding: '8px' }}
+                      aria-label={`Delete persona ${p.name}`}
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDeletePersona(p.id)
@@ -1127,6 +1129,7 @@ const PracticeFramework: React.FC = () => {
                     <button
                       className="btn-secondary"
                       style={{ fontSize: '0.8rem', padding: '8px' }}
+                      aria-label={`View ${record.name} Practice Style`}
                       onClick={(e) => {
                         e.stopPropagation()
                         setConsolidatedView({ title: `${record.name} View`, text: 'Loading...' })
@@ -1153,6 +1156,7 @@ const PracticeFramework: React.FC = () => {
                     <button
                       className="btn-secondary"
                       style={{ color: '#ef4444', padding: '8px' }}
+                      aria-label={`Wipe all custom rules for ${record.name}`}
                       onClick={(e) => {
                         e.stopPropagation()
                         setConfirmation({
