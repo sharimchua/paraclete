@@ -30,7 +30,12 @@ const FrameworkAspectList: React.FC<{
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
 
-  const filteredItems = items.filter((i) => i.aspect === aspect)
+  // ⚡ Bolt Optimization:
+  // What: Memoized the array filtering operation.
+  // Why: Component contains local state (editingId, editValue, isAdding) that updates on every keystroke.
+  //      Previously, this triggered an O(N) recalculation of the items array on every render.
+  // Impact: Prevents redundant O(N) iterations during typing/editing, resulting in a smoother UI experience.
+  const filteredItems = useMemo(() => items.filter((i) => i.aspect === aspect), [items, aspect])
 
   return (
     <div className="card" style={{ marginBottom: '24px' }}>
