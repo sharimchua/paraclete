@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, desc, literal_column
 from typing import List, Dict, Set
 import uvicorn
@@ -570,7 +570,9 @@ def read_group(group_id: int, db: Session = Depends(get_db)):
     # explicit group activity
     # ⚡ Bolt optimization: Fetch only the required date column for notes instead of all full objects
     # and use .count() for messages to avoid O(N) memory allocation and N+1 full object parsing overhead.
-    group_notes_data = db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    group_notes_data = (
+        db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    )
     group_messages_count = (
         db.query(models.Message).filter(models.Message.group_id == group_id).count()
     )
@@ -992,20 +994,26 @@ def read_notes(
     limit: int = 1000,
     db: Session = Depends(get_db),
 ):
+    # ⚡ Bolt Optimization: Switched from `joinedload` to `selectinload` for collection
+    # relationships (groups, tags, actions, messages).
+    # Using `joinedload` with `.limit()` causes incorrect truncation and cartesian products
+    # for collection relationships, leading to severe memory bloat and N+1/truncation bugs.
+    # Expected Impact: Prevents massive cartesian products, speeds up DB query,
+    # and fixes pagination bug.
     query = db.query(models.Note).options(
         joinedload(models.Note.person)
         .joinedload(models.Person.persona)
         .joinedload(models.Persona.framework),
         joinedload(models.Note.person)
-        .joinedload(models.Person.groups)
+        .selectinload(models.Person.groups)
         .joinedload(models.Group.persona)
         .joinedload(models.Persona.framework),
         joinedload(models.Note.group)
         .joinedload(models.Group.persona)
         .joinedload(models.Persona.framework),
-        joinedload(models.Note.tags),
-        joinedload(models.Note.actions),
-        joinedload(models.Note.messages),
+        selectinload(models.Note.tags),
+        selectinload(models.Note.actions),
+        selectinload(models.Note.messages),
     )
     if person_id:
         query = query.filter(models.Note.person_id == person_id)
