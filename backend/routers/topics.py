@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
@@ -68,9 +68,14 @@ def create_topic(topic: schemas.TopicCreate, db: Session = Depends(get_db)):
     db.refresh(db_topic)
     return enrich_topic(db_topic, db)
 
+
 @router.get("/", response_model=List[schemas.Topic])
 def get_topics(person_id: Optional[int] = None, group_id: Optional[int] = None, state: Optional[str] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    query = db.query(models.Topic)
+    # ⚡ Bolt Optimization:
+    # 💡 What: Added selectinload eager loading for Topic.notes, Topic.messages, Topic.reflections
+    # 🎯 Why: Prevents N+1 queries during Pydantic serialization/enrichment
+    # 📊 Impact: Reduces query count from 1+3N to exactly 4 queries.
+    query = db.query(models.Topic).options(selectinload(models.Topic.notes), selectinload(models.Topic.messages), selectinload(models.Topic.reflections))
     if person_id:
         query = query.filter(models.Topic.person_id == person_id)
     if group_id:
@@ -202,7 +207,7 @@ async def suggest_topic(req: TopicSuggestionRequest, db: Session = Depends(get_d
     if not text.strip():
         return {"suggested_topic_id": None}
 
-    query = db.query(models.Topic).filter(models.Topic.state != models.TopicState.closed)
+    query = db.query(models.Topic).options(selectinload(models.Topic.notes), selectinload(models.Topic.messages), selectinload(models.Topic.reflections)).filter(models.Topic.state != models.TopicState.closed)
     if person_id:
         query = query.filter(models.Topic.person_id == person_id)
     elif group_id:

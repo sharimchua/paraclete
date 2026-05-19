@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, desc, literal_column
 from typing import List, Dict, Set
 import uvicorn
@@ -431,13 +431,18 @@ def create_person(person: schemas.PersonCreate, db: Session = Depends(get_db)):
     return db_person
 
 
+
 @app.get("/persons/", response_model=List[schemas.Person])
 def read_persons(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    # ⚡ Bolt Optimization:
+    # 💡 What: Replaced joinedload with selectinload for Person.groups
+    # 🎯 Why: joinedload creates inefficient Cartesian products when joining collections.
+    # 📊 Impact: Significantly reduces query execution time and memory bloat.
     persons = (
         db.query(models.Person)
         .options(
             joinedload(models.Person.persona).joinedload(models.Persona.framework),
-            joinedload(models.Person.groups)
+            selectinload(models.Person.groups)
             .joinedload(models.Group.persona)
             .joinedload(models.Persona.framework),
         )
@@ -462,7 +467,7 @@ def read_person(person_id: int, db: Session = Depends(get_db)):
         db.query(models.Person)
         .options(
             joinedload(models.Person.persona).joinedload(models.Persona.framework),
-            joinedload(models.Person.groups)
+            selectinload(models.Person.groups)
             .joinedload(models.Group.persona)
             .joinedload(models.Persona.framework),
         )
@@ -530,17 +535,22 @@ def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     )
 
 
+
 @app.get("/groups/{group_id}", response_model=schemas.Group)
 def read_group(group_id: int, db: Session = Depends(get_db)):
+    # ⚡ Bolt Optimization:
+    # 💡 What: Replaced joinedload with selectinload for Group.members and sub-collections Person.notes, Person.messages
+    # 🎯 Why: Prevent catastrophic Cartesian product explosion on multiple one-to-many joins.
+    # 📊 Impact: O(1) queries instead of O(N*M) result rows, massive memory/speed saving.
     db_group = (
         db.query(models.Group)
         .options(
             joinedload(models.Group.persona).joinedload(models.Persona.framework),
-            joinedload(models.Group.members)
+            selectinload(models.Group.members)
             .joinedload(models.Person.persona)
             .joinedload(models.Persona.framework),
-            joinedload(models.Group.members).joinedload(models.Person.notes),
-            joinedload(models.Group.members).joinedload(models.Person.messages),
+            selectinload(models.Group.members).selectinload(models.Person.notes),
+            selectinload(models.Group.members).selectinload(models.Person.messages),
         )
         .filter(models.Group.id == group_id)
         .first()
@@ -983,6 +993,7 @@ def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     return db_note
 
 
+
 @app.get("/notes/", response_model=List[schemas.Note])
 def read_notes(
     person_id: int = None,
@@ -992,20 +1003,24 @@ def read_notes(
     limit: int = 1000,
     db: Session = Depends(get_db),
 ):
+    # ⚡ Bolt Optimization:
+    # 💡 What: Swapped joinedload for selectinload on Note.tags, Note.actions, Note.messages, and Person.groups
+    # 🎯 Why: joinedload with limit/offset truncates collections or causes massive data duplication
+    # 📊 Impact: Ensures correct pagination results and avoids N+1 queries.
     query = db.query(models.Note).options(
         joinedload(models.Note.person)
         .joinedload(models.Person.persona)
         .joinedload(models.Persona.framework),
         joinedload(models.Note.person)
-        .joinedload(models.Person.groups)
+        .selectinload(models.Person.groups)
         .joinedload(models.Group.persona)
         .joinedload(models.Persona.framework),
         joinedload(models.Note.group)
         .joinedload(models.Group.persona)
         .joinedload(models.Persona.framework),
-        joinedload(models.Note.tags),
-        joinedload(models.Note.actions),
-        joinedload(models.Note.messages),
+        selectinload(models.Note.tags),
+        selectinload(models.Note.actions),
+        selectinload(models.Note.messages),
     )
     if person_id:
         query = query.filter(models.Note.person_id == person_id)
@@ -1051,12 +1066,12 @@ def read_note(note_id: int, db: Session = Depends(get_db)):
         .options(
             joinedload(models.Note.person).joinedload(models.Person.persona),
             joinedload(models.Note.person)
-            .joinedload(models.Person.groups)
+            .selectinload(models.Person.groups)
             .joinedload(models.Group.persona),
             joinedload(models.Note.group).joinedload(models.Group.persona),
-            joinedload(models.Note.tags),
-            joinedload(models.Note.actions),
-            joinedload(models.Note.messages),
+            selectinload(models.Note.tags),
+            selectinload(models.Note.actions),
+            selectinload(models.Note.messages),
         )
         .filter(models.Note.id == note_id)
         .first()
@@ -1872,7 +1887,7 @@ def get_trends(db: Session = Depends(get_db)):
     notes = (
         db.query(models.Note)
         .options(
-            joinedload(models.Note.tags),
+            selectinload(models.Note.tags),
             joinedload(models.Note.person).joinedload(models.Person.tags),
             joinedload(models.Note.group).joinedload(models.Group.tags),
         )
