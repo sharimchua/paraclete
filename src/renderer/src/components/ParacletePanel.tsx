@@ -233,6 +233,7 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
           }}
         >
           <input
+            aria-label="Ask Paraclete"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
