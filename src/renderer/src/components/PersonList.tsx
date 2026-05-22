@@ -92,6 +92,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
       <div style={{ position: 'relative' }}>
         <input
           type="text"
+          aria-label="Search people"
           placeholder="Search people by name, contact, or tag..."
           className="input-field"
           value={filterText}

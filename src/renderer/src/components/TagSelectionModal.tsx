@@ -48,6 +48,7 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
         <div style={{ marginBottom: '16px' }}>
           <input
             className="input-field"
+            aria-label="Search tags"
             placeholder="Search tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
