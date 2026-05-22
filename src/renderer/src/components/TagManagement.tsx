@@ -127,6 +127,7 @@ const TagManagement: React.FC = () => {
         <div style={{ marginBottom: '20px' }}>
           <input
             type="text"
+            aria-label="Search tags"
             placeholder="Search tags..."
             className="input-field"
             value={searchTerm}

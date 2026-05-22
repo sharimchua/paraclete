@@ -226,6 +226,7 @@ const ReferenceLibrary: React.FC = () => {
           <div className="card" style={{ marginBottom: '24px' }}>
             <input
               type="text"
+              aria-label="Search references"
               placeholder="Search references by title, body, or tags..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

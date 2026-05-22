@@ -50,6 +50,7 @@ const NotesList: React.FC<Props> = ({ onSelectNote }) => {
       <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
         <input
           type="text"
+          aria-label="Search notes"
           placeholder="Search notes content or titles..."
           className="form-control"
           value={search}

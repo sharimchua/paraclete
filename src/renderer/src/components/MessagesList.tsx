@@ -67,6 +67,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
           <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
             <input
               type="text"
+              aria-label="Search messages"
               className="search-input"
               placeholder="Search messages..."
               style={{ flex: 1, maxWidth: '400px', margin: 0 }}

@@ -92,6 +92,7 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
         <div style={{ marginBottom: '20px' }}>
           <input
             className="input-field"
+            aria-label="Search people or groups"
             placeholder="Search people or groups..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
