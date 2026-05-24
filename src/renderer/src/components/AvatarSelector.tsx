@@ -82,6 +82,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ value, onChange 
             type="url"
             className="input-field"
             placeholder="https://example.com/avatar.png"
+            aria-label="Custom Avatar URL"
             value={value.startsWith('plant:') ? '' : value}
             onChange={(e) => onChange(e.target.value)}
           />
