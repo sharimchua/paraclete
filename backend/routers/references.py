@@ -122,6 +122,10 @@ async def extract_references_task(note_id: int):
         existing_refs = db.query(models.Reference).all()
         existing_proposals = db.query(models.ReferenceProposal).filter(models.ReferenceProposal.source_note_id == note_id).all()
         
+        # Pre-compute lowercased titles for O(1) lookups to avoid O(N*M) nested loop
+        existing_refs_titles = {r.title.lower() for r in existing_refs if r.title}
+        existing_proposals_titles = {p.title.lower() for p in existing_proposals if p.title}
+
         batch_titles = set()
         added_count = 0
         for prop in raw_proposals:
@@ -131,10 +135,10 @@ async def extract_references_task(note_id: int):
             if title_lower in batch_titles:
                 continue
             
-            if any(r.title.lower() == title_lower for r in existing_refs):
+            if title_lower in existing_refs_titles:
                 print(f"FORENSIC SKIP: '{prop['title']}' already exists in Reference Library.")
                 continue
-            if any(p.title.lower() == title_lower for p in existing_proposals):
+            if title_lower in existing_proposals_titles:
                 print(f"FORENSIC SKIP: '{prop['title']}' already exists as a Proposal for this note.")
                 continue
             
