@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import List, Optional
 import json
 import asyncio
@@ -55,11 +55,13 @@ async def suggest_references_endpoint(
 
 @router.get("/", response_model=List[schemas.Reference])
 def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Reference).offset(skip).limit(limit).all()
+    # ⚡ Bolt: Eager load tags to prevent N+1 queries during Pydantic serialization
+    return db.query(models.Reference).options(selectinload(models.Reference.tags)).offset(skip).limit(limit).all()
 
 @router.get("/{reference_id}", response_model=schemas.Reference)
 def read_reference(reference_id: int, db: Session = Depends(get_db)):
-    db_ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+    # ⚡ Bolt: Eager load tags to prevent N+1 queries during Pydantic serialization
+    db_ref = db.query(models.Reference).options(selectinload(models.Reference.tags)).filter(models.Reference.id == reference_id).first()
     if db_ref is None:
         raise HTTPException(status_code=404, detail="Reference not found")
     return db_ref
@@ -264,7 +266,12 @@ async def suggest_references(
             await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion"}})
             return []
 
-        all_refs = db.query(models.Reference).all()
+        # ⚡ Bolt: Eager load tags (collection) with selectinload and embedding (scalar) with joinedload
+        # to prevent N+1 queries during the scoring loop
+        all_refs = db.query(models.Reference).options(
+            selectinload(models.Reference.tags),
+            joinedload(models.Reference.embedding)
+        ).all()
         scored_refs = []
         
         for ref in all_refs:
