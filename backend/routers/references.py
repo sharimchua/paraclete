@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 import json
 import asyncio
@@ -55,11 +55,11 @@ async def suggest_references_endpoint(
 
 @router.get("/", response_model=List[schemas.Reference])
 def read_references(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.Reference).offset(skip).limit(limit).all()
+    return db.query(models.Reference).options(selectinload(models.Reference.tags)).offset(skip).limit(limit).all()
 
 @router.get("/{reference_id}", response_model=schemas.Reference)
 def read_reference(reference_id: int, db: Session = Depends(get_db)):
-    db_ref = db.query(models.Reference).filter(models.Reference.id == reference_id).first()
+    db_ref = db.query(models.Reference).options(selectinload(models.Reference.tags)).filter(models.Reference.id == reference_id).first()
     if db_ref is None:
         raise HTTPException(status_code=404, detail="Reference not found")
     return db_ref
@@ -230,17 +230,17 @@ async def suggest_references(
     effective_query = req.query
 
     if req.note_id:
-        note = db.query(models.Note).filter(models.Note.id == req.note_id).first()
+        note = db.query(models.Note).options(selectinload(models.Note.tags)).filter(models.Note.id == req.note_id).first()
         if note:
             context_tag_ids.update([t.id for t in note.tags])
             if not effective_query:
                 effective_query = f"{note.title} {note.cleaned_text or note.raw_capture or ''}"
     if req.person_id:
-        person = db.query(models.Person).filter(models.Person.id == req.person_id).first()
+        person = db.query(models.Person).options(selectinload(models.Person.tags)).filter(models.Person.id == req.person_id).first()
         if person:
             context_tag_ids.update([t.id for t in person.tags])
     if req.group_id:
-        group = db.query(models.Group).filter(models.Group.id == req.group_id).first()
+        group = db.query(models.Group).options(selectinload(models.Group.tags)).filter(models.Group.id == req.group_id).first()
         if group:
             context_tag_ids.update([t.id for t in group.tags])
 
@@ -264,7 +264,10 @@ async def suggest_references(
             await ws_manager.broadcast({"event": "llm_finish", "data": {"type": "reference_suggestion"}})
             return []
 
-        all_refs = db.query(models.Reference).all()
+        all_refs = db.query(models.Reference).options(
+            selectinload(models.Reference.embedding),
+            selectinload(models.Reference.tags)
+        ).all()
         scored_refs = []
         
         for ref in all_refs:
