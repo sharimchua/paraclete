@@ -468,6 +468,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
             <button
               className="btn-primary"
               onClick={handleOpenModal}
+              aria-label="Add note for this date"
               style={{
                 width: '28px',
                 height: '28px',
