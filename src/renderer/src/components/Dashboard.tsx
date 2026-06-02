@@ -484,6 +484,7 @@ const Dashboard: React.FC<Props> = ({ onSelectNote, onStartNote }) => {
                 transition: 'all 0.2s ease'
               }}
               title="Add note for this date"
+            aria-label="Add note for this date"
             >
               <svg
                 width="14"
