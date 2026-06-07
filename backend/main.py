@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, desc, literal_column
 from typing import List, Dict, Set
 import uvicorn
@@ -1861,8 +1861,21 @@ def get_calendar_data(db: Session = Depends(get_db)):
 
 @app.get("/dashboard/recent-notes", response_model=List[schemas.Note])
 def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
+    # ⚡ Bolt optimization: Eager load relationships to prevent N+1 queries during Pydantic serialization.
+    # We use joinedload for scalar relations (person, group) and selectinload for collection relations
+    # (tags, actions, messages) to work safely with the .limit() clause.
     return (
-        db.query(models.Note).order_by(models.Note.created_at.desc()).limit(limit).all()
+        db.query(models.Note)
+        .options(
+            joinedload(models.Note.person),
+            joinedload(models.Note.group),
+            selectinload(models.Note.tags),
+            selectinload(models.Note.actions),
+            selectinload(models.Note.messages),
+        )
+        .order_by(models.Note.created_at.desc())
+        .limit(limit)
+        .all()
     )
 
 
