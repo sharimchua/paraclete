@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, desc, literal_column
 from typing import List, Dict, Set
 import uvicorn
@@ -1869,12 +1869,15 @@ def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
 @app.get("/dashboard/trends", response_model=List[schemas.TrendPoint])
 def get_trends(db: Session = Depends(get_db)):
     # 1. Fetch all notes with tags and entity tags in one go to avoid N+1
+    # ⚡ Bolt optimization: Swapped `joinedload` for `selectinload` on collection relationships (tags)
+    # This prevents massive Cartesian products caused by multiple LEFT OUTER JOINs,
+    # drastically improving database query performance and reducing memory usage when notes have many tags.
     notes = (
         db.query(models.Note)
         .options(
-            joinedload(models.Note.tags),
-            joinedload(models.Note.person).joinedload(models.Person.tags),
-            joinedload(models.Note.group).joinedload(models.Group.tags),
+            selectinload(models.Note.tags),
+            joinedload(models.Note.person).selectinload(models.Person.tags),
+            joinedload(models.Note.group).selectinload(models.Group.tags),
         )
         .all()
     )
