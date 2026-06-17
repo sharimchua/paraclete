@@ -49,6 +49,7 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
           <input
             className="input-field"
             placeholder="Search tags..."
+            aria-label="Search tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoFocus

@@ -93,6 +93,7 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
         <input
           type="text"
           placeholder="Search people by name, contact, or tag..."
+          aria-label="Search people by name, contact, or tag..."
           className="input-field"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
