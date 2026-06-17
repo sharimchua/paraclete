@@ -51,6 +51,7 @@ const NotesList: React.FC<Props> = ({ onSelectNote }) => {
         <input
           type="text"
           placeholder="Search notes content or titles..."
+          aria-label="Search notes content or titles..."
           className="form-control"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

@@ -69,6 +69,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
               type="text"
               className="search-input"
               placeholder="Search messages..."
+              aria-label="Search messages..."
               style={{ flex: 1, maxWidth: '400px', margin: 0 }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
