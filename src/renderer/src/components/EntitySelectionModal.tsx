@@ -93,6 +93,7 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
           <input
             className="input-field"
             placeholder="Search people or groups..."
+            aria-label="Search people or groups"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
