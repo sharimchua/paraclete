@@ -291,6 +291,7 @@ const MessageAuthoring: React.FC<MessageAuthoringProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <input
           type="date"
+          aria-label="Message Date"
           value={message.date || ''}
           onChange={(e) => {
             setMessage({ ...message, date: e.target.value })
