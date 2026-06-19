@@ -478,6 +478,7 @@ const NoteAuthoring: React.FC<Props> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <input
           type="date"
+          aria-label="Session Date"
           value={sessionDate}
           onChange={(e) => setSessionDate(e.target.value)}
           onClick={(e) => e.currentTarget.showPicker?.()}
