@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { api, Tag } from '../services/api'
 
 interface Props {
@@ -26,14 +26,17 @@ const TagSelectionModal: React.FC<Props> = ({ onClose, onSelect, existingTagIds,
       })
   }, [])
 
-  const filteredTags = allTags.filter((tag) => {
-    if (tag.id === undefined) return false
-    const isNotAlreadyUsed = !existingTagIds.includes(tag.id)
-    const matchesSearch =
-      tag.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (tag.key && tag.key.toLowerCase().includes(searchTerm.toLowerCase()))
-    return isNotAlreadyUsed && matchesSearch
-  })
+  const filteredTags = useMemo(() => {
+    const lowerSearchTerm = searchTerm.toLowerCase()
+    return allTags.filter((tag) => {
+      if (tag.id === undefined) return false
+      const isNotAlreadyUsed = !existingTagIds.includes(tag.id)
+      const matchesSearch =
+        tag.value.toLowerCase().includes(lowerSearchTerm) ||
+        (tag.key && tag.key.toLowerCase().includes(lowerSearchTerm))
+      return isNotAlreadyUsed && matchesSearch
+    })
+  }, [allTags, existingTagIds, searchTerm])
 
   return (
     <div className="modal-overlay">

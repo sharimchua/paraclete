@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { api, Person, Group } from '../services/api'
 
 interface EntitySelectionModalProps {
@@ -42,14 +42,17 @@ const EntitySelectionModal: React.FC<EntitySelectionModalProps> = ({
     fetchTargets()
   }, [])
 
-  const filteredTargets = [
-    ...people.map((p) => ({ ...p, type: 'person' as const })),
-    ...groups.map((g) => ({ ...g, type: 'group' as const }))
-  ].filter((t) => {
-    const isExcluded = exclude.some((e) => e.id === t.id && e.type === t.type)
-    const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return !isExcluded && matchesSearch
-  })
+  const filteredTargets = useMemo(() => {
+    const lowerSearchQuery = searchQuery.toLowerCase()
+    return [
+      ...people.map((p) => ({ ...p, type: 'person' as const })),
+      ...groups.map((g) => ({ ...g, type: 'group' as const }))
+    ].filter((t) => {
+      const isExcluded = exclude.some((e) => e.id === t.id && e.type === t.type)
+      const matchesSearch = t.name.toLowerCase().includes(lowerSearchQuery)
+      return !isExcluded && matchesSearch
+    })
+  }, [people, groups, exclude, searchQuery])
 
   return (
     <div className="modal-overlay">

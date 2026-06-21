@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { api, Person, Note, API_BASE, Group, Tag } from '../services/api'
 import ReactMarkdown from 'react-markdown'
 import ConfirmationModal from './ConfirmationModal'
@@ -51,6 +51,14 @@ const NoteAuthoring: React.FC<Props> = ({
   const [tagInput, setTagInput] = useState('')
   const [tagSuggestionIndex, setTagSuggestionIndex] = useState(-1)
   const briefingFetchedFor = useRef<string | null>(null)
+
+  const filteredTaxonomy = useMemo(() => {
+    if (!tagInput) return []
+    const lowerTagInput = tagInput.toLowerCase()
+    return existingTaxonomy.filter((et) =>
+      `${et.key}: ${et.value}`.toLowerCase().includes(lowerTagInput)
+    )
+  }, [existingTaxonomy, tagInput])
 
   // Companion State
   const [companionSessionId, setCompanionSessionId] = useState<string | null>(null)
@@ -1055,20 +1063,21 @@ const NoteAuthoring: React.FC<Props> = ({
                           setTagSuggestionIndex(-1)
                         }}
                         onKeyDown={(e) => {
-                          const filtered = existingTaxonomy.filter((et) =>
-                            `${et.key}: ${et.value}`.toLowerCase().includes(tagInput.toLowerCase())
-                          )
-
                           if (e.key === 'ArrowDown') {
                             e.preventDefault()
-                            setTagSuggestionIndex((prev) => Math.min(prev + 1, filtered.length - 1))
+                            setTagSuggestionIndex((prev) =>
+                              Math.min(prev + 1, filteredTaxonomy.length - 1)
+                            )
                           } else if (e.key === 'ArrowUp') {
                             e.preventDefault()
                             setTagSuggestionIndex((prev) => Math.max(prev - 1, -1))
                           } else if (e.key === 'Enter') {
-                            if (tagSuggestionIndex >= 0 && tagSuggestionIndex < filtered.length) {
+                            if (
+                              tagSuggestionIndex >= 0 &&
+                              tagSuggestionIndex < filteredTaxonomy.length
+                            ) {
                               e.preventDefault()
-                              const t = filtered[tagSuggestionIndex]
+                              const t = filteredTaxonomy[tagSuggestionIndex]
                               if (
                                 !selectedTags.some(
                                   (sel) => sel.key === t.key && sel.value === t.value
@@ -1125,55 +1134,45 @@ const NoteAuthoring: React.FC<Props> = ({
                             zIndex: 100
                           }}
                         >
-                          {existingTaxonomy
-                            .filter((et) =>
-                              `${et.key}: ${et.value}`
-                                .toLowerCase()
-                                .includes(tagInput.toLowerCase())
-                            )
-                            .map((t, i) => (
-                              <div
-                                key={i}
-                                onClick={() => {
-                                  if (
-                                    !selectedTags.some(
-                                      (sel) => sel.key === t.key && sel.value === t.value
-                                    )
-                                  ) {
-                                    setSelectedTags((prev) => [
-                                      ...prev,
-                                      { key: t.key, value: t.value }
-                                    ])
-                                    if (setIsDirty) setIsDirty(true)
-                                  }
-                                  setTagInput('')
-                                  setTagSuggestionIndex(-1)
-                                }}
-                                style={{
-                                  padding: '8px 12px',
-                                  fontSize: '0.85rem',
-                                  cursor: 'pointer',
-                                  background:
-                                    i === tagSuggestionIndex
-                                      ? 'var(--primary-faded)'
-                                      : 'transparent',
-                                  color:
-                                    i === tagSuggestionIndex
-                                      ? 'var(--primary)'
-                                      : 'var(--text-main)',
-                                  borderBottom: '1px solid var(--border-faded)',
-                                  display: 'flex',
-                                  justifyContent: 'space-between'
-                                }}
-                              >
-                                <span>
-                                  <strong>{t.key}:</strong> {t.value}
-                                </span>
-                                {selectedTags.some(
-                                  (sel) => sel.key === t.key && sel.value === t.value
-                                ) && <span style={{ opacity: 0.5 }}>✓</span>}
-                              </div>
-                            ))}
+                          {filteredTaxonomy.map((t, i) => (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                if (
+                                  !selectedTags.some(
+                                    (sel) => sel.key === t.key && sel.value === t.value
+                                  )
+                                ) {
+                                  setSelectedTags((prev) => [
+                                    ...prev,
+                                    { key: t.key, value: t.value }
+                                  ])
+                                  if (setIsDirty) setIsDirty(true)
+                                }
+                                setTagInput('')
+                                setTagSuggestionIndex(-1)
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                background:
+                                  i === tagSuggestionIndex ? 'var(--primary-faded)' : 'transparent',
+                                color:
+                                  i === tagSuggestionIndex ? 'var(--primary)' : 'var(--text-main)',
+                                borderBottom: '1px solid var(--border-faded)',
+                                display: 'flex',
+                                justifyContent: 'space-between'
+                              }}
+                            >
+                              <span>
+                                <strong>{t.key}:</strong> {t.value}
+                              </span>
+                              {selectedTags.some(
+                                (sel) => sel.key === t.key && sel.value === t.value
+                              ) && <span style={{ opacity: 0.5 }}>✓</span>}
+                            </div>
+                          ))}
                         </div>
                       )}
                       <div
