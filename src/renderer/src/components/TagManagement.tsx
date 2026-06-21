@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavbar } from '../hooks/useNavbar'
 
 interface Tag {
@@ -88,19 +88,24 @@ const TagManagement: React.FC = () => {
     }
   }
 
-  const filteredTags = tags.filter(
-    (tag) =>
-      tag.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (tag.key && tag.key.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const { filteredTags, groupedTags } = useMemo(() => {
+    const lowerSearchTerm = searchTerm.toLowerCase()
+    const filtered = tags.filter(
+      (tag) =>
+        tag.value.toLowerCase().includes(lowerSearchTerm) ||
+        (tag.key && tag.key.toLowerCase().includes(lowerSearchTerm))
+    )
 
-  // Group tags by key for better visualization
-  const groupedTags: Record<string, Tag[]> = {}
-  filteredTags.forEach((tag) => {
-    const key = tag.key || 'Uncategorized'
-    if (!groupedTags[key]) groupedTags[key] = []
-    groupedTags[key].push(tag)
-  })
+    // Group tags by key for better visualization
+    const grouped: Record<string, Tag[]> = {}
+    filtered.forEach((tag) => {
+      const key = tag.key || 'Uncategorized'
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(tag)
+    })
+
+    return { filteredTags: filtered, groupedTags: grouped }
+  }, [tags, searchTerm])
 
   return (
     <div className="tag-management animate-in">
