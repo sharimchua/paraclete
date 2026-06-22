@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { api, Message } from '../services/api'
 import { useNavbar } from '../hooks/useNavbar'
 
@@ -38,16 +38,21 @@ const MessagesList: React.FC<MessagesListProps> = ({ onSelectMessage }) => {
     return () => setNavActions([])
   }, [fetchMessages, setNavActions])
 
-  const filteredMessages = messages.filter((m) => {
-    const matchesSearch =
-      (m.draft_text || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.person?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.group?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  // Bolt Optimization: Memoize the filtered list and hoist invariant lowercase string operations
+  // outside the filter loop to prevent O(N) redundant calculations on every render.
+  const filteredMessages = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    return messages.filter((m) => {
+      const matchesSearch =
+        (m.draft_text || '').toLowerCase().includes(searchLower) ||
+        (m.person?.name || '').toLowerCase().includes(searchLower) ||
+        (m.group?.name || '').toLowerCase().includes(searchLower)
 
-    const matchesFilter = filter === 'all' || m.status === filter
+      const matchesFilter = filter === 'all' || m.status === filter
 
-    return matchesSearch && matchesFilter
-  })
+      return matchesSearch && matchesFilter
+    })
+  }, [messages, searchTerm, filter])
 
   return (
     <div className="messages-list-container" style={{ padding: '24px' }}>

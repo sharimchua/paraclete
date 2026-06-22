@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { Avatar } from './Avatar'
 import { AvatarSelector } from './AvatarSelector'
 
@@ -67,12 +67,17 @@ const PersonList: React.FC<Props> = ({ onSelectPerson }) => {
     }
   }
 
-  const filteredPersons = persons.filter(
-    (p) =>
-      p.name.toLowerCase().includes(filterText.toLowerCase()) ||
-      p.contact_method?.toLowerCase().includes(filterText.toLowerCase()) ||
-      p.tags.some((t) => t.value.toLowerCase().includes(filterText.toLowerCase()))
-  )
+  // Bolt Optimization: Memoize the filtered list and hoist invariant lowercase string operations
+  // outside the filter loop to prevent O(N) redundant calculations on every render.
+  const filteredPersons = useMemo(() => {
+    const searchLower = filterText.toLowerCase()
+    return persons.filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchLower) ||
+        p.contact_method?.toLowerCase().includes(searchLower) ||
+        p.tags.some((t) => t.value.toLowerCase().includes(searchLower))
+    )
+  }, [persons, filterText])
 
   if (loading && persons.length === 0) return <div className="loader" />
   if (error)
