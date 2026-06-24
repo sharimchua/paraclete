@@ -760,6 +760,13 @@ const ParacletePanel: React.FC<ParacletePanelProps> = ({ isOpen, onClose }) => {
               return (
                 <button
                   onClick={handleClear}
+                  aria-label={
+                    activeTab === 'jobs'
+                      ? 'Clear completed jobs'
+                      : activeTab === 'forensics'
+                        ? 'Clear forensics logs'
+                        : 'Clear chat history'
+                  }
                   style={{
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
