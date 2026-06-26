@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
@@ -70,7 +70,12 @@ def create_topic(topic: schemas.TopicCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[schemas.Topic])
 def get_topics(person_id: Optional[int] = None, group_id: Optional[int] = None, state: Optional[str] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    query = db.query(models.Topic)
+    # ⚡ Bolt: Prevent N+1 queries during enrich_topic serialization by eager-loading collections
+    query = db.query(models.Topic).options(
+        selectinload(models.Topic.notes),
+        selectinload(models.Topic.messages),
+        selectinload(models.Topic.reflections)
+    )
     if person_id:
         query = query.filter(models.Topic.person_id == person_id)
     if group_id:
