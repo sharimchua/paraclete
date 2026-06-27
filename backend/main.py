@@ -1,9 +1,9 @@
-from fastapi import FastAPI, WebSocket, Depends, HTTPException, status, File, UploadFile
+from fastapi import FastAPI, WebSocket, Depends, HTTPException, File, UploadFile
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, desc, literal_column
-from typing import List, Dict, Set
+from typing import List
 import uvicorn
 import socket
 import os
@@ -570,7 +570,9 @@ def read_group(group_id: int, db: Session = Depends(get_db)):
     # explicit group activity
     # ⚡ Bolt optimization: Fetch only the required date column for notes instead of all full objects
     # and use .count() for messages to avoid O(N) memory allocation and N+1 full object parsing overhead.
-    group_notes_data = db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    group_notes_data = (
+        db.query(models.Note.date).filter(models.Note.group_id == group_id).all()
+    )
     group_messages_count = (
         db.query(models.Message).filter(models.Message.group_id == group_id).count()
     )
@@ -1869,12 +1871,14 @@ def get_recent_notes(limit: int = 5, db: Session = Depends(get_db)):
 @app.get("/dashboard/trends", response_model=List[schemas.TrendPoint])
 def get_trends(db: Session = Depends(get_db)):
     # 1. Fetch all notes with tags and entity tags in one go to avoid N+1
+    # ⚡ Bolt optimization: Changed collection relationships to selectinload
+    # to avoid a massive Cartesian product, significantly speeding up the query.
     notes = (
         db.query(models.Note)
         .options(
-            joinedload(models.Note.tags),
-            joinedload(models.Note.person).joinedload(models.Person.tags),
-            joinedload(models.Note.group).joinedload(models.Group.tags),
+            selectinload(models.Note.tags),
+            joinedload(models.Note.person).selectinload(models.Person.tags),
+            joinedload(models.Note.group).selectinload(models.Group.tags),
         )
         .all()
     )
