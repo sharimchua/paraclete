@@ -56,6 +56,7 @@ const StandardNavbar: React.FC<StandardNavbarProps> = ({
         {showBack && (
           <button
             onClick={onBack}
+            aria-label="Go Back"
             className="btn-secondary"
             style={{
               padding: '4px 10px',
