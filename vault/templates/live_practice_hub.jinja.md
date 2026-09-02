@@ -46,7 +46,7 @@ TABLE
   date as "Date",
   file.link as "Session",
   person as "Client",
-  group as "Cohort",
+  file.frontmatter.group as "Cohort",
   persona as "Persona",
   stage as "Stage"
 FROM "okf/sessions"
