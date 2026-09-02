@@ -9,35 +9,6 @@
 
 ---
 
-## 👥 Client Portfolio & Dossier Directory
-
-```dataview
-TABLE WITHOUT ID
-  file.link as "Client",
-  persona as "Persona",
-  groups as "Cohort",
-  link(file.name + "-dossier", "Dossier ↗") as "Dossier"
-FROM "okf/persons"
-WHERE contains(tags, "client")
-SORT file.name asc
-```
-
----
-
-## 🏢 Cohorts & Group Directory
-
-```dataview
-TABLE WITHOUT ID
-  file.link as "Cohort",
-  persona as "Persona",
-  length(members) as "Members",
-  link(file.name + "-overview", "Overview ↗") as "Dashboard"
-FROM "okf/groups"
-SORT file.name asc
-```
-
----
-
 ## 📅 Recent Session Log & Stage Pipeline
 
 ```dataview
@@ -63,6 +34,36 @@ TASK
 FROM "okf/sessions"
 WHERE !completed
 GROUP BY file.link
+```
+
+---
+
+## 👥 Client Portfolio & Dossier Directory
+
+```dataview
+TABLE WITHOUT ID
+  file.link as "Client",
+  persona as "Persona",
+  groups as "Cohort",
+  default(length(sessions), length(filter(file.inlinks, (i) => contains(i.file.folder, "sessions")))) as "Sessions",
+  link(file.name + "-dossier", "Dossier ↗") as "Dossier"
+FROM "okf/persons"
+WHERE contains(tags, "client")
+SORT file.name asc
+```
+
+---
+
+## 🏢 Cohorts & Group Directory
+
+```dataview
+TABLE WITHOUT ID
+  file.link as "Cohort",
+  persona as "Persona",
+  length(members) as "Members",
+  link(file.name + "-overview", "Overview ↗") as "Dashboard"
+FROM "okf/groups"
+SORT file.name asc
 ```
 
 ---
