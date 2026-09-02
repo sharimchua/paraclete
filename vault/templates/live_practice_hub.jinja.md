@@ -12,12 +12,11 @@
 ## 👥 Client Portfolio & Dossier Directory
 
 ```dataview
-TABLE
+TABLE WITHOUT ID
+  file.link as "Client",
   persona as "Persona",
-  framework as "Framework",
-  groups as "Cohorts / Groups",
-  contact_method as "Contact",
-  link(file.name + "-dossier", "View Dossier") as "Dossier"
+  groups as "Cohort",
+  link(file.name + "-dossier", "Dossier ↗") as "Dossier"
 FROM "okf/persons"
 WHERE contains(tags, "client")
 SORT file.name asc
@@ -28,11 +27,11 @@ SORT file.name asc
 ## 🏢 Cohorts & Group Directory
 
 ```dataview
-TABLE
+TABLE WITHOUT ID
+  file.link as "Cohort",
   persona as "Persona",
-  framework as "Framework",
   length(members) as "Members",
-  link(file.name + "-overview", "View Overview") as "Cohort Dashboard"
+  link(file.name + "-overview", "Overview ↗") as "Dashboard"
 FROM "okf/groups"
 SORT file.name asc
 ```
@@ -42,16 +41,15 @@ SORT file.name asc
 ## 📅 Recent Session Log & Stage Pipeline
 
 ```dataview
-TABLE
+TABLE WITHOUT ID
   date as "Date",
-  file.link as "Session",
+  file.link as "Session Note",
   person as "Client",
-  file.frontmatter.group as "Cohort",
   persona as "Persona",
   stage as "Stage"
 FROM "okf/sessions"
 SORT date desc
-LIMIT 25
+LIMIT 20
 ```
 
 ---
@@ -72,15 +70,14 @@ GROUP BY file.link
 ## 🧘 Reflective Practice & Supervision Stream
 
 ```dataview
-TABLE
+TABLE WITHOUT ID
   date as "Date",
+  file.link as "Reflection",
   persona as "Persona",
-  framework as "Framework",
-  energy_rating as "Energy Rating (1-5)",
-  reviewed_persons as "Reviewed Clients"
+  energy_rating as "Energy (1-5)"
 FROM "okf/reflections"
 SORT date desc
-LIMIT 15
+LIMIT 12
 ```
 
 ---
@@ -88,10 +85,11 @@ LIMIT 15
 ## 📚 Intellectual Capital Reference Taxonomy
 
 ```dataview
-TABLE
+TABLE WITHOUT ID
   reference_type as "Taxonomy",
-  url as "Resource Link",
+  file.link as "Reference Note",
   tags as "Tags"
 FROM "okf/references"
 SORT reference_type asc, file.name asc
+LIMIT 30
 ```
