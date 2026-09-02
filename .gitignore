@@ -19,12 +19,17 @@ env/
 *.db-shm
 *.db-wal
 
-# Obsidian local workspace, transient UI states & cache
+# Obsidian local workspace, plugins, themes, transient UI states & cache
 .obsidian/workspace*.json
 vault/.obsidian/workspace*.json
 vault/.obsidian/appearance.json
 vault/.obsidian/graph.json
 vault/.obsidian/daily-notes.json
+vault/.obsidian/types.json
+vault/.obsidian/plugins/
+vault/.obsidian/themes/
+vault/.obsidian/cache/
+vault/.obsidian/.trash/
 
 # Paraclete engine state, local config, and cache (ignored)
 .paraclete/
