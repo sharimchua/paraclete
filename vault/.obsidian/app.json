@@ -1,0 +1,11 @@
+{
+  "legacyEditor": false,
+  "livePreview": true,
+  "strictLineBreaks": false,
+  "useMarkdownLinks": false,
+  "newFileLocation": "folder",
+  "newFileFolderPath": "input",
+  "attachmentFolderPath": "input/attachments",
+  "showFrontmatter": true,
+  "showInlineTitle": true
+}

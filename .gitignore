@@ -1,21 +1,42 @@
-node_modules
-dist
-out
-.DS_Store
-.eslintcache
-*.log*
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-paraclete.db
-.vscode/
-.env
-scripts/
-design/import/
-uploads/companion/
-Agents.md
-paraclete.db-shm
-paraclete.db-wal
+*.egg-info/
+dist/
+build/
+.venv/
 venv/
-.jules/
-.Jules/
+env/
+
+# Environment & IDE
+.env
+.DS_Store
+.vscode/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Obsidian local workspace, transient UI states & cache
+.obsidian/workspace*.json
+vault/.obsidian/workspace*.json
+vault/.obsidian/appearance.json
+vault/.obsidian/graph.json
+vault/.obsidian/daily-notes.json
+
+# Paraclete engine state, local config, and cache (ignored)
+.paraclete/
+vault/.paraclete/
+config.yaml
+
+# PRIVATE VAULT CONTENT (Strictly ignored from version control)
+vault/input/**
+vault/okf/**
+vault/output/**
+!vault/input/**/
+!vault/okf/**/
+!vault/output/**/
+!vault/**/.gitkeep
+!vault/**/AGENTS.md

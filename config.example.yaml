@@ -1,0 +1,38 @@
+# Paraclete Configuration
+# Copy this file to config.yaml in the project root to customize your setup.
+
+# Directory paths
+paths:
+  vault_dir: "vault"              # Directory containing the Obsidian vault (default: "vault")
+  input_dir: "input"              # Subfolder for user-managed raw notes/transcripts
+  okf_dir: "okf"                  # Subfolder for canonical OKF entities
+  output_dir: "output"            # Subfolder for compiled dashboards and briefs
+  templates_dir: "templates"      # Subfolder for Jinja2 markdown templates
+  state_dir: ".paraclete"         # Engine state & cache directory (inside vault: vault/.paraclete)
+  cache_file: ".paraclete/cache.json"
+
+# Local / Cloud LLM Endpoint (OpenAI compatible)
+llm:
+  endpoint: "http://localhost:11434/v1"   # Ollama, LM Studio, vLLM, or OpenAI/Anthropic/Gemini proxy
+  api_key: "ollama"                       # API key (or set PARACLETE_LLM_API_KEY)
+  model: "gemma2:9b"                      # Model name (or set PARACLETE_LLM_MODEL)
+  temperature: 0.2
+  timeout_seconds: 90
+  max_context_tokens: 8192                # Context window size passed to local LLM (num_ctx)
+  max_history_sessions: 8                 # Number of recent sessions to include in full detail
+  compact_chars_per_session: 1200         # Max characters per session digest for history compression
+  # Reasoning & Thinking Tokens Controls:
+  # reasoning_effort: "off"               # "off" | "on" (for binary toggle models) or "none" | "low" | "medium" | "high"
+  # max_reasoning_tokens: 4096            # Reasoning/thinking token budget (e.g., Claude 3.7 thinking, OpenRouter reasoning, 0 to disable)
+  # max_tokens: 4096                      # Maximum generation/completion tokens (num_predict in Ollama)
+  # extra_body:                           # Optional arbitrary payload parameters passed to provider/proxy
+  #   chat_template_kwargs:
+  #     reasoning_effort: "off"
+
+
+# Processing behaviors
+processing:
+  conflict_strategy: "warn"       # Strategy when an OKF note was manually edited: warn | overwrite | merge | skip
+  auto_generate_output: true      # Automatically compile dashboards after processing inputs
+  extraction_mode: "agentic"      # "agentic" = LLM tool-calling loop with entity CRUD tools (default); "legacy" = single-shot markdown prompt
+  tool_max_rounds: 25             # Max LLM round-trips in the agentic tool loop (only used when extraction_mode: agentic)
