@@ -195,15 +195,21 @@ def search_entities(
             slug_lower = slug.lower()
             aliases = [str(a).lower() for a in entity.metadata.get("aliases", []) if a]
 
-            if q_clean == title_lower or q_clean == slug_lower:
+            if q_clean == title_lower:
                 score += 100
                 match_reason.append("exact title match")
+            elif q_clean == slug_lower:
+                score += 90
+                match_reason.append("exact slug match")
             elif q_clean in aliases:
                 score += 80
                 match_reason.append("alias match")
-            elif q_clean in title_lower or q_clean in slug_lower:
-                score += 50
+            elif q_clean in title_lower:
+                score += 60
                 match_reason.append("partial title match")
+            elif q_clean in slug_lower:
+                score += 45
+                match_reason.append("partial slug match")
             elif any(q_clean in a for a in aliases):
                 score += 40
                 match_reason.append("partial alias match")
