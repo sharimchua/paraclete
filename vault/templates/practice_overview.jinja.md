@@ -3,6 +3,11 @@
 
 *Compiled on: {{ generated_at }}*
 
+{% if has_dataview %}
+> [!TIP]
+> ⚡ **Live Interactive Workspace Available**: Open [[live-practice-hub|Live Practice Hub]] for real-time reactive Dataview queries, dynamic task rollups, and interactive filters.
+{% endif %}
+
 ## Quick Stats
 - **Active Clients (Persons)**: {{ persons|length }}
 - **Active Cohorts (Groups)**: {{ groups|length }}

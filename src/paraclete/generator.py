@@ -35,6 +35,18 @@ class Generator:
         self.jinja_env.filters["table_wikilink"] = table_wikilink
         self.jinja_env.filters["table_escape"] = table_escape
 
+    def is_dataview_enabled(self) -> bool:
+        """Check if the Dataview community plugin is installed and enabled in the Obsidian vault."""
+        plugins_file = self.config.vault_root / ".obsidian" / "community-plugins.json"
+        if plugins_file.exists():
+            try:
+                import json
+                plugins = json.loads(plugins_file.read_text(encoding="utf-8"))
+                return "dataview" in plugins
+            except Exception:
+                return False
+        return False
+
     def generate_all(self) -> List[Path]:
         """Deterministically generate all output documents from the OKF graph."""
         output_dir = self.config.get_path(self.config.paths.output_dir)
@@ -42,6 +54,7 @@ class Generator:
         generated_files = []
 
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        has_dataview = self.is_dataview_enabled()
 
         # 1. Practice Overview Dashboard & Cohort Overviews
         dashboards_dir = output_dir / "dashboards"
@@ -50,6 +63,7 @@ class Generator:
         overview_template = self.jinja_env.get_template("practice_overview.jinja.md")
         overview_content = overview_template.render(
             generated_at=now_str,
+            has_dataview=has_dataview,
             persons=self.graph.get_clients(),
             groups=self.graph.get_groups(),
             personas=self.graph.get_personas(),
@@ -61,6 +75,19 @@ class Generator:
         overview_path = dashboards_dir / "practice-overview.md"
         overview_path.write_text(overview_content, encoding="utf-8")
         generated_files.append(overview_path)
+
+        # Live Interactive Dataview Hub (if template exists)
+        try:
+            live_hub_template = self.jinja_env.get_template("live_practice_hub.jinja.md")
+            live_hub_content = live_hub_template.render(
+                generated_at=now_str,
+                has_dataview=has_dataview,
+            )
+            live_hub_path = dashboards_dir / "live-practice-hub.md"
+            live_hub_path.write_text(live_hub_content, encoding="utf-8")
+            generated_files.append(live_hub_path)
+        except jinja2.TemplateNotFound:
+            pass
 
         # Cohort / Group Overviews
         group_template = self.jinja_env.get_template("group_overview.jinja.md")
