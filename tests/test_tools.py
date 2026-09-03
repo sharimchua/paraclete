@@ -107,3 +107,52 @@ def test_tool_dispatch(temp_okf_dir: Path):
     # 9. Test path traversal safety
     bad = dispatch["read_entity"]({"path": "../../etc/passwd"})
     assert "error" in bad
+
+
+def test_link_entities_person_session(temp_okf_dir: Path):
+    graph = OKFGraph(temp_okf_dir)
+    touched = set()
+    dispatch = build_tool_dispatch(
+        graph,
+        temp_okf_dir.resolve(),
+        touched_paths=touched,
+    )
+
+    # Link Jane Doe to Strategy Review note without specifying field
+    res = dispatch["link_entities"]({
+        "source": "Jane Doe",
+        "target_title": "Strategy Review"
+    })
+    assert res.get("linked") is True
+
+    # Verify that sessions was populated in Jane Doe's frontmatter
+    jane_doc = MarkdownParser.parse_file(temp_okf_dir / "persons" / "Jane Doe.md")
+    assert "sessions" in jane_doc.metadata
+    assert any("Strategy Review" in s for s in jane_doc.metadata["sessions"])
+    assert "## Related" not in jane_doc.content
+
+
+def test_reconcile_person_entities(temp_okf_dir: Path):
+    from paraclete.migrator import reconcile_person_entities
+
+    # Seed a person with session in body instead of frontmatter
+    (temp_okf_dir / "persons" / "John Smith.md").write_text(
+        "---\ntype: person\ntitle: John Smith\ntags: [client]\n---\n# John Smith\nClient profile.\n\n## Sessions\n- [[2026-09-02 - John Smith - Intro Session|Intro Session]]\n\n## Related\n- [[2026-09-02 - John Smith - Intro Session]]\n- [[Deep Work]]\n",
+        encoding="utf-8"
+    )
+    (temp_okf_dir / "sessions" / "2026-09-02 - John Smith - Intro Session.md").write_text(
+        "---\ntype: session_note\ntitle: Intro Session\ndate: 2026-09-02\nperson: \"[[John Smith]]\"\nstage: Published\n---\n# Intro Session\nIntroductory notes.",
+        encoding="utf-8"
+    )
+
+    count = reconcile_person_entities(temp_okf_dir)
+    assert count >= 2
+
+    john_doc = MarkdownParser.parse_file(temp_okf_dir / "persons" / "John Smith.md")
+    assert "sessions" in john_doc.metadata
+    assert len(john_doc.metadata["sessions"]) == 1
+    assert "## Sessions" not in john_doc.content
+    assert "## Related" in john_doc.content
+    assert "Deep Work" in john_doc.content
+    assert "Intro Session" not in john_doc.content
+

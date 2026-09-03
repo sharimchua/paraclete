@@ -27,6 +27,10 @@ persona: "[[Persona Title]]" | null
 framework: "[[Framework Title]]" | null
 groups:
   - "[[Group Title]]"
+sessions:
+  - "[[Session Note Slug|Session Note Title]]"
+messages:
+  - "[[Message Title]]"
 tags:
   - client          # CRITICAL: Include 'client' for direct coachees/students; use other tags (e.g. 'team-member', 'stakeholder', 'executive') for secondary contacts
 created_at: ISO-8601 string

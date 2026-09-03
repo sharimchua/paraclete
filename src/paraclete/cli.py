@@ -254,8 +254,13 @@ def cmd_lint(args, config: AppConfig):
             continue
         clean_person = re.sub(r"\[\[(.*?)\]\]", r"\1", person).strip()
         person_entity = graph.find_by_title(clean_person)
-        if person_entity and entity.title not in (person_entity.links_out or []):
-            missing_backlinks.append((entity.slug, clean_person))
+        if person_entity:
+            has_link = (
+                entity.slug in (person_entity.links_out or [])
+                or entity.title in (person_entity.links_out or [])
+            )
+            if not has_link:
+                missing_backlinks.append((entity.slug, clean_person))
 
     print(f"Scanned {len(graph.entities)} OKF entities.")
     if missing_titles:
@@ -314,6 +319,11 @@ def cmd_lint(args, config: AppConfig):
             # Re-load graph after deduplication
             graph = OKFGraph(config.get_path(config.paths.okf_dir))
             print("Deduplication complete. OKF Knowledge Base re-indexed.")
+
+            print("\n[--fix] Reconciling Person entity frontmatter and body sessions...")
+            from .migrator import reconcile_person_entities
+            rec_count = reconcile_person_entities(config.get_path(config.paths.okf_dir))
+            print(f"Reconciled {rec_count} Person entities.")
     
     if (
         not missing_titles
@@ -390,6 +400,16 @@ def cmd_reset(args, config: AppConfig):
     print(f"Reset complete. {deleted_count} file(s) removed.")
 
 def main():
+    # Force UTF-8 on stdout/stderr so log lines containing musical symbols
+    # (e.g. the flat sign ♭ U+266D) or other non-ASCII characters cannot crash
+    # the run on Windows consoles whose default codepage (cp1252) can't encode
+    # them. File writes already use explicit UTF-8; this only guards console I/O.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     parser = argparse.ArgumentParser(description="Paraclete CLI: Lightweight OKF practice OS engine")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
 

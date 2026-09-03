@@ -405,3 +405,120 @@ class Migrator:
 
         conn.close()
         return stats
+
+
+def reconcile_person_entities(okf_dir: Path) -> int:
+    """Standardize and synchronize all Person entities in okf/persons/.
+
+    - Populates frontmatter `sessions` and `messages` lists with canonical wikilinks.
+    - Removes raw session bullet sections (e.g. ## Sessions, ## Related Sessions) from the markdown body.
+    - Cleans session and message links out of ## Related while preserving non-session references/concepts.
+    """
+    from .graph import OKFGraph
+    graph = OKFGraph(okf_dir)
+
+    session_docs = {s["slug"]: s for s in graph.get_sessions()}
+    for s in graph.get_sessions():
+        session_docs[s["title"]] = s
+
+    msg_docs = {m["slug"]: m for m in graph.get_messages()}
+    for m in graph.get_messages():
+        msg_docs[m["title"]] = m
+
+    persons = graph.get_persons()
+    modified_count = 0
+
+    for p in persons:
+        p_title = p["title"]
+        p_slug = p["slug"]
+        p_file = okf_dir / "persons" / f"{p_slug}.md"
+        if not p_file.exists():
+            p_file = okf_dir / "persons" / f"{p_title}.md"
+        if not p_file.exists():
+            continue
+
+        doc = MarkdownParser.parse_file(p_file)
+
+        # 1. Collect all sessions from graph and document
+        graph_sessions = graph.get_sessions_for_entity(p_title, direct_only=True)
+        existing_fm_sessions = doc.metadata.get("sessions") or []
+        body_links = re.findall(r"\[\[(.*?)\]\]", doc.content)
+
+        session_slug_map = {}
+        for s in graph_sessions:
+            session_slug_map[s["slug"]] = s
+
+        for link_str in list(existing_fm_sessions) + body_links:
+            raw_target = link_str.split("|")[0].strip()
+            if raw_target in session_docs:
+                s_obj = session_docs[raw_target]
+                session_slug_map[s_obj["slug"]] = s_obj
+
+        sorted_sess = sorted(session_slug_map.values(), key=lambda x: str(x.get("date", "")), reverse=True)
+        canonical_session_links = []
+        for s in sorted_sess:
+            slug = s["slug"]
+            title = s["title"]
+            if slug and title and slug != title:
+                canonical_session_links.append(f"[[{slug}|{title}]]")
+            else:
+                canonical_session_links.append(f"[[{title or slug}]]")
+
+        # 2. Collect all messages from graph and document
+        graph_messages = [
+            m for m in graph.get_messages()
+            if (m.get("person") and m["person"].lower() == p_title.lower())
+            or (m.get("recipient") and m["recipient"].lower() == p_title.lower())
+        ]
+        msg_map = {m["slug"]: m for m in graph_messages}
+        for link_str in (doc.metadata.get("messages") or []) + body_links:
+            raw_target = link_str.split("|")[0].strip()
+            if raw_target in msg_docs:
+                m_obj = msg_docs[raw_target]
+                msg_map[m_obj["slug"]] = m_obj
+
+        sorted_msgs = sorted(msg_map.values(), key=lambda x: str(x.get("date", "")), reverse=True)
+        canonical_msg_links = [f"[[{m['title']}]]" for m in sorted_msgs]
+
+        # 3. Clean body
+        body = doc.content
+
+        # Remove ## Sessions or ## Related Sessions headers and their lists
+        body = re.sub(r"\n+##\s+(?:Sessions|Related Sessions)\s*\n.*?(?=\n##|\Z)", "", body, flags=re.DOTALL)
+
+        # Clean ## Related section: remove session and message links
+        all_session_slugs_and_titles = set(session_slug_map.keys()) | {s["title"] for s in session_slug_map.values()}
+        all_msg_slugs_and_titles = set(msg_map.keys()) | {m["title"] for m in msg_map.values()}
+        known_rel_targets = all_session_slugs_and_titles | all_msg_slugs_and_titles
+
+        related_match = re.search(r"(##\s+Related\s*\n)(.*?)(?=\n##|\Z)", body, flags=re.DOTALL)
+        if related_match:
+            rel_header = related_match.group(1)
+            rel_content = related_match.group(2)
+            rel_lines = rel_content.strip().splitlines()
+            kept_lines = []
+            for line in rel_lines:
+                links_in_line = re.findall(r"\[\[(.*?)\]\]", line)
+                is_session_or_msg = False
+                if links_in_line:
+                    targets = [l.split("|")[0].strip() for l in links_in_line]
+                    if all(t in known_rel_targets or t in session_docs or t in msg_docs for t in targets):
+                        is_session_or_msg = True
+                if not is_session_or_msg and line.strip():
+                    kept_lines.append(line)
+
+            if kept_lines:
+                new_rel_sec = f"\n\n## Related\n" + "\n".join(kept_lines) + "\n"
+                body = body[:related_match.start()] + new_rel_sec + body[related_match.end():]
+            else:
+                body = body[:related_match.start()].rstrip() + body[related_match.end():]
+
+        doc.metadata["sessions"] = canonical_session_links
+        doc.metadata["messages"] = canonical_msg_links
+        doc.content = body.strip()
+
+        MarkdownParser.write_file(doc, p_file)
+        modified_count += 1
+
+    return modified_count
+

@@ -582,6 +582,20 @@ def link_entities(
 
     doc = MarkdownParser.parse_file(full_src)
 
+    # Auto-detect canonical frontmatter list field if not explicitly specified
+    if not field_name:
+        src_type = doc.doc_type or (src_entity.doc_type if src_entity else None)
+        tgt_type = tgt_entity.doc_type if tgt_entity else None
+        if src_type == "person":
+            if tgt_type == "session_note":
+                field_name = "sessions"
+            elif tgt_type == "message":
+                field_name = "messages"
+            elif tgt_type == "group":
+                field_name = "groups"
+        elif src_type == "group" and tgt_type == "person":
+            field_name = "members"
+
     if field_name:
         existing = doc.metadata.get(field_name)
         if isinstance(existing, list):

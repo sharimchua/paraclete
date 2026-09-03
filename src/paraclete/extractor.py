@@ -536,8 +536,35 @@ Synthesize a comprehensive Practitioner Dossier and Profile for {person_name} no
 
         # Parse output and extract body
         parsed = MarkdownParser.parse_text(synthesized_text, path=person_file)
-        doc.content = parsed.content.strip()
+        cleaned_content = parsed.content.strip()
+        # Clean any redundant session headers generated in the markdown body
+        cleaned_content = re.sub(r"\n+##\s+Sessions\s*\n.*?(?=\n##|\Z)", "", cleaned_content, flags=re.DOTALL)
+        doc.content = cleaned_content.strip()
         doc.metadata["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Synchronize sessions and messages frontmatter from graph
+        all_person_sessions = self.graph.get_sessions_for_entity(person_name, direct_only=True)
+        session_links = []
+        for s in sorted(all_person_sessions, key=lambda x: str(x.get("date", "")), reverse=True):
+            s_slug = s.get("slug")
+            s_title = s.get("title")
+            if s_slug and s_title and s_slug != s_title:
+                session_links.append(f"[[{s_slug}|{s_title}]]")
+            else:
+                session_links.append(f"[[{s_title or s_slug}]]")
+        if session_links:
+            doc.metadata["sessions"] = session_links
+
+        all_person_messages = [
+            m for m in self.graph.get_messages()
+            if (m.get("person") and m["person"].lower() == person_name.lower())
+            or (m.get("recipient") and m["recipient"].lower() == person_name.lower())
+        ]
+        msg_links = []
+        for m in sorted(all_person_messages, key=lambda x: str(x.get("date", "")), reverse=True):
+            msg_links.append(f"[[{m['title']}]]")
+        if msg_links:
+            doc.metadata["messages"] = msg_links
 
         MarkdownParser.write_file(doc, person_file)
         self.graph.load()

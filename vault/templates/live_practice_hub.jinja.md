@@ -45,7 +45,7 @@ TABLE WITHOUT ID
   file.link as "Client",
   persona as "Persona",
   groups as "Cohort",
-  default(length(sessions), length(filter(file.inlinks, (i) => contains(i.file.folder, "sessions")))) as "Sessions",
+  default(length(sessions), 0) as "Sessions",
   link(file.name + "-dossier", "Dossier ↗") as "Dossier"
 FROM "okf/persons"
 WHERE contains(tags, "client")
