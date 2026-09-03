@@ -18,7 +18,7 @@ This repository combines a Python-based **Knowledge Engine (`paraclete`)** with 
 ```
 
 ### Core Rules for Agents & AI Tools
-1. **Never edit `input/`**: Files in `vault/input/` are user-owned source artifacts. Agents must only read from `input/` to extract knowledge into `okf/`.
+1. **Do not edit existing `input/` files**: Files in `vault/input/` are user-owned source artifacts; during processing runs agents only read from `input/` to extract knowledge into `okf/`. The one sanctioned exception is the agent-assisted session intake step — a new raw note created on explicit user request as a pre-processing step, distinct from any `paraclete process` run (see `vault/input/AGENTS.md`).
 2. **Strict Schema Integrity in `okf/`**: Every file in `vault/okf/` must include valid YAML frontmatter compliant with OKF v0.2 (must have `type`, `title`, and appropriate relational wikilinks).
 3. **Wikilink Syntax**: Use standard Obsidian wikilinks `[[Entity Title]]` for all internal cross-references.
 4. **Never manually edit `output/`**: Files in `vault/output/` are generated deterministically by `paraclete generate`.
