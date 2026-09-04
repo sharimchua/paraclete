@@ -5,13 +5,30 @@ The `okf/` directory holds the canonical, structured knowledge base. Every file 
 ## Subfolder Structure
 - `persons/`: Individual client/student/coachee dossiers.
 - `groups/`: Cohorts, teams, or groups of persons.
-- `personas/`: Practitioner working modes/personas (e.g. `Executive Coach`, `Technical Mentor`).
+- `personas/`: Canonical **practitioner working modes** — how the practitioner engages a client within a particular framework or domain (e.g. `Midlife Muso` for music coaching, `Respec` for professional/leadership coaching). A persona is always an attribute of the *practitioner*, never of the client.
 - `frameworks/`: Practitioner frameworks defining Tone, Phrasing, Formatting, and Principles.
 - `sessions/`: Structured session records (with stage: `Prepare`, `Capture`, `Clean`, `Published`, `Archived`).
 - `references/`: Intellectual capital (types: `CONCEPT`, `RESOURCE`, `TECHNIQUE`, `PATTERN`, `TEMPLATE`).
 - `reflections/`: Meta-reflections on practice dynamics and client growth.
 - `topics/`: Thematic developmental tracks (`future`, `active`, `closed`).
 - `messages/`: Communication drafts and sent messages.
+
+## Persona Semantics (CRITICAL — read before tagging or synthesizing)
+
+A **persona** is a *practitioner working mode*: a label for **how the practitioner engages** with a client within a particular framework or domain. It describes the practitioner's operating stance, never the client.
+
+- A persona entity (`type: persona`, in `okf/personas/`) is a canonical working mode of the practitioner — e.g. `[[Midlife Muso]]` (music coaching) or `[[Respec]]` (professional/leadership coaching).
+- A persona is **never** an attribute, identity, role, or "type" of the client/student/coachee. Do not describe a person *as* a persona.
+- A **group** (`okf/groups/`) is a separate dimension — a business, cohort, contract, or revenue grouping (e.g. the `Midlife Muso` and `Respec` businesses, or `Play Music` for clients contracted through). A group may share a name with a persona, but they are different entity types: the persona names *how the practitioner engages*; the group names *which business/cohort/revenue line* the client sits in. Keep the two distinct.
+
+How the `persona` field reads on each entity type:
+
+| Entity | Meaning of `persona` |
+| --- | --- |
+| `session_note` / `message` | The practitioner working mode under which **this specific** interaction was conducted (how the practitioner engaged for that session/message). |
+| `person` | The practitioner working mode used as the **default** when engaging this client overall. Individual sessions/messages may override it. It is a convenience default, not a description of the client. |
+
+Real example: Chandan Kaur's music-coaching sessions are conducted under `[[Midlife Muso]]`; a leadership-coaching session would be conducted under `[[Respec]]`. In both cases the persona names *the practitioner*, not Chandan or any client.
 
 ## Schema Specifications
 
@@ -23,7 +40,7 @@ title: string
 description: string
 contact_method: string | null
 avatar_logo: string | null
-persona: "[[Persona Title]]" | null
+persona: "[[Persona Title]]" | null   # Default PRACTITIONER working mode for this client (NOT a description of the client)
 framework: "[[Framework Title]]" | null
 groups:
   - "[[Group Title]]"
@@ -48,7 +65,7 @@ date: "YYYY-MM-DD"
 stage: "Prepare" | "Capture" | "Clean" | "Published" | "Archived"
 person: "[[Person Title]]" | null
 group: "[[Group Title]]" | null
-persona: "[[Persona Title]]" | null
+persona: "[[Persona Title]]" | null   # PRACTITIONER working mode for THIS session (how the practitioner engaged)
 source_input: string | null
 tags:
   - list
@@ -66,7 +83,7 @@ date: "YYYY-MM-DD"
 person: "[[Person Title]]" | null
 status: "DRAFT" | "SENT" | "ARCHIVED"
 message_type: string | null
-persona: "[[Persona Title]]" | null
+persona: "[[Persona Title]]" | null   # PRACTITIONER working mode for THIS message
 related_session: "[[Session Title]]" | null
 tags:
   - list
@@ -125,5 +142,5 @@ updated_at: ISO-8601 string
 - Always use `[[Title]]` wikilinks for entity relationships.
 - File names should use kebab-case: `okf/persons/jane-doe.md`.
 - Titles in frontmatter should be human-readable capitalized strings matching the primary `# Header 1`.
-- **Session & Message Persona Tagging**: Every `session_note` and `message` should be tagged with the `persona` under which the interaction was conducted (e.g. `[[Executive Coach]]` for leadership/organizational coaching, `[[Technical Mentor]]` for technical advising). This allows clients who engage across multiple practices to have their sessions and communications accurately contextualized.
+- **Session & Message Persona Tagging**: Every `session_note` and `message` should be tagged with the **practitioner** `persona` (working mode) under which the interaction was conducted — e.g. `[[Midlife Muso]]` for music coaching, `[[Respec]]` for professional/leadership coaching. The persona names the *practitioner's* engagement stance, never the client's identity or "type". This keeps a client who is engaged across multiple working modes accurately contextualized per interaction.
 

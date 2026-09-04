@@ -31,7 +31,7 @@ Rules for each extracted session document:
    - stage: "Published"
    - person: "[[Person Name]]" (e.g. "[[Jane Doe]]", "[[Alex Rivera]]"). Extract the clean individual person name. If no 1-on-1 person is involved, use null.
    - group: "[[Group Name]]" (e.g. "[[Cohort Alpha]]", "[[Team Beta]]" if cohort/group is mentioned, otherwise null)
-   - persona: "[[Persona Name]]" (e.g. "[[Executive Coach]]", "[[Technical Mentor]]", indicating practitioner mindset/operating mode)
+   - persona: "[[Persona Name]]" — the PRACTITIONER's working mode for THIS session (how the practitioner engaged), NOT an attribute of the client. Use a canonical persona entity from okf/personas/ (e.g. "[[Midlife Muso]]" for music coaching, "[[Respec]]" for professional/leadership coaching); prefer null over inventing a client-facing label.
    - tags: list of 4-8 relevant topic keywords (e.g. ["audiation", "harmony", "rhythm", "leadership"])
 2. Markdown Body structure:
    - # [Title matching frontmatter title]
@@ -53,6 +53,8 @@ Your job is to perform a 3-Way Reconciliation:
 
 SYNTHESIS_SYSTEM_PROMPT = """You are an expert executive practitioner, mentor, and diagnostic analyst.
 Your job is to synthesize all recorded session notes and interactions for a specific client into a comprehensive, high-value Practitioner Dossier.
+
+CRITICAL — PERSONA SEMANTICS: The `persona` supplied for this client (and any persona tags on the sessions) is the PRACTITIONER's working mode — how *the practitioner* engages this client within a particular framework or domain (e.g. "Midlife Muso" = music coaching, "Respec" = professional/leadership coaching). It is NEVER an attribute, identity, or "type" of the client. Do NOT describe the client *as* the persona (e.g. do not write "Chandan is a Midlife Muso"). Treat it only as context for your engagement stance; the dossier content must be about the client themselves.
 
 Structure the Markdown output cleanly:
 # [Client Name]
@@ -159,7 +161,7 @@ Your job is to read a raw input file — which may contain session notes, dictat
    - A purely administrative or logistical message (scheduling, invoice, brief question without session content) -> create only a `message` entity.
    - A group/cohort discussion -> create a `session_note` with the group set (and no person, or the facilitator).
    - **CRITICAL for Persona Tagging on Sessions and Messages**:
-     Every `session_note` and `message` MUST be tagged with the relevant practitioner `persona` (e.g. `persona: "[[Executive Coach]]"` or `persona: "[[Technical Mentor]]"`). For clients who engage across multiple domains (e.g. Jane Doe, Alex Rivera), tagging the persona on each session and message ensures that the practitioner's operating mindset and developmental track remain distinct and unambiguous.
+     Every `session_note` and `message` MUST be tagged with the **practitioner's** working-mode `persona` — i.e. how *the practitioner* engaged in that interaction, never an attribute of the client (e.g. `persona: "[[Midlife Muso]]"` for music coaching, `persona: "[[Respec]]"` for professional/leadership coaching). For clients who engage across multiple working modes, tagging the persona on each session and message keeps the practitioner's operating stance distinct and unambiguous. A persona name is a PRACTITIONER mode: do NOT set it as a client identity or describe the person *as* that persona. (Groups are a separate business/cohort/revenue dimension — a client may belong to a group that shares a persona's name, e.g. the `Midlife Muso` business group, or to a different group such as `Play Music`; keep the two dimensions distinct.)
    - **CRITICAL for Completed Practitioner Reflection Questionnaires** (e.g. from `input/reflections/` or with `type: reflection_input` or `# Practitioner Reflection`):
 
      1. Create or update the canonical `reflection` entity in `vault/okf/reflections/` with path `reflections/YYYY-MM-DD-[persona-slug].md`.
@@ -183,7 +185,7 @@ Your job is to read a raw input file — which may contain session notes, dictat
    - A standalone reflection, journal entry, or insight without a structured questionnaire -> create a `reflection`.
    - A thematic developmental track or goal -> create a `topic` entity.
    - A concept, technique, resource, pattern, or template discussed in depth -> create a `reference` with the appropriate reference_type (CONCEPT / RESOURCE / TECHNIQUE / PATTERN / TEMPLATE) and substantive body content summarizing what was said about it. Do NOT create empty stub references; only create a reference when the input contains real substance about that concept.
-   - A person or group not yet in the vault -> create them with `create_entity` (type `person` or `group`) before linking sessions to them.
+   - A person or group not yet in the vault -> create them with `create_entity` (type `person` or `group`) before linking sessions to them. A `group` is a business/cohort/revenue grouping — a separate dimension from the practitioner's persona working mode; link each client to their actual business/cohort group (which may share a name with a persona), and never treat a persona as the client's identity.
      **CRITICAL for Person Tags**: If the person is a direct client, coachee, or music student of the practitioner, include `'client'` in their `tags` (e.g. `tags: ["client", "Piano"]` or `tags: ["client"]`). If the person is a secondary stakeholder, colleague, executive, or team member mentioned during casework, use descriptive tags (e.g. `tags: ["team-member", "engineering"]` or `tags: ["stakeholder"]`) WITHOUT the `'client'` tag.
 3. For every entity you create, set:
    - Correct frontmatter per OKF v0.2 (type, title, and type-specific fields such as date/stage/person/group for session notes; reference_type/url for references; members for groups).
@@ -514,7 +516,7 @@ class Extractor:
         full_history_text = "\n\n---\n\n".join(history_blocks)
 
         prompt = f"""Client: {person_name}
-Persona/Role: {doc.metadata.get('persona', 'Standard Practitioner')}
+Practitioner Working Mode (how the practitioner engages this client — NOT a trait of the client): {doc.metadata.get('persona', 'Standard Practitioner')}
 Framework: {doc.metadata.get('framework', 'Core Framework')}
 Total Recorded Sessions: {total_count} (Showing {len(recent_sessions)} in-depth sessions + historical milestone digest)
 

@@ -761,7 +761,7 @@ def get_tool_schemas() -> List[Dict[str, Any]]:
                             "type": "object",
                             "description": (
                                 "Additional YAML frontmatter fields beyond type/title. "
-                                "Include date, stage, person, group, persona ('[[Executive Coach]]', '[[Technical Mentor]]'), tags, reference_type, url, etc. as appropriate."
+                                "Include date, stage, person, group, persona (the practitioner's working mode, e.g. '[[Midlife Muso]]', '[[Respec]]' — never a client attribute), tags, reference_type, url, etc. as appropriate."
                             ),
                             "additionalProperties": True,
                         },
@@ -826,7 +826,7 @@ def get_tool_schemas() -> List[Dict[str, Any]]:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "persona": {"type": "string", "description": "Persona title (e.g. 'Executive Coach', 'Technical Mentor')."},
+                        "persona": {"type": "string", "description": "Practitioner working-mode persona title (e.g. 'Midlife Muso', 'Respec'); an attribute of the practitioner, not the client."},
                         "since": {"type": "string", "description": "Optional start date filter (YYYY-MM-DD)."},
                     },
                     "required": ["persona"],
