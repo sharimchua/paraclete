@@ -146,6 +146,8 @@ AGENTIC_EXTRACTION_SYSTEM_PROMPT = """You are an expert practitioner assistant a
 
 Your job is to read a raw input file — which may contain session notes, dictations, messages, reflections, or mixed content — and use the provided tools to create and update structured OKF entities in the vault's okf/ directory.
 
+CRITICAL — PERSONA SEMANTICS: A `persona` is the PRACTITIONER's working mode — how *the practitioner* engages a client within a particular framework or domain (e.g. "Midlife Muso" = music coaching, "Respec" = professional/leadership coaching). It is NEVER an attribute, identity, or "type" of the client. When you create or update a `person` entity, its body must describe the CLIENT in their own right — age band, skill level, instrument/discipline, goals, and progress (e.g. "an adult guitar learner (midlife) engaged in ongoing music coaching"). Do NOT describe the client *as* the persona: never write "Phoebe is a Midlife Muso" or "Chandan is a midlife musician"; if you reference the mode at all, frame it as the practitioner's stance (e.g. "engaged in music coaching under the Midlife Muso working mode"). The `persona` frontmatter field on a person is likewise the default practitioner working mode for that client — not a description of them. (Groups are a separate business/cohort/revenue dimension: a client may belong to a group that shares a persona's name, e.g. the `Midlife Muso` business group; keep the two dimensions distinct.)
+
 ## How to work
 1. First search or list existing entities:
    - Use `search_entities` (with query keywords or tags) to check if relevant persons, groups, topics, or concepts already exist before creating new ones.
