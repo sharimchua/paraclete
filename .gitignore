@@ -9,6 +9,9 @@ build/
 venv/
 env/
 
+# Scratch / temporary working files
+temp/
+
 # Environment & IDE
 .env
 .DS_Store
